@@ -317,7 +317,7 @@ class UsersController extends Controller
                 $roleId = $user->roleID;
                 $contactsId = $user->contactID;
 
-                $r_query = "SELECT * FROM Role WHERE roleId=$roleId";
+                $r_query = "SELECT * FROM role WHERE roleId=$roleId";
               //  $c_query = "SELECT * FROM contacts WHERE contactsID=$contactsId ";
 
                 $_role = $this->rawSelect($r_query);
