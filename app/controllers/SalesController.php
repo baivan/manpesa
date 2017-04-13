@@ -199,7 +199,7 @@ class SalesController extends Controller
 		$sales = $this->rawSelect($saleQuery);
 
 
-		return $res->getSalesSucces($sales);
+		return $res->getSalesSuccess($sales);
 
 	}
 

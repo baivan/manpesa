@@ -219,7 +219,7 @@ class ItemsController extends Controller
 	          }
 
 
-	       return $res->success("Item assigned successfully ",$userItem);
+	       return $res->getSalesSuccess($userItem);
 
 
 	

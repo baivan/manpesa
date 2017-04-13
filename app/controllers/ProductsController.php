@@ -142,7 +142,7 @@ class ProductsController extends Controller
 
 		       $products = $this->rawSelect($productQuery);
 
-		       return $res->success("Products are ",$products);
+		       return $res->getSalesSuccess($products);
 		}
 
 }
