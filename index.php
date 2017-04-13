@@ -75,8 +75,25 @@ $sale_route ->setPrefix('/sale/');
 $sale_route ->setHandler(new SalesController());
 $sale_route ->post('create','create');//{paymentPlanID,amount,userID,workMobile,nationalIdNumber,fullName,location,token}
 //$sale_route ->post('update')
-$sale_route ->post('all','getSales');
+$sale_route ->post('all','getSales'); 
 $sale_route ->get('all','getSales');
+
+$category_route = new MicroCollection();
+$category_route ->setPrefix('/category/');
+$category_route ->setHandler(new CategoryController());
+$category_route ->post('create','create');
+$category_route ->post('update','update');
+$category_route ->post('all','getAll');
+$category_route ->get('all','getAll');
+
+$product_route = new MicroCollection();
+$product_route ->setPrefix('/product/');
+$product_route ->setHandler(new ProductsController());
+$product_route ->post('create','create');
+$product_route ->post('update','update');
+$product_route ->post('all','getAll');
+$product_route ->get('all','getAll');
+
 
 
 
@@ -87,6 +104,8 @@ $app->mount($user_route);
 $app->mount($item_route);
 $app->mount($prospect_route);
 $app->mount($sale_route);
+$app->mount($category_route);
+$app->mount($product_route);
 
 try {
     // Handle the request

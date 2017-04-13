@@ -21,15 +21,15 @@ class Category extends \Phalcon\Mvc\Model
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @var string
+     * @Column(type="string", nullable=false)
      */
     public $createdAt;
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @var string
+     * @Column(type="string", nullable=false)
      */
     public $updatedAt;
 

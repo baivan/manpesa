@@ -56,11 +56,6 @@ class SalesController extends Controller
 	    }
 
 
-    	$tokenData = $jwtManager->verifyToken($token,'openRequest');
-       if(!$tokenData){
-         return $res->dataError("Data compromised");
-       }
-
 
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
 	    					'bind'=>array("w_mobile"=>$workMobile)));
