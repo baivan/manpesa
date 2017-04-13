@@ -114,7 +114,9 @@ class ProspectsController extends Controller
 
         $prospects = $this->rawSelect($prospectQuery);
 
-        return $res->success("Prospects are ",$prospects);
+        return $res->getSalesSucces($prospects);
+
+
 
 
 	}
