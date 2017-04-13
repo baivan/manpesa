@@ -198,10 +198,8 @@ class SalesController extends Controller
 
 		$sales = $this->rawSelect($saleQuery);
 
-		return $res->success("User sales are ",$sales);
 
-
-
+		return $res->getSalesSucces($sales);
 
 	}
 

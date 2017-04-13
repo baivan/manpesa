@@ -118,7 +118,7 @@ use Phalcon\Mvc\Controller;
         return $response;
     }
 
-    public function getOrderSucces($data){
+    public function getSalesSucces($data){
         $response = new Response();
         $response->setHeader("Content-Type", "application/json");
         $response->setHeader("Access-Control-Allow-Origin", "*");
