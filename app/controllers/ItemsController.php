@@ -160,7 +160,7 @@ class ItemsController extends Controller
 
 		$items= $this->rawSelect($itemsQuery);
 
-		return $res->success("Items ",$items);
+		return $res->getSalesSuccess($items);
 	}
 	
 
