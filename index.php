@@ -94,8 +94,29 @@ $product_route ->post('update','update');
 $product_route ->post('all','getAll');
 $product_route ->get('all','getAll');
 
+$sale_type_route = new MicroCollection();
+$sale_type_route ->setPrefix('/saleType/');
+$sale_type_route ->setHandler(new SalesTypeController());
+$sale_type_route ->post('create','create');////{salesTypeName,salesTypeDeposit}
+$sale_type_route ->post('update','update');//{salesTypeName,salesTypeDeposit,salesTypeID}
+$sale_type_route ->post('all','getAll');
+$sale_type_route ->get('all','getAll');
 
+$frequency_route = new MicroCollection();
+$frequency_route ->setPrefix('/frequency/');
+$frequency_route ->setHandler(new FrequencyController());
+$frequency_route ->post('create','create');//{numberOfDays,frequencyName,token,frequencyID}
+$frequency_route ->post('update','update');//{numberOfDays,frequencyName,token,frequencyID}
+$frequency_route ->post('all','getAll');
+$frequency_route ->get('all','getAll');
 
+$product_sale_type_price_route = new MicroCollection();
+$product_sale_type_price_route ->setPrefix('/price/');
+$product_sale_type_price_route ->setHandler(new ProductSaleTypePriceController());
+$product_sale_type_price_route ->post('create','create');//{productID,salesTypeID,categoryID,price}
+$product_sale_type_price_route ->post('update','update');//{productID,salesTypeID,categoryID,price,productSaleTypePriceID}
+$product_sale_type_price_route ->post('all','getAll');
+$product_sale_type_price_route ->get('all','getAll');
 
 
 
@@ -106,6 +127,9 @@ $app->mount($prospect_route);
 $app->mount($sale_route);
 $app->mount($category_route);
 $app->mount($product_route);
+$app->mount($sale_type_route);
+$app->mount($frequency_route);
+$app->mount($product_sale_type_price_route);
 
 try {
     // Handle the request

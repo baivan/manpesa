@@ -27,7 +27,6 @@ class ItemsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
-
     	$token = $json->token;
     	$serialNumber = $json->serialNumber;
     	$productID = $json->productID;

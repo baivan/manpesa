@@ -131,7 +131,7 @@ class CategoryController extends Controller
 
 		       $categories = $this->rawSelect($categoryQuery);
 
-		       return $res->success("Categories are ",$categories);
+		       return $res->getSalesSuccess($categories);
 
 		}
 

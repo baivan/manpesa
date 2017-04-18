@@ -171,6 +171,7 @@ class SalesController extends Controller
         return $res->success("Sale created successfully ",$sale);
 
 	}
+	
 	public function getSales(){//{userID,customerID,token}
 		$jwtManager = new JwtManager();
     	$request = new Request();
