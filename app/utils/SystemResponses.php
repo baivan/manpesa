@@ -100,7 +100,7 @@ use Phalcon\Mvc\Controller;
         $logger->log($file.' ty '.$message.' '.json_encode($data));
         $this->composePushLog("success  ".$message,$data);
        
-        return $response;
+        return $success;
     }
 
   public function successFromData($data){
