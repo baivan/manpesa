@@ -137,7 +137,7 @@ class ItemsController extends Controller
         $itemID = $request->getQuery('itemID');
         $userID = $request->getQuery('userID');
 
-        $itemsQuery = "SELECT * FROM item where status >-1";
+        $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND 
 
         if(!$token){
         	return $res->dataError("Token Missing");
@@ -150,11 +150,11 @@ class ItemsController extends Controller
 	      }
 
 	      if($itemID && $itemID > 0 ){
-	      	$itemsQuery = "SELECT * FROM item WHERE itemID=$itemID and status >-1" ;
+	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.itemID=$itemID";//ui.userID=2 AND 
 	      }
 
 	      if($userID && $userID > 0){
-	      	$itemsQuery = "SELECT * FROM item  i JOIN user_items ui on i.itemID=ui.itemID and ui.userID=$userID  and i.status >-1";
+	      	$itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE ui.userID=$userID AND i.status=0";//ui.userID=2 AND 
 	      }
 
 		$items= $this->rawSelect($itemsQuery);
