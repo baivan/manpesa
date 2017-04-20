@@ -50,8 +50,8 @@ else if ($host=='jamess-air' )
 
        $logPath = array('location'  => "../logs/envirofit/");
     }
-    else if($host=='192.168.1.11' ){
-        $connection = array(
+    else if($host=='192.168.1.23' ){
+         $connection = array(
             'adapter'     => 'mysql',
             'host'        => 'localhost',
             'username'    => 'envirofit',
@@ -61,7 +61,7 @@ else if ($host=='jamess-air' )
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
         );
 
-        $logPath = array('location'  => "../logs/msupport/");
+       $logPath = array('location'  => "../logs/envirofit/");
     }
     
 else

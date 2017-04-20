@@ -125,8 +125,8 @@ class UsersController extends Controller
               $res->sendMessage($workMobile,$message);
 
               $data = [
-                     "username"=>$user->username,
                       "username"=>$user->username,
+                       "targetSale"=>$user->targetSale,
                        "userID"=>$user->userID];
            
           return $res->success("User created successfully $code",$data);
@@ -287,6 +287,8 @@ class UsersController extends Controller
 	      return $res->success("User updated successfully",$user);
     
 	}
+
+
 	
 	public function login(){//usename, password
 		$jwtManager = new JwtManager();
@@ -326,8 +328,9 @@ class UsersController extends Controller
 
                 $data = ["token"=>$token,
                           "username"=>$user->username,
+                          "targetSale"=>$user->targetSale,
                           "role"=>$_role['roleName'],
-                         // "roleID"=>$_role['roleID'],
+                          "roleID"=>$_role['roleID'],
                           "userID"=>$user->userID,
                           "contactID"=>$user->contactID
                           ];
@@ -395,6 +398,62 @@ class UsersController extends Controller
            
         return $res->success("Password reset successfully",$data);
 
+    }
+
+    public function userSummary(){
+    	$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$token = $request->getQuery('token');
+       // $salesTypeID = $request->getQuery('salesTypeID');
+        $userID = $request->getQuery('userID');
+
+        if(!$token || !$userID){
+		   return $res->dataError("Missing data ");
+		}
+
+		$tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+	    $overalQuery = "SELECT SUM(amount) as amount, u.targetSale FROM `sales` s join users u on s.userID=u.userID WHERE s.userID=$userID";
+	    $saleTypesQuery = "SELECT * FROM sales_type";
+	    $saleTypes = $this->rawSelect($saleTypesQuery);
+	    $overalSummary = $this->rawSelect($overalQuery);
+
+	    $salesTypeSummary = array();
+
+	    foreach ($saleTypes as $saleType) {
+	    	$salesTypeID = $saleType['salesTypeID'];
+	    	$saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID";
+	    	$typeData = $this->rawSelect($saleTypeQuery);
+	    	//array_push($salesTypeSummary,$typeData[0]);
+	    	$data[$typeData[0]['salesTypeName']]=$typeData[0]['amount'];
+
+	    	if(is_null($typeData[0]['amount'])){
+	    		$data[$typeData[0]['salesTypeName']]=0;
+	    	}
+	    	else{
+	    		$data[$typeData[0]['salesTypeName']]=$typeData[0]['amount'];
+	    	}
+
+	    }
+
+	    $data["totalSales"]=$overalSummary[0]['amount'];
+
+	    if(is_null($overalSummary[0]['targetSale'])){
+	    	$data["targetSale"]=0;
+	    }
+	    else{
+	    	 $data["targetSale"]=$overalSummary[0]['targetSale'];
+	    }
+	   
+	   // $data["salesTypeSummary"]=$salesTypeSummary;
+
+	    return $res->success("userSummary",$data);
+	    
     }
 
 }

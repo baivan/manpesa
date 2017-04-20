@@ -52,6 +52,8 @@ $user_route ->post('resetpassword','resetPassword');//
 $user_route ->post('all/{page}/{max}','getTableUsers');
 $user_route ->get('all/{page}/{max}','getTableUsers');
 $user_route ->post('delete','removeUser'); //{token,userId}
+$user_route ->post('summary','userSummary');
+$user_route ->get('summary','userSummary');
 
 $item_route = new MicroCollection();
 $item_route ->setPrefix('/item/');
