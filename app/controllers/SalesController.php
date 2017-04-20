@@ -192,9 +192,22 @@ class SalesController extends Controller
     	$customerID;
     	$paymentPlanID;
 
-    	if(!$token || !$salesTypeID || !$userID || !$amount || !$frequencyID){
-	    	return $res->dataError("Missing data ");
+    	if(!$token ){//|| !$salesTypeID || !$userID || !$amount || !$frequencyID){
+	    	return $res->dataError("Token missing ");
 	    }
+	    if(!$salesTypeID ){
+	    	return $res->dataError("salesTypeID missing ");
+	    }
+	     if(!$userID ){
+	    	return $res->dataError("userID missing ");
+	    }
+	     if(!$amount ){
+	    	return $res->dataError("amount missing ");
+	    }
+	     if(!$frequencyID ){
+	    	return $res->dataError("frequencyID missing ");
+	    }
+
 
 	    $tokenData = $jwtManager->verifyToken($token,'openRequest');
 
