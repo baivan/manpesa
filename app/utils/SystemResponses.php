@@ -127,7 +127,7 @@ use Phalcon\Mvc\Controller;
         $response->setContent(json_encode($data));
         $logger = new FileAdapter($this->getLogFile('success'));
         $logger->log(' '.json_encode($data));
-        $this->composePushLog("success","get order success"," ".$data);
+        $this->composePushLog("success","get order success",json_encode($data));
         return $response;
     }
 
