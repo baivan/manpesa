@@ -1,0 +1,42 @@
+curl -i -X POST -d '{"username":"0712345678","password":"70332","token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJpYXQiOjE0ODM5NTYwNDYsImFwcCI6ImphdmEzNjAiLCJvd25lciI6ImFub255bW91cyIsImFjdGlvbiI6Im9wZW5SZXF1ZXN0In0.eLHZjnFduufVspUz7E2QfTzKFfPqNWYBoENJbmIeZtA"}' http://api.southwell.io/envirofit_api_v1/user/login
+
+
+HTTP/1.1 201 SUCCESS
+Date: Wed, 19 Apr 2017 14:39:30 GMT
+Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.1e-fips PHP/5.5.38
+X-Powered-By: PHP/5.5.38
+Access-Control-Allow-Origin: *
+Status: 201 SUCCESS
+Content-Length: 326
+Content-Type: application/json
+
+{"success":"Login successful ","data":{"token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuc291dGh3ZWxsLmlvIiwiaWF0IjoxNDkyNjEyNzc2LCJuYmYiOjE0OTI2MTI3ODYsIm5hbWUiOiIyNTQ3MTIzNDU2NzgiLCJ1c2VySWQiOiIyIn0.4wy8Lrit083tcAcKB51qXdNJO3CTb38CGgqKaRLHoVo","username":"254712345678","role":null,"userID":"2","contactID":"2"}}
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+curl -i -X POST -d '{"workMobile":"0712345679","workEmail":"test@southwell1.io","nationalIdNumber":"294356356","fullName":"James Test",
+"locationID":"0","location":"nairobi","roleID":"0","token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJpYXQiOjE0ODM5NTYwNDYsImFwcCI6ImphdmEzNjAiLCJvd25lciI6ImFub255bW91cyIsImFjdGlvbiI6Im9wZW5SZXF1ZXN0In0.eLHZjnFduufVspUz7E2QfTzKFfPqNWYBoENJbmIeZtA"}' http://api.southwell.io/envirofit_api_v1/user/create
+
+/** You can also create user with
+workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,location
+*/
+
+
+
+HTTP/1.1 201 SUCCESS
+Date: Wed, 19 Apr 2017 14:42:47 GMT
+Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.1e-fips PHP/5.5.38
+X-Powered-By: PHP/5.5.38
+Access-Control-Allow-Origin: *
+Status: 201 SUCCESS
+Content-Length: 93
+Content-Type: application/json
+
+{"success":"User created successfully 30959","data":{"username":"254712345679","userID":"3"}}
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+
+{"productID":"5","serialNumber":"UI123456","token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJpYXQiOjE0ODM5NTYwNDYsImFwcCI6ImphdmEzNjAiLCJvd25lciI6ImFub255bW91cyIsImFjdGlvbiI6Im9wZW5SZXF1ZXN0In0.eLHZjnFduufVspUz7E2QfTzKFfPqNWYBoENJbmIeZtA",
+"status":"0"}
