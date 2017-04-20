@@ -230,7 +230,7 @@ class SalesController extends Controller
 				$prospect = Prospects::findFirst(array("prospectsID=:id: ",
 	    					'bind'=>array("id"=>$prospectID)));
 				if($prospect){
-					$contactsID = $prospect->$contactsID;
+					$contactsID = $prospect->contactsID;
 				}
 				else{
 					 return $res->dataError("Prospect not found");
