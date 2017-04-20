@@ -136,6 +136,7 @@ class ItemsController extends Controller
     	$token = $request->getQuery('token');
         $itemID = $request->getQuery('itemID');
         $userID = $request->getQuery('userID');
+        $productID = $request->getQuery('productID');
 
         $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND 
 
@@ -155,6 +156,10 @@ class ItemsController extends Controller
 
 	      if($userID && $userID > 0){
 	      	$itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE ui.userID=$userID AND i.status=0";//ui.userID=2 AND 
+	      }
+
+	      if($userID && $userID > 0 && $productID && $productID>0){
+	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE ui.userID=$userID AND i.status=0 AND i.productID=$productID";//ui.userID=2 AND 
 	      }
 
 		$items= $this->rawSelect($itemsQuery);
