@@ -148,7 +148,7 @@ use Phalcon\Mvc\Controller;
          $logger = new FileAdapter($this->getLogFile('error'));
         $logger->log($message.' '.json_encode($data).$this->config->logPath->location);
 
-        $this->composePushLog("error","NOT FOUND ".$message," ".$data);
+        $this->composePushLog("error","NOT FOUND ".$message," ".json_encode($data));
         return $response;
     }
 
