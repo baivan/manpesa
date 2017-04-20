@@ -205,7 +205,8 @@ class SalesController extends Controller
 	    	return $res->dataError("amount missing ");
 	    }
 	     if(!$frequencyID ){
-	    	return $res->dataError("frequencyID missing ");
+	    	//return $res->dataError("frequencyID missing ");
+	    	$frequencyID=0;
 	    }
 
 
