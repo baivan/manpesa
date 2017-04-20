@@ -58,6 +58,8 @@ class SalesController extends Controller
     	    $res = new SystemResponses();
        		$customer =  Customer::findFirst(array("contactsID=:id: ",
 	    					'bind'=>array("id"=>$contactsID)));
+
+       		$res->dataError("select user $userID contact $contactsID");
        		if($customer){
        			return $customer->customerID;
        		}
