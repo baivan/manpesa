@@ -85,22 +85,27 @@ use Phalcon\Mvc\Controller;
  	
  	public function success($message,$data){
         $file = $this->config->senderIds->mediamax;
+       
     	
         $response = new Response();
         $response->setHeader("Content-Type", "application/json");
         $response->setHeader("Access-Control-Allow-Origin", "*");
         $response->setStatusCode(201, "SUCCESS");
-        $success = array();
-        $success["success"]=$message;
+       /* $success = array();
         $sucess["code"] = 201;
+        $success["success"]=$message;
         $success["data"]=$data;
-        $response->setContent(json_encode($success));
+        $response->setStatusCode(201, "SUCCESS");*/
+        $success["success"]=$message;
+        $success["data"]=$data;
+        $success["code"] = 201;
 
+        $response->setContent(json_encode($success));
         $logger = new FileAdapter($this->getLogFile('success'));
         $logger->log($file.' ty '.$message.' '.json_encode($data));
         $this->composePushLog("success  ".$message,$data);
        
-        return $success;
+        return $response;
     }
 
   public function successFromData($data){
