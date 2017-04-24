@@ -481,6 +481,69 @@ class UsersController extends Controller
     }
 
 
+    public function getTableUsers(){ //sort, order, page, limit,filter
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$token = $request->getQuery('token');
+        $productID = $request->getQuery('productID');
+        $sort = $request->getQuery('sort');
+        $order = $request->getQuery('order');
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+
+        $countQuery = "SELECT count(userID) as totalUsers from users";
+
+        $selectQuery = "SELECT u.userID, co.fullName,co.nationalIdNumber,co.workMobile,r.roleID,r.roleName from users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
+
+      
+
+        $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
+
+        if($queryBuilder){
+        	$selectQuery=$selectQuery." ".$queryBuilder;
+        }
+        //return $res->success($selectQuery);
+
+        $count = $this->rawSelect($countQuery);
+
+		$users= $this->rawSelect($selectQuery);
+//users["totalUsers"] = $count[0]['totalUsers'];
+		$data["totalUsers"] = $count[0]['totalUsers'];
+		$data["users"] = $users;
+
+		return $res->getSalesSuccess($data);
+
+
+	}
+
+	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
+		$query = "";
+
+		$ofset = ($page-1)*$limit;
+		if($sort  && $order  && $filter ){
+			$query = " WHERE co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by u.$sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && $limit >0){
+			$query = " ORDER by u.$sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && !$limit){
+			$query = " ORDER by u.$sort $order  LIMIT $ofset,10";
+		}
+		else if(!$sort && !$order && $limit>0){
+			$query = " LIMIT $ofset,$limit";
+		}
+
+		else if(!$sort && !$order && $filter){
+			$query = " WHERE co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter 'LIMIT $ofset,10";
+		}
+
+		return $query;
+
+	}
+
+
 
 }
 

@@ -506,5 +506,82 @@ class SalesController extends Controller
 
 	}
 
+	public function getTableSales(){ //sort, order, page, limit,filter
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$token = $request->getQuery('token');
+        $productID = $request->getQuery('productID');
+        $sort = $request->getQuery('sort');
+        $order = $request->getQuery('order');
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+
+        $countQuery = "SELECT count(salesID) as totalSales from sales";
+
+        $selectQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
+
+      
+
+        $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
+
+        if($queryBuilder){
+        	$selectQuery=$selectQuery." ".$queryBuilder;
+        }
+       // return $res->success($selectQuery);
+
+        $count = $this->rawSelect($countQuery);
+
+		$sales= $this->rawSelect($selectQuery);
+//users["totalUsers"] = $count[0]['totalUsers'];
+		$data["totalSales"] = $count[0]['totalSales'];
+		$data["sales"] = $sales;
+
+		return $res->getSalesSuccess($data);
+
+
+	}
+
+	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
+		$query = "";
+
+		$ofset = ($page-1)*$limit;
+		if($sort  && $order  && $filter ){
+			$query = " WHERE co.fullName REGEXP '$filter' OR ".
+					"co.workMobile REGEXP '$filter' OR ".
+					" co.nationalIdNumber REGEXP '$filter' OR ".
+					"st.salesTypeName REGEXP '$filter' OR ".
+					" p.productName REGEXP '$filter' OR ".
+					" ca.categoryName REGEXP '$filter' ".
+					" ORDER by $sort $order LIMIT $ofset,$limit";
+		}
+	
+		else if($sort  && $order  && !$filter && $ofset > 0){
+			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && $ofset <= 0){
+			$query = " ORDER by $sort $order LIMIT $ofset,10";
+		}
+
+		else if(!$sort && !$order && $limit>0){
+			$query = " LIMIT $ofset,$limit";
+		}
+
+		else if(!$sort && !$order && $filter){
+			$query =  " WHERE co.fullName REGEXP '$filter' OR ".
+					"co.workMobile REGEXP '$filter' OR ".
+					" co.nationalIdNumber REGEXP '$filter' OR ".
+					"st.salesTypeName REGEXP '$filter' OR ".
+					" p.productName REGEXP '$filter' OR ".
+					" ca.categoryName REGEXP '$filter' ".
+					" LIMIT $ofset,$limit";
+		}
+
+		return $query;
+
+	}
+
+
 }
 

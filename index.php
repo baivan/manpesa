@@ -56,6 +56,8 @@ $user_route ->post('summary','userSummary');
 $user_route ->get('summary','userSummary');
 $user_route ->get('agent','getAgents');
 $user_route ->post('agent','getAgents');
+$user_route ->get('crm/all','getTableUsers');
+$user_route ->post('crm/all','getTableUsers');
 
 $item_route = new MicroCollection();
 $item_route ->setPrefix('/item/');
@@ -65,6 +67,8 @@ $item_route ->post('update','update');//{productID,serialNumber,token,itemID,sta
 $item_route ->post('all','getAllItems');
 $item_route ->get('all','getAllItems');
 $item_route ->post('assign','assignItem');//{itemID,userID,token}
+$item_route ->get('crm/all','getTableItems');
+$item_route ->post('crm/all','getTableItems');
 
 $prospect_route = new MicroCollection();
 $prospect_route ->setPrefix('/prospect/');
@@ -74,12 +78,15 @@ $prospect_route ->post('create','create');//{userID,workMobile,nationalIdNumber,
 $prospect_route ->post('all','getAll');
 $prospect_route ->get('all','getAll');
 
+
 $sale_route = new MicroCollection();
 $sale_route ->setPrefix('/sale/');
 $sale_route ->setHandler(new SalesController());
-$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit,customerID}
+$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit}
 $sale_route ->post('all','getSales'); 
 $sale_route ->get('all','getSales');
+$sale_route ->post('crm/all','getTableSales'); 
+$sale_route ->get('crm/all','getTableSales');
 
 $category_route = new MicroCollection();
 $category_route ->setPrefix('/category/');
@@ -120,6 +127,8 @@ $product_sale_type_price_route ->post('create','create');//{productID,salesTypeI
 $product_sale_type_price_route ->post('update','update');//{productID,salesTypeID,categoryID,price,productSaleTypePriceID}
 $product_sale_type_price_route ->post('all','getAll');
 $product_sale_type_price_route ->get('all','getAll');
+$product_sale_type_price_route ->post('crm/all','getTablePrices');
+$product_sale_type_price_route ->get('crm/all','getTablePrices');
 
 $role_route = new MicroCollection();
 $role_route ->setPrefix('/role/');
@@ -128,6 +137,18 @@ $role_route ->post('create','create');//{roleName,roleDescription}
 $role_route ->post('update','update');//{roleID,roleName,roleDescription}
 $role_route ->post('all','getAll');
 $role_route ->get('all','getAll');
+
+$customer_route = new MicroCollection();
+$customer_route ->setPrefix('/customer/');
+$customer_route ->setHandler(new CustomerController());
+$customer_route ->post('crm/all','getTableCustomers');
+$customer_route ->get('crm/all','getTableCustomers');
+
+$user_item_route = new MicroCollection();
+$user_item_route ->setPrefix('/userItem/');
+$user_item_route ->setHandler(new UserItemsController());
+$user_item_route ->post('crm/all','getTableUserItems');
+$user_item_route ->get('crm/all','getTableUserItems');
 
 
 $app->mount($user_route);
@@ -140,6 +161,8 @@ $app->mount($sale_type_route);
 $app->mount($frequency_route);
 $app->mount($product_sale_type_price_route);
 $app->mount($role_route);
+$app->mount($customer_route);
+$app->mount($user_item_route);
 
 try {
     // Handle the request
