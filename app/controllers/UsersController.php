@@ -394,7 +394,7 @@ class UsersController extends Controller
           $data = [
                      "username"=>$user->username,
                       "username"=>$user->username,
-                       "userID"=>$user->userID];
+                      "userID"=>$user->userID];
            
         return $res->success("Password reset successfully",$data);
 
@@ -455,6 +455,32 @@ class UsersController extends Controller
 	    return $res->success("userSummary",$data);
 	    
     }
+
+    public function getAgents(){
+    	$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$token = $request->getQuery('token');
+        $roleID = $request->getQuery('roleID');
+
+        if(!$token || !$roleID){
+		   return $res->dataError("Missing data ");
+		}
+
+		$tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+	      $agentQuery ="SELECT u.userID, co.fullName from users u join contacts co on u.contactID=co.contactsID WHERE roleID=$roleID";
+
+	       $salesAgents = $this->rawSelect($agentQuery);
+
+		   return $res->getSalesSuccess($salesAgents);
+    }
+
+
 
 }
 

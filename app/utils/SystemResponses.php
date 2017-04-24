@@ -196,25 +196,47 @@ use Phalcon\Mvc\Controller;
         return $response;
     }
 
-    public function sendMessage($msisdn, $message){
+    
 
-         
+   public function sendMessage($msisdn,$message) 
+      {
+                $postData = array(
+                "sender" => "EnvirofitKE",
+                "recipient" => $msisdn,
+                "message" => $message
+              );
+               
+                $channelAPIURL = "api.southwell.io/fastSMS/public/api/v1/messages";
+                $username = "faith.wanjiku@envirofit.org";
+                $password = "envirofit1234";
 
-            $message = urlencode($message); 
-  
 
-            $correlator = $msisdn. time(); 
-        
+                $httpRequest = curl_init($channelAPIURL);
+                curl_setopt($httpRequest, CURLOPT_NOBODY, true);
+                curl_setopt($httpRequest, CURLOPT_POST, true);
+                curl_setopt($httpRequest, CURLOPT_POSTFIELDS, json_encode($postData));
+                curl_setopt($httpRequest, CURLOPT_TIMEOUT, 10);
+                curl_setopt($httpRequest, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($httpRequest, CURLOPT_HTTPHEADER, array('Content-Type: application/json',
+                        'Content-Length: ' . strlen(json_encode($postData))));
+                    curl_setopt($httpRequest, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
+                    curl_setopt($httpRequest, CURLOPT_USERPWD, "$username:$password");
+                    $postresponse = curl_exec($httpRequest);
+                    $httpStatusCode = curl_getinfo($httpRequest, CURLINFO_HTTP_CODE); //get status code
+                    curl_close($httpRequest);
 
-            $sendSMSurl = "http://localhost/SDP/KANNEL/bulk.php?kmp_correlator=$correlator" . "&kmp_recipients=" . $msisdn . "&kmp_code=kabogo&" . "kmp_message=$message " . date("Y-m-d"); 
+                    
+                       
+                     $response = array(
+                        'httpStatus' => $httpStatusCode,
+                        'response' => json_decode($postresponse)
+                    );
 
-            $postresponse = file_get_contents($sendSMSurl); 
+                      $logger = new FileAdapter($this->getLogFile());
+                    $logger->log($message.' '.json_encode($response));
 
-            $logger = new FileAdapter($this->getLogFile());
-            $logger->log($message.' '.json_encode($response));
+                    return $response;
 
-            return true;
-             
         }
 
     private function sendAndroidPushNotification($data,$title,$body,$userID,$appName){

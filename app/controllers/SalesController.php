@@ -170,7 +170,7 @@ class SalesController extends Controller
 
     }
 
-    public function createSale(){//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit}
+    public function createSale(){//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit,customerID}
     	$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
@@ -182,6 +182,7 @@ class SalesController extends Controller
     	$itemID = $json->itemID;
     	$userID = $json->userID;
     	$prospectID = $json->prospectID;
+    	$customerID = $json->customerID;
     	$token =$json->token;
     	$location = $json->location;
     	$workMobile = $json->workMobile;
@@ -191,7 +192,6 @@ class SalesController extends Controller
     	$amount = $json->amount;
 
     	$contactsID;
-    	$customerID;
     	$paymentPlanID;
 
     	if(!$token ){//|| !$salesTypeID || !$userID || !$amount || !$frequencyID){
@@ -226,7 +226,7 @@ class SalesController extends Controller
 			/*createPaymentPlan($paymentPlanDeposit,$salesTypeID,$frequencyID,$repaymentPeriodID=0)*/
 
 			//create this contact if prospectId not provided
-			if($prospectID || $prospectID > 0){
+			if($prospectID || $prospectID > 0){ 
 				$prospect = Prospects::findFirst(array("prospectsID=:id: ",
 	    					'bind'=>array("id"=>$prospectID)));
 				if($prospect){
@@ -236,7 +236,12 @@ class SalesController extends Controller
 					 return $res->dataError("Prospect not found");
 				}
 			}
+			elseif ($customerID || $customerID > 0) { //added create sale of an existing customer
+				$customer = Customer::findFirst(array("customerID=:id: ",
+	    					'bind'=>array("id"=>$customerID)));
+			}
 			elseif ($workMobile && $nationalIdNumber && $fullName && $location) {
+				$workMobile = $res->formatMobileNumber($workMobile);
 				$contactsID = $this->createContact($workMobile,$nationalIdNumber,$fullName,$location);
 
 				if(!$contactsID || $contactsID <=0){
@@ -246,9 +251,12 @@ class SalesController extends Controller
 			else{
 				return $res->dataError("Prospect not found");
 			}
-
-			//then we create customer 
-			$customerID = $this->createCustomer($userID,$contactsID);
+ 
+			//then we create customer if customerId not provided
+			if(!$customerID || $customerID <=0){
+				$customerID = $this->createCustomer($userID,$contactsID);
+			}
+			
 
 			if(!$customerID || $customerID <= 0 ){
 				return $res->dataError("Customer not found");
@@ -283,9 +291,11 @@ class SalesController extends Controller
 	               return $res->dataError('sale create failed',$errors);
 	          }
 
-	          //now we map this sale to item mapItemToSale($saleID,$itemID)
-	          $saleStatus = $this->mapItemToSale($sale->salesID,$itemID);
+	          /*send message to customer*/
+	           $MSISDN = $this->getCustomerMobileNumber($customerID);
+	          $res->sendMessage($workMobile,"Your sale has been placed successfully");
 
+	          //now we map this sale to item mapItemToSale($saleID,$itemID)
 	          if(!$saleStatus || $saleStatus <=0){
 	          	return $res->dataError("Item not mapped to sale, please contact system admin $itemID");
 	          }
@@ -296,6 +306,14 @@ class SalesController extends Controller
 
 	          return $res->success("Sale successfully done ",$sale);
     }
+
+    public function getCustomerMobileNumber($customerID){
+    	$customerquery = "SELECT cs.workMobile as MSISDN from contacts cs left join customer co on cs.contactsID=co.contactsID WHERE co.customerID=$customerID";
+
+    	$customer = $this->rawSelect($customerquery);
+    	return $customer[0]['MSISDN'];
+
+      }
 
 	public function createCustomerSale(){//{paymentPlanID,amount,userID,workMobile,nationalIdNumber,fullName,location,token,items[]}
 		$jwtManager = new JwtManager();
@@ -455,9 +473,9 @@ class SalesController extends Controller
         $customerID = $request->getQuery('customerID');
         $userID = $request->getQuery('userID');
 
-        $saleQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID WHERE s.userID=$userID";
+        $saleQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID";
 
-		if(!$token || !$userID){
+		if(!$token){
 		   return $res->dataError("Missing data ");
 		}
 
@@ -468,9 +486,18 @@ class SalesController extends Controller
 	      }
 
 
-		if($customerID){
-			 $saleQuery = "SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID WHERE s.userID=$userID AND s.customerID=$customerID";
+		if($customerID > 0 && $userID > 0){
+			 $saleQuery = $saleQuery." WHERE s.userID=$userID AND s.customerID=$customerID";
 		}
+		elseif ($customerID > 0 &&  $userID <=0) {
+			$saleQuery = $saleQuery." WHERE s.customerID=$customerID";
+		}
+		elseif ($userID>0 &&  $customerID <=0) {
+			 $saleQuery =$saleQuery." WHERE s.userID=$userID";
+		}
+		/*else{
+			 $saleQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
+		}*/
 
 		$sales = $this->rawSelect($saleQuery);
 

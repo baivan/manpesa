@@ -54,6 +54,8 @@ $user_route ->get('all/{page}/{max}','getTableUsers');
 $user_route ->post('delete','removeUser'); //{token,userId}
 $user_route ->post('summary','userSummary');
 $user_route ->get('summary','userSummary');
+$user_route ->get('agent','getAgents');
+$user_route ->post('agent','getAgents');
 
 $item_route = new MicroCollection();
 $item_route ->setPrefix('/item/');
@@ -75,7 +77,7 @@ $prospect_route ->get('all','getAll');
 $sale_route = new MicroCollection();
 $sale_route ->setPrefix('/sale/');
 $sale_route ->setHandler(new SalesController());
-$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit}
+$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit,customerID}
 $sale_route ->post('all','getSales'); 
 $sale_route ->get('all','getSales');
 
@@ -119,7 +121,13 @@ $product_sale_type_price_route ->post('update','update');//{productID,salesTypeI
 $product_sale_type_price_route ->post('all','getAll');
 $product_sale_type_price_route ->get('all','getAll');
 
-
+$role_route = new MicroCollection();
+$role_route ->setPrefix('/role/');
+$role_route ->setHandler(new RoleController());
+$role_route ->post('create','create');//{roleName,roleDescription}
+$role_route ->post('update','update');//{roleID,roleName,roleDescription}
+$role_route ->post('all','getAll');
+$role_route ->get('all','getAll');
 
 
 $app->mount($user_route);
@@ -131,6 +139,7 @@ $app->mount($product_route);
 $app->mount($sale_type_route);
 $app->mount($frequency_route);
 $app->mount($product_sale_type_price_route);
+$app->mount($role_route);
 
 try {
     // Handle the request
