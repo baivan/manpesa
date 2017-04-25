@@ -295,6 +295,8 @@ class SalesController extends Controller
 	           $MSISDN = $this->getCustomerMobileNumber($customerID);
 	          $res->sendMessage($workMobile,"Your sale has been placed successfully");
 
+	          $saleStatus = $this->mapItemToSale($sale->saleID,$itemID);
+
 	          //now we map this sale to item mapItemToSale($saleID,$itemID)
 	          if(!$saleStatus || $saleStatus <=0){
 	          	return $res->dataError("Item not mapped to sale, please contact system admin $itemID");
