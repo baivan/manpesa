@@ -157,7 +157,7 @@ class ItemsController extends Controller
 	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.itemID=$itemID";//ui.userID=2 AND 
 	      }
 
-	      elseif($userID && $userID > 0 && $productID && $productID > 0 && $status && $status > 0){
+	      elseif($userID && $userID > 0 && $productID && $productID > 0 && $status && $status >= 0){
 	      	 $itemsQuery = "SELECT  i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i LEFT JOIN user_items ui on i.itemID =ui.itemID WHERE  i.status=$status and ui.userID=$userID and i.productID=$productID";
 	      }
 
@@ -165,26 +165,26 @@ class ItemsController extends Controller
 	      	$itemsQuery = "SELECT  i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i LEFT JOIN user_items ui on i.itemID =ui.itemID WHERE  i.status=$status and ui.userID=$userID";//ui.userID=2 AND 
 	      }
 
-	      elseif($userID && $userID > 0 && $productID && $productID > 0 && !$status && $status <= 0){
+	      elseif($userID && $userID > 0 && $productID && $productID > 0 && !$status && $status < 0){
 	      	 $itemsQuery = "SELECT  i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i LEFT JOIN user_items ui on i.itemID =ui.itemID WHERE  i.productID=$productID and ui.userID=$userID";//ui.userID=2 AND 
 	      }
 
-	      elseif($productID && $productID > 0 && $status && $status > 0 && !$userID && $userID <=0 ){
+	      elseif($productID && $productID > 0 && $status && $status >= 0 && !$userID && $userID <=0 ){
 	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i WHERE i.productID=$productID AND i.status=$status";
 	      }
 
-	      elseif(!$userID && $userID <=0 && !$productID && $productID <= 0 && !$status && $status <= 0){
+	      elseif(!$userID && $userID <=0 && !$productID && $productID <= 0 && !$status && $status < 0){
 	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i ";
 	      }
 
-	      elseif(!$userID && $userID <=0 && $productID && $productID > 0 && !$status && $status <= 0){
+	      elseif(!$userID && $userID <=0 && $productID && $productID > 0 && !$status && $status < 0){
 	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i WHERE i.productID=$productID";
 	      }
 	      
 
 
 		$items= $this->rawSelect($itemsQuery);
-		return $res->success($itemsQuery,$items);
+		return $res->success("Items fetch success",$items);
 
 		//return $res->getSalesSuccess($items);
 	}
