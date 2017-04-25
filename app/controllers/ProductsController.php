@@ -162,7 +162,6 @@ class ProductsController extends Controller
 	        $selectQuery = "SELECT * FROM `product` p join category c on p.categoryID=c.categoryID ";
 
 	      
-
 	        $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
 	        if($queryBuilder){
