@@ -580,13 +580,13 @@ class UsersController extends Controller
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
-			$query = " WHERE co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by u.$sort $order LIMIT $ofset,$limit";
+			$query = " WHERE co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter && $limit >0){
-			$query = " ORDER by u.$sort $order LIMIT $ofset,$limit";
+			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter && !$limit){
-			$query = " ORDER by u.$sort $order  LIMIT $ofset,10";
+			$query = " ORDER by $sort $order  LIMIT $ofset,10";
 		}
 		else if(!$sort && !$order && $limit>0){
 			$query = " LIMIT $ofset,$limit";
