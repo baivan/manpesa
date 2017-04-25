@@ -543,8 +543,11 @@ class SalesController extends Controller
 
 	}
 
-	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
+	public function tableQueryBuilder($sort="",$order="",$page=1,$limit=10,$filter=""){
 		$query = "";
+		if(!$page){
+			$page=1;
+		}
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
@@ -561,10 +564,10 @@ class SalesController extends Controller
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter && $ofset <= 0){
-			$query = " ORDER by $sort $order LIMIT $ofset,10";
+			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 
-		else if(!$sort && !$order && $limit>0){
+		else if(!$sort && !$order && $limit > 0){
 			$query = " LIMIT $ofset,$limit";
 		}
 
