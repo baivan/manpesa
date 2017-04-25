@@ -135,5 +135,70 @@ class CategoryController extends Controller
 
 		}
 
+		public function getTableCategory(){ //sort, order, page, limit,filter
+			$jwtManager = new JwtManager();
+	    	$request = new Request();
+	    	$res = new SystemResponses();
+	    	$token = $request->getQuery('token');
+	        $productID = $request->getQuery('productID');
+	        $sort = $request->getQuery('sort');
+	        $order = $request->getQuery('order');
+	        $page = $request->getQuery('page');
+	        $limit = $request->getQuery('limit');
+	        $filter = $request->getQuery('filter');
+
+	        $countQuery = "SELECT count(categoryID) as totalCategory from category";
+
+	        $selectQuery = "SELECT * FROM `category` c ";
+
+	      
+
+	        $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
+
+	        if($queryBuilder){
+	        	$selectQuery=$selectQuery." ".$queryBuilder;
+	        }
+	        //return $res->success($selectQuery);
+
+	        $count = $this->rawSelect($countQuery);
+
+			$categories= $this->rawSelect($selectQuery);
+	//users["totalUsers"] = $count[0]['totalUsers'];
+			$data["totalCategory"] = $count[0]['totalCategory'];
+			$data["categories"] = $categories;
+
+			return $res->getSalesSuccess($data);
+
+
+	}
+
+	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
+		$query = "";
+
+		$ofset = ($page-1)*$limit;
+		if($sort  && $order  && $filter ){
+			$query = " WHERE c.categoryName  REGEXP '$filter'  ORDER by c.$sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && $limit > 0 ){
+			$query = " ORDER by c.$sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && !$limit ){
+			$query = " ORDER by c.$sort $order  LIMIT $ofset,10";
+		}
+		else if(!$sort && !$order && $limit>0){
+			$query = " LIMIT $ofset,$limit";
+		}
+		else if(!$sort && !$order && $filter && !$limit){
+			$query = " WHERE c.categoryName  REGEXP '$filter'  LIMIT $ofset,10";
+		}
+
+		else if(!$sort && !$order && $filter && $limit){
+			$query = " WHERE c.categoryName  REGEXP '$filter'  LIMIT $ofset,$limit";
+		}
+
+		return $query;
+
+	}
+
 }
 

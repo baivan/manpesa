@@ -144,6 +144,71 @@ class SalesTypeController extends Controller
      }
      
 
+     public function getTableSaleTypes(){ //sort, order, page, limit,filter
+			$jwtManager = new JwtManager();
+	    	$request = new Request();
+	    	$res = new SystemResponses();
+	    	$token = $request->getQuery('token');
+	        $productID = $request->getQuery('productID');
+	        $sort = $request->getQuery('sort');
+	        $order = $request->getQuery('order');
+	        $page = $request->getQuery('page');
+	        $limit = $request->getQuery('limit');
+	        $filter = $request->getQuery('filter');
+
+	        $countQuery = "SELECT count(salesTypeID) as totalSalesTypes from sales_type";
+
+	        $selectQuery = "SELECT * FROM `sales_type` st ";
+
+	      
+
+	        $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
+
+	        if($queryBuilder){
+	        	$selectQuery=$selectQuery." ".$queryBuilder;
+	        }
+	        //return $res->success($selectQuery);
+
+	        $count = $this->rawSelect($countQuery);
+
+			$salesTypes= $this->rawSelect($selectQuery);
+	//users["totalUsers"] = $count[0]['totalUsers'];
+			$data["totalSalesTypes"] = $count[0]['totalSalesTypes'];
+			$data["salesTypes"] = $salesTypes;
+
+			return $res->getSalesSuccess($data);
+
+
+	}
+
+	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
+		$query = "";
+
+		$ofset = ($page-1)*$limit;
+		if($sort  && $order  && $filter ){
+			$query = " WHERE st.salesTypeName  REGEXP '$filter' OR st.salesTypeDeposit  REGEXP '$filter'  ORDER by st.$sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && $limit > 0 ){
+			$query = " ORDER by st.$sort $order LIMIT $ofset,$limit";
+		}
+		else if($sort  && $order  && !$filter && !$limit ){
+			$query = " ORDER by st.$sort $order  LIMIT $ofset,10";
+		}
+		else if(!$sort && !$order && $limit>0){
+			$query = " LIMIT $ofset,$limit";
+		}
+		else if(!$sort && !$order && $filter && !$limit){
+			$query = " WHERE st.salesTypeName  REGEXP '$filter' OR st.salesTypeDeposit  REGEXP '$filter'  LIMIT $ofset,10";
+		}
+
+		else if(!$sort && !$order && $filter && $limit){
+			$query = " WHERE st.salesTypeName  REGEXP '$filter' OR st.salesTypeDeposit  REGEXP '$filter'  LIMIT $ofset,$limit";
+		}
+
+		return $query;
+
+	}
+
 
 
 }

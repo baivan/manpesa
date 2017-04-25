@@ -46,7 +46,7 @@ class CustomerController extends Controller
 		$customers= $this->rawSelect($selectQuery);
 //users["totalUsers"] = $count[0]['totalUsers'];
 		$data["totalCustmers"] = $count[0]['totalCustmers'];
-		$data["users"] = $customers;
+		$data["customers"] = $customers;
 
 		return $res->getSalesSuccess($data);
 
@@ -80,5 +80,7 @@ class CustomerController extends Controller
 		return $query;
 
 	}
+
+
 }
 

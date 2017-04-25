@@ -77,6 +77,8 @@ $prospect_route ->post('create','create');//{userID,workMobile,nationalIdNumber,
 //$prospect_route ->post('update','update');
 $prospect_route ->post('all','getAll');
 $prospect_route ->get('all','getAll');
+$prospect_route ->post('crm/all','getTableProspects');
+$prospect_route ->get('crm/all','getTableProspects');
 
 
 $sale_route = new MicroCollection();
@@ -94,7 +96,10 @@ $category_route ->setHandler(new CategoryController());
 $category_route ->post('create','create');
 $category_route ->post('update','update');
 $category_route ->post('all','getAll');
-$category_route ->get('all','getAll');
+$category_route ->get('all','getAll');//getTableCategory
+$category_route ->post('crm/all','getTableCategory'); 
+$category_route ->get('crm/all','getTableCategory');
+
 
 $product_route = new MicroCollection();
 $product_route ->setPrefix('/product/');
@@ -102,7 +107,10 @@ $product_route ->setHandler(new ProductsController());
 $product_route ->post('create','create');
 $product_route ->post('update','update');
 $product_route ->post('all','getAll');
-$product_route ->get('all','getAll');
+$product_route ->get('all','getAll');//getTableProducts
+$product_route ->post('crm/all','getTableProducts'); 
+$product_route ->get('crm/all','getTableProducts');
+
 
 $sale_type_route = new MicroCollection();
 $sale_type_route ->setPrefix('/saleType/');
@@ -110,7 +118,9 @@ $sale_type_route ->setHandler(new SalesTypeController());
 $sale_type_route ->post('create','create');////{salesTypeName,salesTypeDeposit}
 $sale_type_route ->post('update','update');//{salesTypeName,salesTypeDeposit,salesTypeID}
 $sale_type_route ->post('all','getAll');
-$sale_type_route ->get('all','getAll');
+$sale_type_route ->get('all','getAll');//getTableSaleTypes
+$sale_type_route ->post('crm/all','getTableSaleTypes'); 
+$sale_type_route ->get('crm/all','getTableSaleTypes');
 
 $frequency_route = new MicroCollection();
 $frequency_route ->setPrefix('/frequency/');
@@ -119,6 +129,10 @@ $frequency_route ->post('create','create');//{numberOfDays,frequencyName,token,f
 $frequency_route ->post('update','update');//{numberOfDays,frequencyName,token,frequencyID}
 $frequency_route ->post('all','getAll');
 $frequency_route ->get('all','getAll');
+$frequency_route ->post('crm/all','getTableFrequency'); 
+$frequency_route ->get('crm/all','getTableFrequency');
+
+
 
 $product_sale_type_price_route = new MicroCollection();
 $product_sale_type_price_route ->setPrefix('/price/');
@@ -150,6 +164,12 @@ $user_item_route ->setHandler(new UserItemsController());
 $user_item_route ->post('crm/all','getTableUserItems');
 $user_item_route ->get('crm/all','getTableUserItems');
 
+$contacts_route = new MicroCollection();
+$contacts_route ->setPrefix('/constact/');
+$contacts_route ->setHandler(new ContactsController());
+$contacts_route ->post('search','searchContacts');
+$contacts_route ->get('search','searchContacts');
+
 
 $app->mount($user_route);
 $app->mount($item_route);
@@ -161,6 +181,7 @@ $app->mount($sale_type_route);
 $app->mount($frequency_route);
 $app->mount($product_sale_type_price_route);
 $app->mount($role_route);
+$app->mount($contacts_route);
 $app->mount($customer_route);
 $app->mount($user_item_route);
 
