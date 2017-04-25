@@ -104,7 +104,7 @@ class UsersController extends Controller
 			                          $errors[] = $e;
 			                        }
 			                  //return $res->dataError('contact create failed',$errors);
-			                  $dbTransaction->rollback("contact create failed " . $errors);
+			                  $dbTransaction->rollback("contact create failed " . json_encode($errors));
 			          }
 
 			          $code = rand(9999,99999);
@@ -129,7 +129,7 @@ class UsersController extends Controller
 			                          $errors[] = $e;
 			                        }
 			                  //return $res->dataError('user create failed',$errors);
-			                 $dbTransaction->rollback("user create failed " . $errors);
+			                 $dbTransaction->rollback("user create failed " . json_encode($errors));
 			          }
 			          
 			          $dbTransaction->commit();
