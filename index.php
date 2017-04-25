@@ -49,15 +49,16 @@ $user_route ->post('login','login'); //{username,password,token}
 $user_route ->post('update','update'); //userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token
 $user_route ->post('create','create');//workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,location
 $user_route ->post('resetpassword','resetPassword');//
-$user_route ->post('all/{page}/{max}','getTableUsers');
-$user_route ->get('all/{page}/{max}','getTableUsers');
-$user_route ->post('delete','removeUser'); //{token,userId}
+// $user_route ->post('all/{page}/{max}','getTableUsers');
+// $user_route ->get('all/{page}/{max}','getTableUsers');
+//$user_route ->post('delete','removeUser'); //{token,userId}
 $user_route ->post('summary','userSummary');
 $user_route ->get('summary','userSummary');
 $user_route ->get('agent','getAgents');
 $user_route ->post('agent','getAgents');
 $user_route ->get('crm/all','getTableUsers');
 $user_route ->post('crm/all','getTableUsers');
+$user_route ->post('update/status','changeUserStatus');
 
 $item_route = new MicroCollection();
 $item_route ->setPrefix('/item/');
@@ -96,7 +97,7 @@ $category_route ->setHandler(new CategoryController());
 $category_route ->post('create','create');
 $category_route ->post('update','update');
 $category_route ->post('all','getAll');
-$category_route ->get('all','getAll');//getTableCategory
+$category_route ->get('all','getAll');
 $category_route ->post('crm/all','getTableCategory'); 
 $category_route ->get('crm/all','getTableCategory');
 

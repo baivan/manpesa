@@ -195,6 +195,7 @@ class ItemsController extends Controller
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
         $productID = $request->getQuery('productID');
+        $userID = $request->getQuery('userID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
@@ -202,12 +203,15 @@ class ItemsController extends Controller
         $filter = $request->getQuery('filter');
 
         $selectQuery = "SELECT * FROM item i ";
+        $condition = " WHERE ";
 
-      
+        if($productID){
+        	$selectQuery = $selectQuery." WHERE i.productID=$productID ";
+        }
 
-       /* if(!$productID || $productID < 0){
-        	return $res->dataError("please provide product id");
-        }*/
+        if(!$productID && !$filter){
+        	$condition = " WHERE ";
+        }
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
@@ -218,8 +222,7 @@ class ItemsController extends Controller
         //return $res->success($selectQuery);
 
 		$items= $this->rawSelect($selectQuery);
-		return $res->getSalesSuccess($items);
-
+		return $res->success("Items ",$items);
 
 	}
 
@@ -232,7 +235,7 @@ class ItemsController extends Controller
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
-			$query = " WHERE i.serialNumber REGEXP $filter ORDER by $sort $order LIMIT $ofset,$limit";
+			$query = "  i.serialNumber REGEXP $filter ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter ){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
@@ -245,7 +248,7 @@ class ItemsController extends Controller
 		}
 
 		else if(!$sort && !$order && $filter){
-			$query = " WHERE i.serialNumber REGEXP '$filter' LIMIT $ofset,$limit";
+			$query = " i.serialNumber REGEXP '$filter' LIMIT $ofset,$limit";
 		}
 
 		return $query;
@@ -308,9 +311,11 @@ class ItemsController extends Controller
 	          }
 
 
-	       return $res->getSalesSuccess($userItem);
+	       return $res->success("Items assigned",$userItem);
 	
 	}
+
+
  
 
 }

@@ -102,25 +102,35 @@ class ProspectsController extends Controller
         $prospectID = $request->getQuery('prospectID');
         $userID = $request->getQuery('userID');
  
-        if(!$token || !$userID){
+        if(!$token){
 	    	return $res->dataError("Missing data ");
 	    }
 
-        $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID AND p.userID=$userID";
+	    $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID ";
 
-        if($prospectID){
-        	$prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID where p.userID=$userID AND p.prospectID=$prospectID";
-        }
+	    if($userID && !$prospectID){
+	    	$prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID AND p.userID=$userID";
+	    }
+	    elseif(!$userID && $prospectID){
+	    	$prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID where p.prospectID=$prospectID";
+	    }
+	    elseif($userID && $prospectID){
+	    	$prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID where p.userID=$userID AND p.prospectID=$prospectID";
+	    }
+
 
         $prospects = $this->rawSelect($prospectQuery);
+        
+        if($userID && !$prospectID){
+        	return $res->getSalesSuccess($prospects);
+        }
+        else{
+        	return $res->success("prospects ",$prospects);
+        }
 
-        return $res->getSalesSuccess($prospects);
-
-
-
+        
 
 	}
-
 
 
 
@@ -136,11 +146,14 @@ class ProspectsController extends Controller
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $countQuery = "SELECT count(prospectsID) as totalProspects from prospects";
+        $countQuery = "SELECT count(prospectsID) as totalProspects ";
 
-        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location from prospects  p join contacts co on p.contactsID=co.contactsID ";
+        $baseQuery = " FROM prospects  p join contacts co on p.contactsID=co.contactsID " ;
 
-      
+        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location  ";
+
+      	$countQuery = $countQuery.$baseQuery;
+      	$selectQuery = $selectQuery.$baseQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
@@ -156,7 +169,7 @@ class ProspectsController extends Controller
 		$data["totalProspects"] = $count[0]['totalProspects'];
 		$data["prospects"] = $prospects;
 
-		return $res->getSalesSuccess($data);
+		return $res->success("Prospects ",$data);
 
 
 	}
@@ -168,15 +181,19 @@ class ProspectsController extends Controller
 			$page=1;
 		}
 
+		if(!$limit){
+			$limit=10;
+		}
+
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
-			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by c.$sort $order LIMIT $ofset,$limit";
+			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter && $limit > 0 ){
-			$query = " ORDER by c.$sort $order LIMIT $ofset,$limit";
+			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter && !$limit ){
-			$query = " ORDER by c.$sort $order  LIMIT $ofset,10";
+			$query = " ORDER by $sort $order  LIMIT $ofset,10";
 		}
 		else if(!$sort && !$order && $limit>0){
 			$query = " LIMIT $ofset,$limit";

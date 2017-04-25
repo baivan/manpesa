@@ -104,9 +104,7 @@ class CategoryController extends Controller
 
 			   return $res->success('Category edited successfully',$category);
 		}
-		public function delete(){
-			
-		}
+		
 		public function getAll(){
 			 $jwtManager = new JwtManager();
 		    	$request = new Request();
@@ -167,7 +165,7 @@ class CategoryController extends Controller
 			$data["totalCategory"] = $count[0]['totalCategory'];
 			$data["categories"] = $categories;
 
-			return $res->getSalesSuccess($data);
+			return $res->success("Categories ",$data);
 
 
 	}

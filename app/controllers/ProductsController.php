@@ -142,7 +142,7 @@ class ProductsController extends Controller
 
 		       $products = $this->rawSelect($productQuery);
 
-		       return $res->getSalesSuccess($products);
+		       return $res->success("Products ",$products);
 		}
 
 		public function getTableProducts(){ //sort, order, page, limit,filter

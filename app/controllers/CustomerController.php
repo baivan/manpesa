@@ -21,7 +21,6 @@ class CustomerController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
-        $productID = $request->getQuery('productID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
@@ -31,15 +30,13 @@ class CustomerController extends Controller
         $countQuery = "SELECT count(customerID) as totalCustmers from customer";
 
         $selectQuery = "SELECT c.customerID, co.fullName,co.nationalIdNumber,co.workMobile,co.location from customer  c join contacts co on c.contactsID=co.contactsID ";
-
       
-
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
         	$selectQuery=$selectQuery." ".$queryBuilder;
         }
-        //return $res->success($selectQuery);
+        //return $res->success($queryBuilder);
 
         $count = $this->rawSelect($countQuery);
 
@@ -48,7 +45,7 @@ class CustomerController extends Controller
 		$data["totalCustmers"] = $count[0]['totalCustmers'];
 		$data["customers"] = $customers;
 
-		return $res->getSalesSuccess($data);
+		return $res->success("customers",$data);
 
 
 	}
@@ -59,29 +56,63 @@ class CustomerController extends Controller
 		if(!$page || $page <= 0){
 			$page=1;
 		}
+		if(!$limit){
+			$limit=10;
+		}
 
 		$ofset = ($page-1)*$limit;
+
 		if($sort  && $order  && $filter ){
 			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by c.$sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && $limit > 0 ){
+		elseif($sort  && $order  && !$filter  ){
 			$query = " ORDER by c.$sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && !$limit ){
-			$query = " ORDER by c.$sort $order  LIMIT $ofset,10";
+		elseif($sort  && $order  && !$filter  ){
+			$query = " ORDER by c.$sort $order  LIMIT $ofset,$limit";
 		}
-		else if(!$sort && !$order && $limit>0){
+		elseif(!$sort && !$order && !$filter ){
 			$query = " LIMIT $ofset,$limit";
 		}
-		else if(!$sort && !$order && $filter && !$limit){
-			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' LIMIT $ofset,10";
-		}
-
-		else if(!$sort && !$order && $filter && $limit){
+		
+		elseif(!$sort && !$order && $filter ){
 			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' LIMIT $ofset,$limit";
 		}
 
 		return $query;
+
+	}
+
+	public function getAll(){
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$token = $request->getQuery('token');
+        $customerID = $request->getQuery('customerID');
+        $userID = $request->getQuery('userID');
+ 
+        if(!$token){
+	    	return $res->dataError("Missing data ");
+	    }
+	    $customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID ";
+
+	    
+	    if($userID && !$customerID){
+	    	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID";
+	    }
+        elseif($customerID && !$userID){
+        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID where cu.userID=$userID AND p.customerID=$customerID";
+        }
+        elseif($userID && $customerID){
+        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID where p.userID=$userID AND cu.customerID=$customerID";
+        }
+        else{
+        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID ";
+        }
+
+        $customers = $this->rawSelect($customerQuery);
+
+        return $res->success("Customers are ",$customers);
 
 	}
 

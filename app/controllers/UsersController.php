@@ -4,6 +4,7 @@ use Phalcon\Http\Request;
 use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
+use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
 class UsersController extends Controller
 { 
@@ -16,11 +17,14 @@ class UsersController extends Controller
           $success = $success->fetchAll($success); 
           return $success;
        }
-	public function create(){ //workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,location
+	public function create(){ //workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,location,status
 		$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
+
     	$workMobile = $json->workMobile;
     	$roleID=$json->roleID;
     	$homeMobile = $json->homeMobile;
@@ -30,6 +34,7 @@ class UsersController extends Controller
     	$nationalIdNumber = $json->nationalIdNumber;
     	$fullName = $json->fullName;
     	$locationID = $json->locationID;
+    	$status = $json->status;
     	$location = $json->location;
 	    $token = $json->token;
 
@@ -48,99 +53,114 @@ class UsersController extends Controller
 	    if(!$locationID){
 	    	$locationID=0;
 	    }
+	    if(!$status){
+	    	$status=0;
+	    }
 	    $workMobile = $res->formatMobileNumber($workMobile);
 
-	    $contact = Contacts::findFirst(array("workMobile=:w_mobile: OR workEmail=:w_email: ",
-	    					'bind'=>array("w_mobile"=>$workMobile,"w_email"=>$workEmail)));
+		 try {
+			    $contact = Contacts::findFirst(array("workMobile=:w_mobile: OR workEmail=:w_email: ",
+			    					'bind'=>array("w_mobile"=>$workMobile,"w_email"=>$workEmail)));
 
-	    if($contact){
-	    	$user = Users::findFirst(array("contactID=:contactID:",
-	    					'bind'=>array("contactID"=>$contact->contactsID)));
-	    	if($user){
-	    		return $res->success("User exists ",$user);
-	    	}
-	    }
-	    else{
-	    	$contact = new Contacts();
-	    	$contact->workEmail = $workEmail;
-	    	$contact->workMobile = $workMobile;
-	    	$contact->fullName = $fullName;
-	    	$contact->createdAt = date("Y-m-d H:i:s");
-	    	if($passportNumber){
-	    		$contact->passportNumber = $passportNumber;
-	    	}
+			    if($contact){
+			    	$user = Users::findFirst(array("contactID=:contactID:",
+			    					'bind'=>array("contactID"=>$contact->contactsID)));
+			    	if($user){
+			    		return $res->success("User exists ",$user);
+			    	}
+			    }
+			    else{
+			    	$contact = new Contacts();
+			    	$contact->workEmail = $workEmail;
+			    	$contact->workMobile = $workMobile;
+			    	$contact->fullName = $fullName;
+			    	$contact->createdAt = date("Y-m-d H:i:s");
+			    	if($passportNumber){
+			    		$contact->passportNumber = $passportNumber;
+			    	}
 
-	    	if($nationalIdNumber){
-	    		$contact->nationalIdNumber = $nationalIdNumber;
-	    	}
+			    	if($nationalIdNumber){
+			    		$contact->nationalIdNumber = $nationalIdNumber;
+			    	}
 
-	    	if($nationalIdNumber){
-	    		$contact->nationalIdNumber = $nationalIdNumber;
-	    	}
-	    	if($locationID){
-	    		$contact->locationID = $locationID;
-	    	}
-	    	if($location){
-	    		$contact->location = $location;
-	    	}
-
-
-	          if($contact->save()===false){
-	            $errors = array();
-	                    $messages = $contact->getMessages();
-	                    foreach ($messages as $message) 
-	                       {
-	                         $e["message"] = $message->getMessage();
-	                         $e["field"] = $message->getField();
-	                          $errors[] = $e;
-	                        }
-	                  return $res->dataError('contact create failed',$errors);
-	          }
-
-	          $code = rand(9999,99999);
-
-	          $user = new Users();
-	          $user->username = $workMobile;
-	          $user->locationID = $locationID;
-	          $user->contactID = $contact->contactsID;
-	          $user->roleID=$roleID;
-	          $user->createdAt = date("Y-m-d H:i:s");
-	          $user->password = $this->security->hash($code);
+			    	if($nationalIdNumber){
+			    		$contact->nationalIdNumber = $nationalIdNumber;
+			    	}
+			    	if($locationID){
+			    		$contact->locationID = $locationID;
+			    	}
+			    	if($location){
+			    		$contact->location = $location;
+			    	}
 
 
-	          if($user->save()===false){
-	            $errors = array();
-	                    $messages = $user->getMessages();
-	                    foreach ($messages as $message) 
-	                       {
-	                         $e["message"] = $message->getMessage();
-	                         $e["field"] = $message->getField();
-	                          $errors[] = $e;
-	                        }
-	                  return $res->dataError('user create failed',$errors);
-	          }
-	          
+			          if($contact->save()===false){
+			            $errors = array();
+			                    $messages = $contact->getMessages();
+			                    foreach ($messages as $message) 
+			                       {
+			                         $e["message"] = $message->getMessage();
+			                         $e["field"] = $message->getField();
+			                          $errors[] = $e;
+			                        }
+			                  //return $res->dataError('contact create failed',$errors);
+			                  $dbTransaction->rollback("contact create failed " . $errors);
+			          }
 
-	          $message = "Envirofit verification code is \n ".$code;
-              $res->sendMessage($workMobile,$message);
+			          $code = rand(9999,99999);
 
-              $data = [
-                      "username"=>$user->username,
-                       "targetSale"=>$user->targetSale,
-                       "userID"=>$user->userID];
-           
-          return $res->success("User created successfully $code",$data);
+			          $user = new Users();
+			          $user->username = $workMobile;
+			          $user->locationID = $locationID;
+			          $user->contactID = $contact->contactsID;
+			          $user->roleID=$roleID;
+			          $user->status=$status;
+			          $user->createdAt = date("Y-m-d H:i:s");
+			          $user->password = $this->security->hash($code);
 
-	    
-	    }
+
+			          if($user->save()===false){
+			            $errors = array();
+			                    $messages = $user->getMessages();
+			                    foreach ($messages as $message) 
+			                       {
+			                         $e["message"] = $message->getMessage();
+			                         $e["field"] = $message->getField();
+			                          $errors[] = $e;
+			                        }
+			                  //return $res->dataError('user create failed',$errors);
+			                 $dbTransaction->rollback("user create failed " . $errors);
+			          }
+			          
+			          $dbTransaction->commit();
+
+			          $message = "Envirofit verification code is \n ".$code;
+		              $res->sendMessage($workMobile,$message);
+
+		              $data = [
+		                      "username"=>$user->username,
+		                       "targetSale"=>$user->targetSale,
+		                       "userID"=>$user->userID];
+		           
+		          return $res->success("User created successfully ",$data);
+
+			    
+			    }
+			}
+		  catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('user create error', $message); 
+		}
 	}
 
 	public function update(){
-	//userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token
+	//userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,status
 		$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
 
     	$workMobile = $json->workMobile;
     	$roleID=$json->roleID;
@@ -153,12 +173,15 @@ class UsersController extends Controller
     	$fullName = $json->fullName;
     	$locationID = $json->locationID;
     	$location = $json->location;
+    	$status = $json->status;
 	    $token = $json->token;
 	    $contactsID=0;
 
 	     if(!$token || !$userID){
 	    	return $res->dataError("Missing data ");
 	    }
+
+
 
 	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
 
@@ -172,6 +195,8 @@ class UsersController extends Controller
 	    if(!$user){
 	    	return $res->dataError("User not found ");
 	    }
+
+	    try {
 
 	    $contact = Contacts::findFirst(array("contactsID=:id:",
 	    					'bind'=>array("id"=>$user->contactID)));
@@ -209,7 +234,8 @@ class UsersController extends Controller
 	                         $e["field"] = $message->getField();
 	                          $errors[] = $e;
 	                        }
-	                  return $res->dataError('contact create failed',$errors);
+	                //  return $res->dataError('contact create failed',$errors);
+	                 $dbTransaction->rollback("contact create failed " . $errors);
 	          }
 	          $contactsID = $contact->contactsID;
 
@@ -253,7 +279,8 @@ class UsersController extends Controller
 	                         $e["field"] = $message->getField();
 	                          $errors[] = $e;
 	                        }
-	                  return $res->dataError('contact update failed',$errors);
+	                 // return $res->dataError('contact update failed',$errors);
+	                  $dbTransaction->rollback("contact update failed " . $errors);
 	          }
 	          $contactsID = $contact->contactsID;
 	    }
@@ -281,10 +308,20 @@ class UsersController extends Controller
 	                         $e["field"] = $message->getField();
 	                          $errors[] = $e;
 	                        }
-	                  return $res->dataError('user update failed',$errors);
+	                 // return $res->dataError('user update failed',$errors);
+	                  $dbTransaction->rollback("contact update failed " . $errors);
+
 	          }
 
+
+           $dbTransaction->commit();
 	      return $res->success("User updated successfully",$user);
+
+	   }
+	   catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('user update error', $message); 
+		}
     
 	}
 
@@ -350,6 +387,8 @@ class UsersController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
     	$username = $json->username;
 	    $token = $json->token;
 	      
@@ -366,37 +405,44 @@ class UsersController extends Controller
 		$username = $res->formatMobileNumber($username);
 		$user = Users::findFirst(array("username=:username:",
         					'bind'=>array("username"=>$username)));
+		try {
+			
+		      if(!$user){
+		        return $res->dataError("user not found");
+		      }
 
+				//generate code
+				$code = rand(9999,99999);
+	 			$user->password = $this->security->hash($code);
 
-	      if(!$user){
-	        return $res->dataError("user not found");
-	      }
+	 			 if($user->save()===false){
+		            $errors = array();
+		                    $messages = $user->getMessages();
+		                    foreach ($messages as $message) 
+		                       {
+		                         $e["message"] = $message->getMessage();
+		                         $e["field"] = $message->getField();
+		                          $errors[] = $e;
+		                        }
+		                //  return $res->dataError('reset password failed',$errors);
+		              $dbTransaction->rollback("reset password failed" . $errors);
+		          }
 
-			//generate code
-			$code = rand(9999,99999);
- 			$user->password = $this->security->hash($code);
+	          $message = "Envirofit verification code\n ".$code;
+	          $res->sendMessage($user->username,$message);
 
- 			 if($user->save()===false){
-	            $errors = array();
-	                    $messages = $user->getMessages();
-	                    foreach ($messages as $message) 
-	                       {
-	                         $e["message"] = $message->getMessage();
-	                         $e["field"] = $message->getField();
-	                          $errors[] = $e;
-	                        }
-	                  return $res->dataError('reset password failed',$errors);
-	          }
+	          $data = [
+	                     "username"=>$user->username,
+	                      "username"=>$user->username,
+	                      "userID"=>$user->userID];
 
-          $message = "Envirofit verification code\n ".$code;
-          $res->sendMessage($user->username,$message);
-
-          $data = [
-                     "username"=>$user->username,
-                      "username"=>$user->username,
-                      "userID"=>$user->userID];
-           
-        return $res->success("Password reset successfully",$data);
+	          $dbTransaction->commit();
+	        return $res->success("Password reset successfully",$data);
+ 		}
+       catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('user update error', $message); 
+		}
 
     }
 
@@ -513,7 +559,7 @@ class UsersController extends Controller
 		$data["totalUsers"] = $count[0]['totalUsers'];
 		$data["users"] = $users;
 
-		return $res->getSalesSuccess($data);
+		return $res->success("Users",$data);
 
 
 	}
@@ -544,6 +590,61 @@ class UsersController extends Controller
 		}
 
 		return $query;
+
+	}
+
+	public function changeUserStatus(){//{userID,status,token}
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
+	    $status = $json->status;
+	    $userID = $json->userID;
+	    $token = $json->token;
+
+	    if(!$token || !$userID || !$status ){
+	    	return $res->dataError("Missing data ");
+	    }
+	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	      if(!$tokenData){
+	        return $res->dataError(" Data compromised");
+	      }
+
+	   try {
+	   		 $user = Users::findFirst(array("userID=:id:  ",
+			    					'bind'=>array("id"=>$userID)));
+	   		 if(!$user){
+	   		 	return $res->dataError("user not founf");
+	   		 }
+
+	   		 $user->status = $status;
+
+	   		 if($user->save()===false){
+	            $errors = array();
+	                    $messages = $user->getMessages();
+	                    foreach ($messages as $message) 
+	                       {
+	                         $e["message"] = $message->getMessage();
+	                         $e["field"] = $message->getField();
+	                          $errors[] = $e;
+	                        }
+	                 // return $res->dataError('user update failed',$errors);
+	                    $dbTransaction->rollback("user status update failed " . $errors);
+
+	          }
+
+
+           $dbTransaction->commit();
+	      return $res->success("User status updated successfully",$user);
+
+		   }
+		    catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+			   $message = $e->getMessage(); 
+			   return $res->dataError('user status change error', $message); 
+			}
 
 	}
 

@@ -148,7 +148,7 @@ class ProductSaleTypePriceController extends Controller
 
 		 $prices= $this->rawSelect($priceQuery);
 
-		return $res->getSalesSuccess($prices);
+		return $res->success("Prices ",$prices);
 
 	}
 	public function getTablePrices(){ //sort, order, page, limit,filter

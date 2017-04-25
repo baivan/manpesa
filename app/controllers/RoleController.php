@@ -22,6 +22,9 @@ class RoleController extends Controller
 		    	$request = new Request();
 		    	$res = new SystemResponses();
 		    	$json = $request->getJsonRawBody();
+		    	$transactionManager = new TransactionManager(); 
+	            $dbTransaction = $transactionManager->get();
+
 		    	$roleName = $json->roleName;
 		    	$roleDescription = $json->roleDescription;
 		    	$token = $json->token;
@@ -41,24 +44,34 @@ class RoleController extends Controller
 		       	return $res->dataError("Role with similar name exists");
 		       }
 
-		       $role = new Role();
-		       $role->roleName = $roleName;
-		       $role->roleDescription = $roleDescription;
-		       $role->createdAt = date("Y-m-d H:i:s");
+		       try{
 
-		        if($role->save()===false){
-			            $errors = array();
-			                    $messages = $role->getMessages();
-			                    foreach ($messages as $message) 
-			                       {
-			                         $e["message"] = $message->getMessage();
-			                         $e["field"] = $message->getField();
-			                          $errors[] = $e;
-			                        }
-			                  return $res->dataError('role create failed',$errors);
-			          }
+			       $role = new Role();
+			       $role->roleName = $roleName;
+			       $role->roleDescription = $roleDescription;
+			       $role->createdAt = date("Y-m-d H:i:s");
 
-			      return $res->success("role saved successfully",$role);
+			        if($role->save()===false){
+				            $errors = array();
+				                    $messages = $role->getMessages();
+				                    foreach ($messages as $message) 
+				                       {
+				                         $e["message"] = $message->getMessage();
+				                         $e["field"] = $message->getField();
+				                          $errors[] = $e;
+				                        }
+				                //  return $res->dataError('role create failed',$errors);
+				                 $dbTransaction->rollback("role create failed " . $errors);
+				          }
+				       $dbTransaction->commit();
+
+				      return $res->success("role saved successfully",$role);
+			  }
+
+	     catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+			   $message = $e->getMessage(); 
+			   return $res->dataError('user create error', $message); 
+		}
 
      }
      public function update(){//{roleID,roleName,roleDescription}
@@ -66,6 +79,8 @@ class RoleController extends Controller
 		    	$request = new Request();
 		    	$res = new SystemResponses();
 		    	$json = $request->getJsonRawBody();
+		    	$transactionManager = new TransactionManager(); 
+	            $dbTransaction = $transactionManager->get();
 		    	$roleName = $json->roleName;
 		    	$roleID = $json->roleID;
 		    	$roleDescription = $json->roleDescription;
@@ -93,19 +108,28 @@ class RoleController extends Controller
 		       	   $role->roleDescription = $roleDescription;
 		       }
 
-		        if($role->save()===false){
-			            $errors = array();
-			                    $messages = $role->getMessages();
-			                    foreach ($messages as $message) 
-			                       {
-			                         $e["message"] = $message->getMessage();
-			                         $e["field"] = $message->getField();
-			                          $errors[] = $e;
-			                        }
-			                  return $res->dataError('role update failed',$errors);
-			          }
+		       try {
+			       	if($role->save()===false){
+				            $errors = array();
+				                    $messages = $role->getMessages();
+				                    foreach ($messages as $message) 
+				                       {
+				                         $e["message"] = $message->getMessage();
+				                         $e["field"] = $message->getField();
+				                          $errors[] = $e;
+				                        }
+				                   $dbTransaction->rollback("role update failed " . $errors);
+				          }
+				       $dbTransaction->commit();
+				      return $res->success("role updated successfully",$role);
+		       	 
+		       }  
+		       catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+				   $message = $e->getMessage(); 
+				   return $res->dataError('user create error', $message); 
+				}
 
-			      return $res->success("role updated successfully",$role);
+		        
 
      }
      public function getAll(){
@@ -131,7 +155,7 @@ class RoleController extends Controller
 
 		        $roles = $this->rawSelect($selectQuery);
 
-		       return $res->getSalesSuccess($roles);
+		       return $res->success("roles",$roles);
 
 		      
      }

@@ -175,7 +175,7 @@ class FrequencyController extends Controller
 			$data["totalFrequency"] = $count[0]['totalFrequency'];
 			$data["salesTypes"] = $salesTypes;
 
-			return $res->getSalesSuccess($data);
+			return $res->success("frequencies",$data);
 
 
 	}

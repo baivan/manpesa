@@ -508,30 +508,42 @@ class SalesController extends Controller
 
 	}
 
-	public function getTableSales(){ //sort, order, page, limit,filter
+	public function getTableSales(){ //sort, order, page, limit,filter,userID
 		$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
-        $productID = $request->getQuery('productID');
+        $userID = $request->getQuery('userID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $countQuery = "SELECT count(salesID) as totalSales from sales";
+        $countQuery = "SELECT count(s.salesID) as totalSales ";
 
-        $selectQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
+        $defaultQuery = " FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
-      
+        $selectQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName ";
+
+       if($userID ){
+        	$countQuery=$countQuery.$defaultQuery." WHERE s.userID=$userID  ";
+        	$selectQuery=$selectQuery.$defaultQuery." WHERE s.userID=$userID  ";
+        }
+        else {
+        	$selectQuery=$selectQuery.$defaultQuery." WHERE ";
+        	$countQuery = $countQuery.$defaultQuery." WHERE ";
+        }
+        
+		      
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
         	$selectQuery=$selectQuery." ".$queryBuilder;
+        	$countQuery = $countQuery." ".$queryBuilder;
         }
-       // return $res->success($selectQuery);
+        //return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
@@ -540,20 +552,24 @@ class SalesController extends Controller
 		$data["totalSales"] = $count[0]['totalSales'];
 		$data["sales"] = $sales;
 
-		return $res->getSalesSuccess($data);
+		return $res->success("Sales ",$data);
 
 
 	}
 
 	public function tableQueryBuilder($sort="",$order="",$page=1,$limit=10,$filter=""){
 		$query = "";
+
 		if(!$page || $page <= 0){
 			$page=1;
+		}
+		if(!$limit || $limit <=0){
+			$limit=10;
 		}
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
-			$query = " WHERE co.fullName REGEXP '$filter' OR ".
+			$query = "  AND co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
 					"st.salesTypeName REGEXP '$filter' OR ".
@@ -562,19 +578,19 @@ class SalesController extends Controller
 					" ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 	
-		else if($sort  && $order  && !$filter && $ofset > 0){
+		else if($sort  && $order  && !$filter ){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && $ofset <= 0){
-			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
+		else if($sort  && !$order  && !$filter ){
+			$query = " ORDER by $sort LIMIT $ofset,$limit";
 		}
 
-		else if(!$sort && !$order && $limit > 0){
+		else if(!$sort && !$order && !$filter){
 			$query = " LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && $filter){
-			$query =  " WHERE co.fullName REGEXP '$filter' OR ".
+			$query =  " AND co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
 					"st.salesTypeName REGEXP '$filter' OR ".

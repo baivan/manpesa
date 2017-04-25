@@ -140,7 +140,7 @@ class SalesTypeController extends Controller
 
         $salesType= $this->rawSelect($salesTypeQuery);
 
-		return $res->getSalesSuccess($salesType);
+		return $res->success("Sales types",$salesType);
      }
      
 

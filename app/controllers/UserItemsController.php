@@ -24,6 +24,7 @@ class UserItemsController extends Controller
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
         $productID = $request->getQuery('productID');
+        $userID = $request->getQuery('userID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
@@ -32,23 +33,59 @@ class UserItemsController extends Controller
 
 
 
+        $basicQuery = "FROM user_items ui join item i on ui.itemID=i.itemID LEFT JOIN users u on ui.userID=u.userID LEFT JOIN contacts co on u.contactID=co.contactsID";
+        $countQuery = "SELECT count(userItemID) as totalUserItems ";
+        $selectQuery = "SELECT ui.userItemID, i.itemID,u.userID,i.serialNumber,i.status,co.workMobile,co.fullName, i.createdAt as dispatchDate, ui.createdAt as assignDate  ";
+        $condition=" ";
+ 
+        if($productID && $userID && !$filter){
+        	//$countQuery=$countQuery.$basicQuery." WHERE i.productID = $productID AND ui.userID=$userID ";
+        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.productID=$productID AND ui.userID=$userID ";
+        	$condition = " WHERE i.productID = $productID AND ui.userID=$userID ";
 
-        $countQuery = "SELECT count(userItemID) as totalUserItems from user_items";
-
-        $selectQuery = "SELECT ui.userItemID, i.itemID,u.userID,i.serialNumber,i.status,co.workMobile,co.fullName, i.createdAt as dispatchDate, ui.createdAt as assignDate from user_items ui join item i on ui.itemID=i.itemID LEFT JOIN users u on ui.userID=u.userID LEFT JOIN contacts co on u.contactID=co.contactsID ";
-
-        if($productID){
-        	$countQuery." WHERE i.productID = $productID ";
-        	$selectQuery." WHERE i.productID=$productID ";
+        }
+        elseif($productID && $userID && $filter){
+        	$condition = " WHERE i.productID = $productID AND ui.userID=$userID AND ";
+        }
+        elseif ($productID && !$userID && !$filter) {
+        	//$countQuery=$countQuery.$basicQuery." WHERE i.productID = $productID  ";
+        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.productID=$productID ";
+        	$condition = " WHERE i.productID=$productID ";
+        }
+        elseif ($productID && !$userID && $filter) {
+        	//$countQuery=$countQuery.$basicQuery." WHERE i.productID = $productID  ";
+        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.productID=$productID ";
+        	$condition = " WHERE i.productID=$productID AND ";
+        }
+        elseif (!$productID && $userID && !$filter) {
+        	//$countQuery=$countQuery.$basicQuery." WHERE i.userID = $userID  ";
+        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.userID=$userID ";
+        	$condition = " WHERE i.userID=$userID ";
+        }
+        elseif (!$productID && $userID && $filter) {
+        	//$countQuery=$countQuery.$basicQuery." WHERE i.userID = $userID  ";
+        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.userID=$userID ";
+        	$condition = " WHERE i.userID=$userID AND ";
+        }
+        elseif(!$productID && !$userID && $filter){
+        	 
+        	//$countQuery=$countQuery.$basicQuery." WHERE ";
+        	//$selectQuery=$selectQuery.$basicQuery." WHERE  ";
+        	$condition = " WHERE ";
+        }
+        else{
+        	$condition = " ";
         }
 
+        $selectQuery=$selectQuery.$basicQuery.$condition;
+        $countQuery =$countQuery.$basicQuery.$condition;
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
         	$selectQuery=$selectQuery." ".$queryBuilder;
         }
-      //  return $res->success($selectQuery);
+      // return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
@@ -68,26 +105,29 @@ class UserItemsController extends Controller
 		if(!$page || $page <= 0){
 			$page=1;
 		}
+		if(!$limit){
+			$limit=10;
+		}
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
 			$query = " i.serialNumber REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.fullName REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && $limit > 0 ){
+		else if($sort  && $order  && !$filter  ){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && !$limit ){
+		else if($sort  && $order  && !$filter  ){
 			$query = " ORDER by $sort $order  LIMIT $ofset,10";
 		}
 		else if(!$sort && !$order && $limit>0){
 			$query = " LIMIT $ofset,$limit";
 		}
-		else if(!$sort && !$order && $filter && !$limit){
-			$query = " i.serialNumber REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.fullName REGEXP '$filter' LIMIT $ofset,10";
+		else if(!$sort && !$order && $filter ){
+			$query = " i.serialNumber REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.fullName REGEXP '$filter' LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && $filter && $limit){
-			$query = " i.serialNumber REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.fullName REGEXP '$filter' LIMIT $ofset,10";
+			$query = " i.serialNumber REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.fullName REGEXP '$filter' LIMIT $ofset,$limit";
 		}
 
 		return $query;
