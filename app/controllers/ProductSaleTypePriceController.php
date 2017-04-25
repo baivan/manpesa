@@ -167,6 +167,11 @@ class ProductSaleTypePriceController extends Controller
 
         $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,st.salesTypeDeposit ,ps.price from product_sale_type_price ps join product p on ps.productID=p.productID LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID";
 
+        if($productID){
+        	$countQuery = $countQuery." WHERE ps.productID=$productID ";
+        	$selectQuery = $selectQuery." WHERE ps.productID=$productID "
+        }
+
       
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
@@ -190,10 +195,13 @@ class ProductSaleTypePriceController extends Controller
 
 	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
 		$query = "";
+		if(!$page || $page <= 0){
+			$page=1;
+		}
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
-			$query = " WHERE c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter ORDER by $sort $order LIMIT $ofset,$limit";
+			$query = "  c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && $order  && !$filter && $limit >0){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
@@ -206,7 +214,7 @@ class ProductSaleTypePriceController extends Controller
 		}
 
 		else if(!$sort && !$order && $filter){
-			$query = "WHERE c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter LIMIT $ofset,10";
+			$query = " c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter LIMIT $ofset,10";
 		}
 
 		return $query;

@@ -164,6 +164,10 @@ class ProspectsController extends Controller
 	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
 		$query = "";
 
+		if(!$page || $page <= 0){
+			$page=1;
+		}
+
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
 			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by c.$sort $order LIMIT $ofset,$limit";

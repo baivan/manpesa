@@ -547,7 +547,7 @@ class SalesController extends Controller
 
 	public function tableQueryBuilder($sort="",$order="",$page=1,$limit=10,$filter=""){
 		$query = "";
-		if(!$page){
+		if(!$page || $page <= 0){
 			$page=1;
 		}
 
