@@ -169,7 +169,7 @@ class ProductSaleTypePriceController extends Controller
 
         if($productID){
         	$countQuery = $countQuery." WHERE ps.productID=$productID ";
-        	$selectQuery = $selectQuery." WHERE ps.productID=$productID "
+        	$selectQuery = $selectQuery." WHERE ps.productID=$productID ";
         }
 
       
