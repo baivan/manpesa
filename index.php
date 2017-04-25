@@ -165,7 +165,7 @@ $user_item_route ->post('crm/all','getTableUserItems');
 $user_item_route ->get('crm/all','getTableUserItems');
 
 $contacts_route = new MicroCollection();
-$contacts_route ->setPrefix('/constact/');
+$contacts_route ->setPrefix('/contact/');
 $contacts_route ->setHandler(new ContactsController());
 $contacts_route ->post('search','searchContacts');
 $contacts_route ->get('search','searchContacts');
