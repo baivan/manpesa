@@ -139,6 +139,8 @@ class UsersController extends Controller
 
 		              $data = [
 		                      "username"=>$user->username,
+		                      "status"=>$user->status,
+		                      "createdAt"=>$user->createdAt,
 		                       "targetSale"=>$user->targetSale,
 		                       "userID"=>$user->userID];
 		           
@@ -369,9 +371,12 @@ class UsersController extends Controller
                           "role"=>$_role['roleName'],
                           "roleID"=>$_role['roleID'],
                           "userID"=>$user->userID,
-                          "contactID"=>$user->contactID
+                          "contactID"=>$user->contactID,
+                          "status"=>$user->status,
+		                      "createdAt"=>$user->createdAt
                           ];
                           
+
                 
                 return $res->success("Login successful ",$data);
             }
@@ -434,6 +439,8 @@ class UsersController extends Controller
 	          $data = [
 	                     "username"=>$user->username,
 	                      "username"=>$user->username,
+	                      "status"=>$user->status,
+		                   "createdAt"=>$user->createdAt,
 	                      "userID"=>$user->userID];
 
 	          $dbTransaction->commit();
@@ -541,7 +548,7 @@ class UsersController extends Controller
 
         $countQuery = "SELECT count(userID) as totalUsers from users";
 
-        $selectQuery = "SELECT u.userID, co.fullName,co.nationalIdNumber,co.workMobile,r.roleID,r.roleName from users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
+        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,co.workMobile,r.roleID,r.roleName,u.createdAt from users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
 
       
 
