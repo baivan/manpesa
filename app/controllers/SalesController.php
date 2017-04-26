@@ -4,6 +4,7 @@ use Phalcon\Http\Request;
 use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
+use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
 class SalesController extends Controller
 {
@@ -218,14 +219,7 @@ class SalesController extends Controller
 	        return $res->dataError("Data compromised");
 	      }
 
-			/*createContact($workMobile,$nationalIdNumber,$fullName,$location,$homeMobile=null,
-			      $homeEmail=null,$workEmail=null,$passportNumber=0,$locationID=0)*/
-
-			/*createCustomer($userID,$contactsID,$locationID=0)*/
-
-			/*createPaymentPlan($paymentPlanDeposit,$salesTypeID,$frequencyID,$repaymentPeriodID=0)*/
-
-			//create this contact if prospectId not provided
+			
 			if($prospectID || $prospectID > 0){ 
 				$prospect = Prospects::findFirst(array("prospectsID=:id: ",
 	    					'bind'=>array("id"=>$prospectID)));
@@ -349,8 +343,6 @@ class SalesController extends Controller
 	    if(!$status){
 	    	$status=0;
 	    }
-
-
 
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
 	    					'bind'=>array("w_mobile"=>$workMobile)));

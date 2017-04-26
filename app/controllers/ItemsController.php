@@ -4,14 +4,20 @@ use Phalcon\Http\Request;
 use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT; 
+use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
 class ItemsController extends Controller
 {
 
     public function indexAction()
-    {
+    { 
 
     }
+
+    protected $notAssigned = 0;
+    protected $assigned = 1;
+    protected $sold = 2;
+
 
      protected function rawSelect($statement)
        { 
@@ -27,6 +33,9 @@ class ItemsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
+
     	$token = $json->token;
     	$serialNumber = $json->serialNumber;
     	$productID = $json->productID;
@@ -53,26 +62,33 @@ class ItemsController extends Controller
 	    	return $res->dataError("An item with the same serialNumber exists");
 	    }
 
-	    $item = new Item();
-	    $item->serialNumber = $serialNumber;
-	    $item->productID = $productID;
-	    $item->status=$status;
-	    $item->createdAt = date("Y-m-d H:i:s");
+		 try {
 
-	     if($item->save()===false){
-	            $errors = array();
-	                    $messages = $item->getMessages();
-	                    foreach ($messages as $message) 
-	                       {
-	                         $e["message"] = $message->getMessage();
-	                         $e["field"] = $message->getField();
-	                          $errors[] = $e;
-	                        }
-	                  return $res->dataError('item create failed',$errors);
-	          }
+			    $item = new Item();
+			    $item->serialNumber = $serialNumber;
+			    $item->productID = $productID;
+			    $item->status=$status;
+			    $item->createdAt = date("Y-m-d H:i:s");
 
-	     return $res->success("Item created successfully ",$item);
-
+			     if($item->save()===false){
+			            $errors = array();
+			                    $messages = $item->getMessages();
+			                    foreach ($messages as $message) 
+			                       {
+			                         $e["message"] = $message->getMessage();
+			                         $e["field"] = $message->getField();
+			                          $errors[] = $e;
+			                        }
+			                 // return $res->dataError('item create failed',$errors);
+			               $dbTransaction->rollback("Item create failed " . json_encode($errors));
+			          }
+			     $dbTransaction->commit();
+			     return $res->success("Item created successfully ",$item);
+			}
+		catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('Item create error', $message); 
+		}
 
 
 	} 
@@ -81,6 +97,8 @@ class ItemsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
 
     	$token = $json->token;
     	$serialNumber = $json->serialNumber;
@@ -113,19 +131,27 @@ class ItemsController extends Controller
 	     if($status){
 	     	$item->status = $status;
 	     }
+	     try {
 
-	     if($item->save()===false){
-	            $errors = array();
-	            $messages = $item->getMessages();
-	            foreach ($messages as $message) 
-	                  {
-	                     $e["message"] = $message->getMessage();
-	                     $e["field"] = $message->getField();
-	                      $errors[] = $e;
-	                    }
-	              return $res->dataError('item edit failed',$errors);
-	          }
-	      return $res->success("Item updated successfully",$item);
+		     if($item->save()===false){
+		            $errors = array();
+		            $messages = $item->getMessages();
+		            foreach ($messages as $message) 
+		                  {
+		                     $e["message"] = $message->getMessage();
+		                     $e["field"] = $message->getField();
+		                      $errors[] = $e;
+		                    }
+		              $dbTransaction->rollback("Item update failed " . json_encode($errors));
+		          }
+
+		      $dbTransaction->commit();
+		      return $res->success("Item updated successfully",$item);
+		    }
+		catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('Item update error', $message); 
+		}
 
 
 	}
@@ -139,8 +165,6 @@ class ItemsController extends Controller
         $status = $request->getQuery('status');
 
      //   $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND
-
-
 
         if(!$token){
         	return $res->dataError("Token Missing");
@@ -199,7 +223,7 @@ class ItemsController extends Controller
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $selectQuery = "SELECT * FROM item i ";
+        $selectQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt,u.userID,co.fullName FROM item i LEFT JOIN user_items ui on i.itemID=ui.itemID LEFT JOIN users u ON ui.userID=u.userID LEFT JOIN contacts co on u.contactID=co.contactsID ";//"SELECT * FROM item i ";
         $countQuery = "SELECT count(i.itemID) as totalItems from item i";
         $condition = " WHERE ";
 
@@ -281,6 +305,9 @@ class ItemsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
+
     	$itemID = $json->itemID;
     	$userID = $json->userID;
     	$token = $json->token;
@@ -296,8 +323,11 @@ class ItemsController extends Controller
 	        return $res->dataError("Data compromised");
 	      }
 
+
+
 	      $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID:",
 	    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID))); 
+
 
 	      if($userItem){
 	      	return $res->dataError("Item already assigned to this user");
@@ -318,6 +348,8 @@ class ItemsController extends Controller
 	      	$userItem->itemID = $itemID;
 	      }
 
+
+	  try{
 	      if($userItem->save()===false){
 	            $errors = array();
 	            $messages = $userItem->getMessages();
@@ -327,11 +359,36 @@ class ItemsController extends Controller
 	                     $e["field"] = $message->getField();
 	                      $errors[] = $e;
 	                    }
-	              return $res->dataError('item assign failed',$errors);
+	               $dbTransaction->rollback("Item update failed " . json_encode($errors));
 	          }
 
+	          $item = Items::findFirst(array("itemID=:id:",
+	    					'bind'=>array("id"=>$itemID))); 
+	          if(!$item){
+	          	$dbTransaction->rollback("Item update failed, item not found " . json_encode($errors));
+	          }
+	          else{
+	          	$item->status = $this->assigned;
+	          	if($item->save()===false){
+		            $errors = array();
+		            $messages = $item->getMessages();
+		            foreach ($messages as $message) 
+		                  {
+		                     $e["message"] = $message->getMessage();
+		                     $e["field"] = $message->getField();
+		                      $errors[] = $e;
+		                    }
+		               $dbTransaction->rollback("Item update failed " . json_encode($errors));
+		          }
+	          }
 
-	       return $res->success("Items assigned",$userItem);
+	       return $res->success("Items assigned successfully",$userItem);
+	       $dbTransaction->commit();
+	   }
+	   catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('Item create error', $message); 
+		}
 	
 	}
 

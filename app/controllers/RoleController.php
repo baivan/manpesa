@@ -4,7 +4,7 @@ use Phalcon\Http\Request;
 use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
-
+use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
 class RoleController extends Controller
 {
