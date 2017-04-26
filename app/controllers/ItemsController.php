@@ -222,7 +222,7 @@ class ItemsController extends Controller
         	$selectQuery=$selectQuery." ".$queryBuilder;
         }
 
-        //return $res->success($selectQuery);
+      //  return $res->success($selectQuery);
 
 		$items= $this->rawSelect($selectQuery);
 		return $res->success("Items ",$items);
@@ -234,6 +234,9 @@ class ItemsController extends Controller
 
 		if(!$page || $page <= 0){
 			$page=1;
+		}
+		if(!$limit){
+			$limit =10;
 		}
 
 		$ofset = ($page-1)*$limit;
