@@ -240,7 +240,7 @@ class ItemsController extends Controller
 
 		 $data["totalItems"] = $count[0]['totalItems'];
           $data["items"] = $items;
-		return $res->success("Items get successfully ",$items);
+		return $res->success("Items get successfully ",$data);
 
 
 
