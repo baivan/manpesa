@@ -539,18 +539,32 @@ class UsersController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
-        $productID = $request->getQuery('productID');
+        $roleID = $request->getQuery('roleID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $countQuery = "SELECT count(userID) as totalUsers from users";
+        $countQuery = "SELECT count(userID) as totalUsers ";
 
-        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,co.workMobile,r.roleID,r.roleName,u.createdAt from users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
+        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,co.workMobile,r.roleID,r.roleName,u.createdAt  ";
 
-      
+        $baseQuery = " FROM users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
+        $condition ="";
+         
+         if($roleID && !$filter){
+         	$condition = " WHERE u.roleID=$roleID ";
+         }
+         elseif($roleID && $filter){
+         	$condition = " WHERE u.roleID=$roleID AND ";
+         }
+         elseif(!$roleID && $filter){
+         	$condition = " WHERE ";
+         }
+
+         $countQuery = $countQuery.$baseQuery.$condition;
+         $selectQuery = $selectQuery.$baseQuery.$condition;
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
@@ -577,23 +591,26 @@ class UsersController extends Controller
 		if(!$page || $page <= 0){
 			$page=1;
 		}
+		if(!$limit){
+			$limit=10;
+		}
 
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
-			$query = " WHERE co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
+			$query = "  co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && $limit >0){
+		elseif($sort  && $order  && !$filter ){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && !$limit){
-			$query = " ORDER by $sort $order  LIMIT $ofset,10";
+		elseif($sort  && $order  && !$filter ){
+			$query = " ORDER by $sort $order  LIMIT $ofset,$limit";
 		}
-		else if(!$sort && !$order && $limit>0){
+		elseif(!$sort && !$order ){
 			$query = " LIMIT $ofset,$limit";
 		}
 
-		else if(!$sort && !$order && $filter){
-			$query = " WHERE co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter 'LIMIT $ofset,10";
+		elseif(!$sort && !$order && $filter){
+			$query = "  co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter 'LIMIT $ofset,$limit";
 		}
 
 		return $query;
