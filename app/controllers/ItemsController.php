@@ -362,7 +362,7 @@ class ItemsController extends Controller
 	               $dbTransaction->rollback("Item update failed " . json_encode($errors));
 	          }
 
-	          $item = Items::findFirst(array("itemID=:id:",
+	          $item = Item::findFirst(array("itemID=:id:",
 	    					'bind'=>array("id"=>$itemID))); 
 	          if(!$item){
 	          	$dbTransaction->rollback("Item update failed, item not found " . json_encode($errors));

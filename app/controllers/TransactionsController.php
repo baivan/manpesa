@@ -21,7 +21,7 @@ class TransactionsController extends Controller
         $filter = $request->getQuery('filter');
 
         $countQuery = "SELECT count(c.transactionID) as totalTransaction ";
-        $baseQuery = " from transaction  c join contacts co on c.contactsID=co.contactsID ";
+        $baseQuery = " from transaction  t join contacts co on c.contactsID=co.contactsID ";
         $selectQuery = "SELECT c.customerID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, c.createdAt  ";
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
