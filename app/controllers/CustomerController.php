@@ -28,7 +28,7 @@ class CustomerController extends Controller
         $filter = $request->getQuery('filter');
 
         $countQuery = "SELECT count(customerID) as totalCustomers ";
-        $baseQuery = " from customer  c join contacts co on c.contactsID=co.contactsID "
+        $baseQuery = " from customer  c join contacts co on c.contactsID=co.contactsID ";
 
         $selectQuery = "SELECT c.customerID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, c.createdAt  ";
          
