@@ -212,6 +212,9 @@ class ItemsController extends Controller
         if(!$productID && !$filter){
         	$condition = " WHERE ";
         }
+        elseif ($productID && !$filter) {
+        	$condition = " AND ";
+        }
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
