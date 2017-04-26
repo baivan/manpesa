@@ -135,11 +135,12 @@ class ItemsController extends Controller
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
         $itemID = $request->getQuery('itemID');
-        $userID = $request->getQuery('userID');
         $productID = $request->getQuery('productID');
         $status = $request->getQuery('status');
 
-        $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND 
+     //   $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND
+
+
 
         if(!$token){
         	return $res->dataError("Token Missing");
@@ -151,36 +152,32 @@ class ItemsController extends Controller
 	        return $res->dataError("Data compromised");
 	      }
 
+	       $itemsQuery ="SELECT * FROM item ";
+	       $condition = " ";
 
+	       if($productID && $itemID && $status >= 0 && $status >=0){
+	       	  $condition = " WHERE productID=$productID AND itemID=$itemID AND status = $status ";
+	       }
+	       elseif ($productID && $itemID  && $status < 0) {
+	       	    $condition = " WHERE productID=$productID AND itemID=$itemID  ";
+	       }
+	       elseif($productID && !$itemID && !$status ){
+	       	     $condition = " WHERE productID=$productID ";
+	       }
+	       elseif(!$productID  && $itemID  && !$status){
+	       		$condition = " WHERE itemID=$itemID ";
+	       }
+	       elseif(!$productID  && !$itemID  && $status >=  0){
+	       	    $condition = " WHERE status=$status ";
+	       }
+	       else{
+	       	  $condition="";
+	       }
+	       $itemsQuery = $itemsQuery.$condition;
 
-	      if($itemID && $itemID > 0 ){
-	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.itemID=$itemID";//ui.userID=2 AND 
-	      }
-
-	      elseif($userID && $userID > 0 && $productID && $productID > 0 && $status && $status >= 0){
-	      	 $itemsQuery = "SELECT  i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i LEFT JOIN user_items ui on i.itemID =ui.itemID WHERE  i.status=$status and ui.userID=$userID and i.productID=$productID";
-	      }
-
-	      elseif($userID && $userID > 0 && $status && $status > 0 && !$productID && $productID <=0){
-	      	$itemsQuery = "SELECT  i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i LEFT JOIN user_items ui on i.itemID =ui.itemID WHERE  i.status=$status and ui.userID=$userID";//ui.userID=2 AND 
-	      }
-
-	      elseif($userID && $userID > 0 && $productID && $productID > 0 && !$status && $status < 0){
-	      	 $itemsQuery = "SELECT  i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i LEFT JOIN user_items ui on i.itemID =ui.itemID WHERE  i.productID=$productID and ui.userID=$userID";//ui.userID=2 AND 
-	      }
-
-	      elseif($productID && $productID > 0 && $status && $status >= 0 && !$userID && $userID <=0 ){
-	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i WHERE i.productID=$productID AND i.status=$status";
-	      }
-
-	      elseif(!$userID && $userID <=0 && !$productID && $productID <= 0 && !$status && $status < 0){
-	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i ";
-	      }
-
-	      elseif(!$userID && $userID <=0 && $productID && $productID > 0 && !$status && $status < 0){
-	      	 $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM item i WHERE i.productID=$productID";
-	      }
-	      
+	     
+	     
+	    // return $res->success($itemsQuery);
 
 
 		$items= $this->rawSelect($itemsQuery);
