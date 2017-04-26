@@ -203,29 +203,46 @@ class ItemsController extends Controller
         $filter = $request->getQuery('filter');
 
         $selectQuery = "SELECT * FROM item i ";
+        $countQuery = "SELECT count(i.itemID) as totalItems from item i";
         $condition = " WHERE ";
 
-        if($productID){
-        	$selectQuery = $selectQuery." WHERE i.productID=$productID ";
+        if($productID && $filter){
+        	//$selectQuery = $selectQuery." WHERE i.productID=$productID ";
+        	$condition = " WHERE i.productID=$productID AND ";
         }
 
-        if(!$productID && !$filter){
+        elseif(!$productID && !$filter){
         	$condition = " WHERE ";
         }
         elseif ($productID && !$filter) {
-        	$condition = " AND ";
+        	$condition = " WHERE i.productID=$productID ";    
         }
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
-        	$selectQuery=$selectQuery." ".$queryBuilder;
+        	$selectQuery=$selectQuery.$condition." ".$queryBuilder;
+        	if($filter){
+        		$countQuery = $countQuery.$condition." ".$queryBuilder;
+        	}
+        	else{
+        		$countQuery = $countQuery.$condition;
+        	}
+        }
+        else{
+        	$selectQuery=$selectQuery.$condition;
+        	$countQuery = $countQuery.$condition;
         }
 
       //  return $res->success($selectQuery);
-
+        $count = $this->rawSelect($countQuery);
 		$items= $this->rawSelect($selectQuery);
-		return $res->success("Items ",$items);
+
+		 $data["totalItems"] = $count[0]['totalItems'];
+          $data["items"] = $items;
+		return $res->success("Items get successfully ",$items);
+
+
 
 	}
 
