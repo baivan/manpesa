@@ -545,7 +545,7 @@ class SalesController extends Controller
         }
         //return $res->success($selectQuery);
 
-        $count = $this->rawSelect($countQuery);
+        $totalSales = $this->rawSelect($countQuery);
 
 		$sales= $this->rawSelect($selectQuery);
 //users["totalUsers"] = $count[0]['totalUsers'];
