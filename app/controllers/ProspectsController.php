@@ -87,7 +87,9 @@ class ProspectsController extends Controller
 	                  return $res->dataError('prospect create failed',$errors);
 	          }
 
-	          return $res->success("Prospect created successfully ",$prospect);
+	        $res->sendMessage($workMobile,"Dear ".$fullName.", welcome to Envirofit. For any questions or comments call 0800722700 ");
+
+	        return $res->success("Prospect created successfully ",$prospect);
 
 	   }
 

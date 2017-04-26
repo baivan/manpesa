@@ -82,6 +82,7 @@ class SalesController extends Controller
 			               $res->dataError('customer create failed',$errors);
 			                return 0;
 			          }
+
 			      return $customer->customerID;
 	       	}
     }
@@ -119,7 +120,9 @@ class SalesController extends Controller
 	                 $res->dataError('contact create failed',$errors);
 	                 return 0;
 	          }
-	          return $contact->contactsID;
+
+	         $res->sendMessage($workMobile,"Dear ".$fullName.", welcome to Envirofit. For any questions or comments call 0800722700 ");
+	         return $contact->contactsID;
     	 }
 
 
@@ -517,27 +520,52 @@ class SalesController extends Controller
         $defaultQuery = " FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
         $selectQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName ";
+          $condition ="";
 
-       if($userID ){
-        	$countQuery=$countQuery.$defaultQuery." WHERE s.userID=$userID  ";
-        	$selectQuery=$selectQuery.$defaultQuery." WHERE s.userID=$userID  ";
+       if($userID && $filter){
+       	    $condition = " WHERE s.userID=$userID AND ";
+        	//$countQuery=$countQuery.$defaultQuery.
+        	//$selectQuery=$selectQuery.$defaultQuery." WHERE s.userID=$userID  ";
         }
-        else {
-        	$selectQuery=$selectQuery.$defaultQuery." WHERE ";
-        	$countQuery = $countQuery.$defaultQuery." WHERE ";
+        elseif ($userID && !$filter) {
+            $condition = " WHERE s.userID=$userID ";
         }
+        elseif (!$userID && $filter) {
+            $condition = " WHERE ";
+        	
+        }
+        elseif(!$userID && !$filter){
+        	$condition = " ";
+        }
+
+
+        // else {
+        // 	$selectQuery=$selectQuery.$defaultQuery." WHERE ";
+        // 	$countQuery = $countQuery.$defaultQuery." WHERE ";
+        // }
+
         
 		      
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
-        	$selectQuery=$selectQuery." ".$queryBuilder;
-        	$countQuery = $countQuery." ".$queryBuilder;
+        	$selectQuery=$selectQuery.$defaultQuery.$condition." ".$queryBuilder;
+        	//$countQuery = $countQuery." ".$queryBuilder;
+        	if($filter){
+        		$countQuery = $countQuery.$defaultQuery.$condition." ".$queryBuilder;
+        	}
+        	else{
+        		$countQuery=$countQuery.$defaultQuery.$condition;
+        	}
+        }
+        else{
+        	$selectQuery=$selectQuery.$defaultQuery.$condition;
+        	$countQuery=$countQuery.$defaultQuery.$condition;
         }
         //return $res->success($selectQuery);
 
-        $totalSales = $this->rawSelect($countQuery);
+        $count = $this->rawSelect($countQuery);
 
 		$sales= $this->rawSelect($selectQuery);
 //users["totalUsers"] = $count[0]['totalUsers'];
@@ -555,11 +583,12 @@ class SalesController extends Controller
 		if(!$page || $page <= 0){
 			$page=1;
 		}
-		if(!$limit || $limit <=0){
+		if(!$limit ){
 			$limit=10;
 		}
 
 		$ofset = ($page-1)*$limit;
+
 		if($sort  && $order  && $filter ){
 			$query = "  AND co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
