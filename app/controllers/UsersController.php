@@ -611,7 +611,7 @@ class UsersController extends Controller
 	    $userID = $json->userID;
 	    $token = $json->token;
 
-	    if(!$token || !$userID || !$status ){
+	    if(!$token || !$userID || $status<0  ){
 	    	return $res->dataError("Missing data ");
 	    }
 	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
