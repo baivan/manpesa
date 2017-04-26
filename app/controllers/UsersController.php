@@ -430,11 +430,11 @@ class UsersController extends Controller
 		                          $errors[] = $e;
 		                        }
 		                //  return $res->dataError('reset password failed',$errors);
-		              $dbTransaction->rollback("reset password failed" . $errors);
+		              $dbTransaction->rollback("reset password failed" . json_encode($errors));
 		          }
 
 	          $message = "Envirofit verification code\n ".$code;
-	          $res->sendMessage($user->username,$message);
+	          $res->sendMessage($username,$message);
 
 	          $data = [
 	                     "username"=>$user->username,
@@ -444,7 +444,7 @@ class UsersController extends Controller
 	                      "userID"=>$user->userID];
 
 	          $dbTransaction->commit();
-	        return $res->success("Password reset successfully",$data);
+	        return $res->success("Password reset successfully ",$data);
  		}
        catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
 		   $message = $e->getMessage(); 

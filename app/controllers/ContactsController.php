@@ -38,7 +38,7 @@ class ContactsController extends Controller
         $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber, c.nationalIdNumber, p.prospectsID,cu.customerID from contacts c LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID ";
 
         if($filter){
-        	$searchQuery." where c.workMobile REGEXP '$filter'";
+        	$searchQuery=$searchQuery." where c.workMobile REGEXP '$filter'";
         }
 
         $contacts = $this->rawSelect($searchQuery);

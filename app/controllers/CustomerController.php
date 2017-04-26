@@ -27,7 +27,7 @@ class CustomerController extends Controller
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $countQuery = "SELECT count(customerID) as totalCustmers from customer";
+        $countQuery = "SELECT count(customerID) as totalCustomers from customer";
 
         $selectQuery = "SELECT c.customerID, co.fullName,co.nationalIdNumber,co.workMobile,co.location from customer  c join contacts co on c.contactsID=co.contactsID ";
       
@@ -42,7 +42,7 @@ class CustomerController extends Controller
 
 		$customers= $this->rawSelect($selectQuery);
 //users["totalUsers"] = $count[0]['totalUsers'];
-		$data["totalCustmers"] = $count[0]['totalCustmers'];
+		$data["totalCustomers"] = $count[0]['totalCustomers'];
 		$data["customers"] = $customers;
 
 		return $res->success("customers",$data);
