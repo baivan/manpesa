@@ -548,7 +548,7 @@ class UsersController extends Controller
 
         $countQuery = "SELECT count(userID) as totalUsers ";
 
-        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,co.workMobile,r.roleID,r.roleName,u.createdAt  ";
+        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,co.workMobile,co.location,r.roleID,r.roleName,u.createdAt  ";
 
         $baseQuery = " FROM users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
         $condition ="";
