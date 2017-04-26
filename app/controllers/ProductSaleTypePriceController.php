@@ -169,8 +169,8 @@ class ProductSaleTypePriceController extends Controller
         $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,st.salesTypeDeposit ,ps.price  ";
         $condition = "";
 
-        $countQuery = $countQuery.$baseQuery;
-        $selectQuery = $selectQuery.$baseQuery;
+        //$countQuery = $countQuery.$baseQuery;
+        //$selectQuery = $selectQuery.$baseQuery;
 
 
         if($productID && $filter){
