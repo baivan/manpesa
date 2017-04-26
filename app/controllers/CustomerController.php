@@ -37,6 +37,10 @@ class CustomerController extends Controller
         	if($filter){
         		$countQuery = $countQuery.$baseQuery." ".$queryBuilder;
         	}
+        	else{
+        		$countQuery = $countQuery.$baseQuery;
+        	}
+
         	
         }
         else{
