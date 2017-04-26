@@ -590,7 +590,7 @@ class SalesController extends Controller
 		$ofset = ($page-1)*$limit;
 
 		if($sort  && $order  && $filter ){
-			$query = "  AND co.fullName REGEXP '$filter' OR ".
+			$query = "  co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
 					"st.salesTypeName REGEXP '$filter' OR ".
@@ -611,7 +611,7 @@ class SalesController extends Controller
 		}
 
 		else if(!$sort && !$order && $filter){
-			$query =  " AND co.fullName REGEXP '$filter' OR ".
+			$query =  " co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
 					"st.salesTypeName REGEXP '$filter' OR ".
