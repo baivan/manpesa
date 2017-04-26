@@ -24,7 +24,7 @@ class ContactsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
-        $filter = $request->getQuery('filter');
+      $filter = $request->getQuery('filter');
 
         if(!$token){
 	    	return $res->dataError("Missing data ");
@@ -38,7 +38,7 @@ class ContactsController extends Controller
         $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber, c.nationalIdNumber, p.prospectsID,cu.customerID from contacts c LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID ";
 
         if($filter){
-        	$searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter'";
+        	$searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter' ";
         }
 
         $contacts = $this->rawSelect($searchQuery);

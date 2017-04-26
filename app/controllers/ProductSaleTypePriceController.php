@@ -163,21 +163,44 @@ class ProductSaleTypePriceController extends Controller
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $countQuery = "SELECT count(productSaleTypePriceID) as totalPrices from product_sale_type_price";
+        $countQuery = "SELECT count(productSaleTypePriceID) as totalPrices ";
+        $baseQuery = " FROM product_sale_type_price ps join product p on ps.productID=p.productID LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID "
 
-        $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,st.salesTypeDeposit ,ps.price from product_sale_type_price ps join product p on ps.productID=p.productID LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID";
+        $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,st.salesTypeDeposit ,ps.price  ";
+        $condition = "";
 
-        if($productID){
-        	$countQuery = $countQuery." WHERE ps.productID=$productID ";
-        	$selectQuery = $selectQuery." WHERE ps.productID=$productID ";
+        $countQuery = $countQuery.$baseQuery;
+        $selectQuery = $selectQuery.$baseQuery;
+
+
+        if($productID && $filter){
+        	$condition=" WHERE ps.productID=$productID  AND ";
+        }
+        elseif ($productID && !$filter) {
+        	$condition=" WHERE ps.productID=$productID  ";
+        }
+        elseif (!$productID && !$filter){
+        	$condition="  ";
+        	
         }
 
-      
+      	
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
-        	$selectQuery=$selectQuery." ".$queryBuilder;
+        	$selectQuery=$selectQuery.$baseQuery.$condition." ".$queryBuilder;
+        	if($filter){
+        		$countQuery = $countQuery.$baseQuery.$condition." ".$queryBuilder;
+        	}
+        	else{
+        		$countQuery = $countQuery.$baseQuery.$condition;
+        	}
+
+        }
+        else{
+        	$selectQuery=$selectQuery.$baseQuery.$condition;
+        	$countQuery = $countQuery.$baseQuery.$condition;
         }
         //return $res->success($selectQuery);
 
@@ -199,22 +222,26 @@ class ProductSaleTypePriceController extends Controller
 			$page=1;
 		}
 
+		if(!$limit){
+			$limit=10;
+		}
+
 		$ofset = ($page-1)*$limit;
 		if($sort  && $order  && $filter ){
 			$query = "  c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && $limit >0){
+		else if($sort  && $order  && !$filter ){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		else if($sort  && $order  && !$filter && !$limit){
-			$query = " ORDER by $sort $order  LIMIT $ofset,10";
+		else if($sort  && $order  && !$filter ){
+			$query = " ORDER by $sort $order  LIMIT $ofset,$limit";
 		}
-		else if(!$sort && !$order && $limit>0){
+		else if(!$sort && !$order ){
 			$query = " LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && $filter){
-			$query = " c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter LIMIT $ofset,10";
+			$query = " c.categoryName REGEXP $filter OR st.salesTypeDeposit REGEXP $filter OR ps.price REGEXP $filter  OR p.productName REGEXP $filter OR st.salesTypeName REGEXP $filter LIMIT $ofset,$limit";
 		}
 
 		return $query;
