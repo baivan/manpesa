@@ -63,13 +63,13 @@ class CustomerController extends Controller
 		$ofset = ($page-1)*$limit;
 
 		if($sort  && $order  && $filter ){
-			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by c.$sort $order LIMIT $ofset,$limit";
+			$query = " WHERE co.fullName REGEXP '$filter' OR co.workMobile REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		elseif($sort  && $order  && !$filter  ){
-			$query = " ORDER by c.$sort $order LIMIT $ofset,$limit";
+			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		elseif($sort  && $order  && !$filter  ){
-			$query = " ORDER by c.$sort $order  LIMIT $ofset,$limit";
+			$query = " ORDER by $sort $order  LIMIT $ofset,$limit";
 		}
 		elseif(!$sort && !$order && !$filter ){
 			$query = " LIMIT $ofset,$limit";
