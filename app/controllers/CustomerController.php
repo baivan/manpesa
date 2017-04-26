@@ -75,8 +75,8 @@ class CustomerController extends Controller
 		elseif($sort  && $order  && !$filter  ){
 			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
 		}
-		elseif($sort  && $order  && !$filter  ){
-			$query = " ORDER by $sort $order  LIMIT $ofset,$limit";
+		elseif($sort  && !$order  && !$filter  ){
+			$query = " ORDER by $sort  LIMIT $ofset,$limit";
 		}
 		elseif(!$sort && !$order && !$filter ){
 			$query = " LIMIT $ofset,$limit";
