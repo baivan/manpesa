@@ -381,9 +381,9 @@ class ItemsController extends Controller
 		               $dbTransaction->rollback("Item update failed " . json_encode($errors));
 		          }
 	          }
-
+	        $dbTransaction->commit();
 	       return $res->success("Items assigned successfully",$userItem);
-	       $dbTransaction->commit();
+	       
 	   }
 	   catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
 		   $message = $e->getMessage(); 
