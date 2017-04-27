@@ -82,7 +82,7 @@ class TransactionsController extends Controller
 	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
 
 	       
-	      return $res->success("Transaction successfully done ".json_encode($userID),$transaction);
+	      return $res->success("Transaction successfully done ",$transaction);
 
 	   }
 	    catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
