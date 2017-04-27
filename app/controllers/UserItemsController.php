@@ -61,12 +61,12 @@ class UserItemsController extends Controller
         elseif (!$productID && $userID && !$filter) {
         	//$countQuery=$countQuery.$basicQuery." WHERE i.userID = $userID  ";
         	//$selectQuery=$selectQuery.$basicQuery." WHERE i.userID=$userID ";
-        	$condition = " WHERE i.userID=$userID ";
+        	$condition = " WHERE ui.userID=$userID ";
         }
         elseif (!$productID && $userID && $filter) {
         	//$countQuery=$countQuery.$basicQuery." WHERE i.userID = $userID  ";
         	//$selectQuery=$selectQuery.$basicQuery." WHERE i.userID=$userID ";
-        	$condition = " WHERE i.userID=$userID AND ";
+        	$condition = " WHERE ui.userID=$userID AND ";
         }
         elseif(!$productID && !$userID && $filter){
         	 
