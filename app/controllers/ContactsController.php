@@ -117,6 +117,73 @@ class ContactsController extends Controller
 
   }
 
+  public function createContact(){//($workMobile,$nationalIdNumber,$fullName,$location,
+      $jwtManager = new JwtManager();
+      $request = new Request();
+      $res = new SystemResponses();
+      $json = $request->getJsonRawBody();
+      $transactionManager = new TransactionManager(); 
+      $dbTransaction = $transactionManager->get();
+
+      $token =$json->token;
+      $location = $json->location;
+      $workMobile = $json->workMobile;
+      $fullName = $json->fullName;
+      $nationalIdNumber = $json->nationalIdNumber;
+
+      if(!$token || !$workMobile || !$fullName){
+        return $res->dataError("Missing data ");
+      }
+
+      $workMobile = $res->formatMobileNumber($workMobile);
+
+       $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
+                'bind'=>array("w_mobile"=>$workMobile)));
+
+       if($contact){
+        $res->sendMessage($workMobile,"Dear ".$fullName.", thankyou for your support, we value you. For any questions or comments call 0800722700 ");
+        return $res->success("Success ",$contact);
+       }
+       else{
+        try{
+            $contact = new Contacts();
+           // $contact->workEmail = $workEmail;
+           // $contact->homeEmail=$homeEmail;
+            $contact->workMobile = $workMobile;
+          //  $contact->homeMobile=$homeMobile;
+            $contact->fullName = $fullName;
+            $contact->location = $location;
+            $contact->nationalIdNumber = $nationalIdNumber;
+            //$contact->passportNumber=$passportNumber;
+           // $contact->locationID=$locationID;
+
+            $contact->createdAt = date("Y-m-d H:i:s");
+
+            if($contact->save()===false){
+                  $errors = array();
+                          $messages = $contact->getMessages();
+                          foreach ($messages as $message) 
+                             {
+                               $e["message"] = $message->getMessage();
+                               $e["field"] = $message->getField();
+                                $errors[] = $e;
+                              }
+                       $dbTransaction->rollback("Contacts create" . json_encode($errors));
+                      
+                }
+             $dbTransaction->commit();
+          $res->sendMessage($workMobile,"Dear ".$fullName.", welcome to Envirofit. For any questions or comments call 0800722700 ");
+
+         return $res->success("Success ",$contact);
+       }
+    catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+       $message = $e->getMessage(); 
+       return $res->dataError('Contacts create', $message); 
+    }
+
+
+    }
+  }
     
 
 }

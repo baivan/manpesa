@@ -170,6 +170,7 @@ $contacts_route ->setPrefix('/contact/');
 $contacts_route ->setHandler(new ContactsController());
 $contacts_route ->post('search','searchContacts');
 $contacts_route ->get('search','searchContacts');
+$contacts_route ->post('create','createContact');//workMobile,nationalIdNumber,fullName,location
 
 
 $app->mount($user_route);
