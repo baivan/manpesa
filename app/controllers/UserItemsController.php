@@ -36,7 +36,7 @@ class UserItemsController extends Controller
 
         $basicQuery = "FROM user_items ui join item i on ui.itemID=i.itemID LEFT JOIN users u on ui.userID=u.userID LEFT JOIN contacts co on u.contactID=co.contactsID LEFT JOIN product p on i.productID=p.productID";
         $countQuery = "SELECT count(userItemID) as totalUserItems ";
-        $selectQuery = "SELECT ui.userItemID, i.itemID,u.userID,i.serialNumber,i.status,co.workMobile,co.fullName, i.createdAt, as dispatchDate, ui.createdAt as assignDate,i.productID,p.productName ";
+        $selectQuery = "SELECT ui.userItemID, i.itemID,u.userID,i.serialNumber,i.status,co.workMobile,co.fullName, i.createdAt as dispatchDate, ui.createdAt as assignDate,i.productID,p.productName ";
         $condition=" ";
  
         if($productID && $userID && !$filter){
@@ -86,7 +86,7 @@ class UserItemsController extends Controller
         if($queryBuilder){
         	$selectQuery=$selectQuery." ".$queryBuilder;
         }
-     //  return $res->success($selectQuery);
+     // return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
