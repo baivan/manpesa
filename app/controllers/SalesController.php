@@ -22,8 +22,93 @@ class SalesController extends Controller
           $success = $success->fetchAll($success); 
           return $success;
        }
+    public function create(){ //{contactsID,amount,userID,salesTypeID,frequencyID}
+    	$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+        $dbTransaction = $transactionManager->get();
 
-    public function createPaymentPlan($paymentPlanDeposit,$salesTypeID,$frequencyID,$repaymentPeriodID=0){
+    	$paymentPlanDeposit = $json->paymentPlanDeposit;
+    	$salesTypeID = $json->salesTypeID;
+    	$frequencyID = $json->frequencyID;
+    	$contactsID = $json->contactsID;
+    	$userID = $json->userID;
+    	$amount = $json->amount;
+    	$token = $json->token;
+
+    	if(!$token ){
+	    	return $res->dataError("Token missing er".json_encode($json));
+	    }
+	    if(!$salesTypeID ){
+	    	return $res->dataError("salesTypeID missing ");
+	    }
+	     if(!$userID ){
+	    	return $res->dataError("userID missing ");
+	    }
+	     if(!$amount ){
+	    	return $res->dataError("amount missing ");
+	    }
+	     if(!$frequencyID ){
+	    	//return $res->dataError("frequencyID missing ");
+	    	$frequencyID=0;
+	    }
+	    if(!$contactsID){
+	    	return $res->dataError("Customer missing ");
+	    }
+
+
+	    $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+
+	      try {
+	      	$paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit,$salesTypeID,$frequencyID,$dbTransaction);
+	      	$customerID = $this->createCustomer($userID,$contactsID,$dbTransaction);
+
+	      	 $sale = new Sales();
+	         $sale->status=0;
+	         $sale->paymentPlanID = $paymentPlanID;
+	         $sale->userID = $userID;
+	         $sale->customerID = $customerID;
+	         $sale->amount = $amount;
+	         $sale->createdAt = date("Y-m-d H:i:s");
+
+	         if($sale->save()===false){
+	            $errors = array();
+	                    $messages = $sale->getMessages();
+	                    foreach ($messages as $message) 
+	                       {
+	                         $e["message"] = $message->getMessage();
+	                         $e["field"] = $message->getField();
+	                          $errors[] = $e;
+	                        }
+	               //return $res->dataError('sale create failed',$errors);
+	                $dbTransaction->rollback('sale create failed' . json_encode($errors));  
+	          }
+
+	          /*send message to customer*/
+	          $customer = $this->getCustomerDetails($customerID);
+	          $MSISDN = $customer["workMobile"];
+	          $name = $customer["fullName"];
+
+	         $res->sendMessage($MSISDN,"Dear ".$name.", your sale has been placed successfully, please pay Ksh. ".$paymentPlanDeposit);
+              $dbTransaction->commit();
+
+	      	  return $res->success("Sale successfully done ",$sale);
+	      } 
+	       catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+	       $message = $e->getMessage(); 
+	       return $res->dataError('sale create error', $message); 
+       }
+
+    }
+
+    public function createPaymentPlan($paymentPlanDeposit,$salesTypeID,$frequencyID,$dbTransaction,$repaymentPeriodID=0){
     	$res = new SystemResponses();
     	$paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: ",
 	    					'bind'=>array("s_id"=>$salesTypeID,"f_id"=>$frequencyID)));
@@ -48,19 +133,20 @@ class SalesController extends Controller
 	                         $e["field"] = $message->getField();
 	                          $errors[] = $e;
 	                        }
-	                  $res->dataError('paymentPlan create failed',$errors);
-	                  return 0;
+	                 // $res->dataError('paymentPlan create failed',$errors);
+	                 $dbTransaction->rollback('paymentPlan create failed' . json_encode($errors)); 
+	                  //return 0;
 	          }
 	          return $paymentPlan->paymentPlanID;
     	}
     }
 
-    public function createCustomer($userID,$contactsID,$locationID=0){
+    public function createCustomer($userID,$contactsID,$dbTransaction,$locationID=0){
     	    $res = new SystemResponses();
        		$customer =  Customer::findFirst(array("contactsID=:id: ",
 	    					'bind'=>array("id"=>$contactsID)));
 
-       		$res->dataError("select user $userID contact $contactsID");
+       		//$res->dataError("select user $userID contact $contactsID");
        		if($customer){
        			return $customer->customerID;
        		}
@@ -79,8 +165,9 @@ class SalesController extends Controller
 			                         $e["field"] = $message->getField();
 			                          $errors[] = $e;
 			                        }
-			               $res->dataError('customer create failed',$errors);
-			                return 0;
+			             //  $res->dataError('customer create failed',$errors);
+			             $dbTransaction->rollback('customer create failed' . json_encode($errors)); 
+			                //return 0;
 			          }
 
 			      return $customer->customerID;
@@ -306,13 +393,15 @@ class SalesController extends Controller
 	          return $res->success("Sale successfully done ",$sale);
     }
 
-    public function getCustomerMobileNumber($customerID){
-    	$customerquery = "SELECT cs.workMobile as MSISDN from contacts cs left join customer co on cs.contactsID=co.contactsID WHERE co.customerID=$customerID";
+    public function getCustomerDetails($customerID){
+    	$customerquery = "SELECT cs.workMobile ,cs.fullName from contacts cs left join customer co on cs.contactsID=co.contactsID WHERE co.customerID=$customerID";
 
     	$customer = $this->rawSelect($customerquery);
-    	return $customer[0]['MSISDN'];
+    	return $customer[0];
 
       }
+
+
 
 	public function createCustomerSale(){//{paymentPlanID,amount,userID,workMobile,nationalIdNumber,fullName,location,token,items[]}
 		$jwtManager = new JwtManager();

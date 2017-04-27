@@ -74,8 +74,9 @@ $item_route ->post('crm/all','getTableItems');
 $prospect_route = new MicroCollection();
 $prospect_route ->setPrefix('/prospect/');
 $prospect_route ->setHandler(new ProspectsController());
-$prospect_route ->post('create','create');//{userID,workMobile,nationalIdNumber,fullName,location,token}
+$prospect_route ->post('create','createContactProspect');//{userID,workMobile,nationalIdNumber,fullName,location,token}
 //$prospect_route ->post('update','update');
+$prospect_route ->post('contact/add','createProspect'); //maps existing contact to prospect
 $prospect_route ->post('all','getAll');
 $prospect_route ->get('all','getAll');
 $prospect_route ->post('crm/all','getTableProspects');
@@ -85,7 +86,8 @@ $prospect_route ->get('crm/all','getTableProspects');
 $sale_route = new MicroCollection();
 $sale_route ->setPrefix('/sale/');
 $sale_route ->setHandler(new SalesController());
-$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit}
+//$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit}
+$sale_route ->post('create','create');
 $sale_route ->post('all','getSales'); 
 $sale_route ->get('all','getSales');
 $sale_route ->post('crm/all','getTableSales'); 

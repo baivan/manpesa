@@ -15,30 +15,44 @@ class Transaction extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
-     * @Column(type="string", length=50, nullable=false)
+     * @Column(type="string", length=50, nullable=true)
      */
     public $nationalIDNumber;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=50, nullable=false)
+     * @Column(type="string", length=50, nullable=true)
+     */
+    public $fullName;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=50, nullable=true)
+     */
+    public $referenceNumber;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=50, nullable=true)
      */
     public $mobile;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=50, nullable=false)
+     * @Column(type="string", length=10, nullable=false)
      */
-    public $amount;
+    public $depositAmount;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $saleID;
+    public $salesID;
 
     /**
      *

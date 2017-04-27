@@ -19,7 +19,51 @@ class ProspectsController extends Controller
           return $success;
        }
 
-	public function create(){//{userID,workMobile,nationalIdNumber,fullName,location,token}
+     public function createProspect(){//
+     	$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+        $dbTransaction = $transactionManager->get();
+
+
+    	$userID = $json->userID;
+    	$contactsID = $json->contactsID;
+    	$token = $json->token;
+
+    	if(!$token || !$contactsID || !$userID){
+    		return dataError("Fields Missing");
+    	}
+    	try{
+    		$prospect = new Prospects();
+	        $prospect->status= 0 ;
+	        $prospect->userID = $userID;
+	        $prospect->contactsID = $contactsID;
+	        $prospect->createdAt = date("Y-m-d H:i:s");
+	        if($prospect->save()===false){
+	            $errors = array();
+	                    $messages = $prospect->getMessages();
+	                    foreach ($messages as $message) 
+	                       {
+	                         $e["message"] = $message->getMessage();
+	                         $e["field"] = $message->getField();
+	                          $errors[] = $e;
+	                        }
+	                 $dbTransaction->rollback("Prospect create" . json_encode($errors));  
+	          }
+
+	        $dbTransaction->commit();
+	       return $res->success("Prospect created successfully ",$prospect);
+
+    	}
+       catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+	       $message = $e->getMessage(); 
+	       return $res->dataError('Contacts create', $message); 
+       }
+     }
+
+	public function createContactProspect(){//{userID,workMobile,nationalIdNumber,fullName,location,token}
 		$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
@@ -34,6 +78,8 @@ class ProspectsController extends Controller
     	if(!$token || !$workMobile || !$fullName){
 	    	return $res->dataError("Missing data ");
 	    }
+
+
 
 	   $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
 	    					'bind'=>array("w_mobile"=>$workMobile)));
