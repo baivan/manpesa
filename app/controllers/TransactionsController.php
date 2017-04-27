@@ -75,9 +75,10 @@ class TransactionsController extends Controller
 	       $userID = $this->rawSelect($userQuery);
 	       $pushNotificationData = array();
 	       $pushNotificationData['salesID']=$salesID;
-	       $pushNotificationData['mobile'] = $salesID;
+	       $pushNotificationData['mobile'] = $mobile;
 	       $pushNotificationData['amount'] = $amount;
 	       $pushNotificationData['saleAmount'] = $sale->amount;
+	       $pushNotificationData['fullName']=$fullName;
 
 	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
 
