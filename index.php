@@ -174,6 +174,11 @@ $contacts_route ->post('search','searchContacts');
 $contacts_route ->get('search','searchContacts');
 $contacts_route ->post('create','createContact');//workMobile,nationalIdNumber,fullName,location
 
+$transaction_route = new MicroCollection();
+$transaction_route ->setPrefix('/transaction/');
+$transaction_route ->setHandler(new TransactionsController());
+$transaction_route ->post('create','create');//workMobile,nationalIdNumber,fullName,location
+
 
 $app->mount($user_route);
 $app->mount($item_route);
@@ -185,6 +190,7 @@ $app->mount($sale_type_route);
 $app->mount($frequency_route);
 $app->mount($product_sale_type_price_route);
 $app->mount($role_route);
+$app->mount($transaction_route);
 $app->mount($contacts_route);
 $app->mount($customer_route);
 $app->mount($user_item_route);

@@ -67,7 +67,7 @@ use Phalcon\Mvc\Controller;
          $data["alertTime"] = date("d-m-Y H:i:s");
          $data["status"] = 0;
          $data["type"] = $type;
-         $title = "Msupporter api notification";
+         $title = "Envirofit api notification";
          $body = $type." notification";
 
          $userID = array();
@@ -291,7 +291,7 @@ use Phalcon\Mvc\Controller;
 
     public function sendPushNotification($data,$title,$body,$userID){
        
-        $appName = "com.james.pushnotification"; //for test
+        $appName = "com.southwell.envirofitsalesapp"; //for test
        return $this->sendAndroidPushNotification($data,$title,$body,$userID,$appName);
                  
     }
