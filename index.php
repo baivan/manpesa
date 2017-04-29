@@ -72,7 +72,7 @@ $item_route ->get('crm/all','getTableItems');
 $item_route ->post('crm/all','getTableItems');
 $item_route ->post('return','returnItem');
 $item_route ->post('receive','receiveItem');
-$item_route ->pot('issue','issueItem');//{salesID,ItemID,userID,contactsID}
+$item_route ->post('issue','issueItem');//{salesID,ItemID,userID,contactsID}
 
 $prospect_route = new MicroCollection();
 $prospect_route ->setPrefix('/prospect/');
