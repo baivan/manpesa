@@ -14,9 +14,10 @@ class ItemsController extends Controller
 
     }
 
-    protected $notAssigned = 0;
-    protected $assigned = 1;
+    protected $assigned = 0;
+    protected $received = 1;
     protected $sold = 2;
+    protected $returned = 3;
 
 
      protected function rawSelect($statement)
@@ -28,7 +29,7 @@ class ItemsController extends Controller
           return $success;
        }
 
-	public function create(){//{productID,serialNumber,token,status}
+	public function create(){//{productID,serialNumber,userID,token,status}
 	    $jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
@@ -40,8 +41,9 @@ class ItemsController extends Controller
     	$serialNumber = $json->serialNumber;
     	$productID = $json->productID;
     	$status = $json->status;
+    	$userID = $json->userID;
 
-    	if(!$token || !$serialNumber || !$productID ){
+    	if(!$token || !$serialNumber || !$productID || !$userID){
 	    	return $res->dataError("Missing data ");
 	    }
 	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
@@ -51,7 +53,7 @@ class ItemsController extends Controller
 	      }
 
 	      if(!$status){
-	      	$status=0;
+	      	$status=$this->assigned;
 	      }
 
 
@@ -82,6 +84,31 @@ class ItemsController extends Controller
 			                 // return $res->dataError('item create failed',$errors);
 			               $dbTransaction->rollback("Item create failed " . json_encode($errors));
 			          }
+			    $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID:",
+	    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID))); 
+			    if($userItem){
+			    	$dbTransaction->rollback("Item already assigned, create failed failed " . json_encode($errors));
+			    }
+
+			    $userItem = new UserItems();
+	      	    $userItem->userID = $userID;
+	      	    $userItem->itemID = $item->itemID;
+	      	    $userItem->status = $status;
+	      	    $userItem->createdAt=date("Y-m-d H:i:s");
+
+	      	    if($userItem->save()===false){
+			            $errors = array();
+			                    $messages = $userItem->getMessages();
+			                    foreach ($messages as $message) 
+			                       {
+			                         $e["message"] = $message->getMessage();
+			                         $e["field"] = $message->getField();
+			                          $errors[] = $e;
+			                        }
+			                 // return $res->dataError('item create failed',$errors);
+			               $dbTransaction->rollback("Assigning item failed, Item create failed " . json_encode($errors));
+			          }
+
 			     $dbTransaction->commit();
 			     return $res->success("Item created successfully ",$item);
 			}
@@ -287,7 +314,7 @@ class ItemsController extends Controller
 		else if($sort  && $order  && !$filter ){
 			$query = " ORDER by $sort $order  LIMIT $ofset,$limit";
 		}
-		else if(!$sort && !$order ){
+		else if(!$sort && !$order && !$filter){
 			$query = " LIMIT $ofset,$limit";
 		}
 
@@ -392,7 +419,211 @@ class ItemsController extends Controller
 	
 	}
 
+	public function receiveItem(){//{userID,itemID,token}
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
 
+    	$token = $json->token;
+    	$userID=$json->itemID;
+    	$itemID = $json->itemID;
+    	$status = $this->received;
+
+    	if(!$token || !$itemID || !$itemID || !$status){
+	    	return $res->dataError("Missing data ");
+	    }
+	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+	     try {
+
+	     	$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID:",
+	    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID)));
+		    $item = Item::findFirst(array("itemID=:itemId: ",
+		    					'bind'=>array("itemId"=>$itemID)));
+
+		    if(!$userItem && !$item){
+		    	return $res->dataError("Item not assigned to this user or doesnt exist");
+		    }
+
+		   $this->updateItemStatus($itemID,$this->received,$dbTransaction);
+		     $dbTransaction->commit();
+		    return $res->success("Item received successfully");
+
+	     } 
+	     catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('Item create error', $message); 
+		}
+	   
+	}
+
+
+	public function returnItem(){//{userID,itemID,token}
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+	    $dbTransaction = $transactionManager->get();
+
+    	$token = $json->token;
+    	$userID=$json->itemID;
+    	$itemID = $json->itemID;
+    	$status = $this->received;
+
+    	if(!$token || !$itemID || !$itemID || !$status){
+	    	return $res->dataError("Missing data ");
+	    }
+	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+	     try {
+
+	     	$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID:",
+	    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID)));
+		    $item = Item::findFirst(array("itemID=:itemId: ",
+		    					'bind'=>array("itemId"=>$itemID)));
+
+		    if(!$userItem && !$item){
+		    	return $res->dataError("Item not assigned to this user or doesnt exist");
+		    }
+
+		  $this->updateItemStatus($itemID,$this->returned,$dbTransaction);
+		   $dbTransaction->commit();
+
+		    return $res->success("Item returned successfully");
+
+	     } 
+	     catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+		   $message = $e->getMessage(); 
+		   return $res->dataError('Item create error', $message); 
+		}
+	   
+	}
+
+	protected function updateItemStatus($itemID, $status,$dbTransaction){
+		$item = Item::findFirst(array("itemID=:id: ",
+		    					'bind'=>array("id"=>$itemID)));
+		$item->status = $status;
+
+		if($item->save()===false){
+		            $errors = array();
+		            $messages = $item->getMessages();
+		            foreach ($messages as $message) 
+		                  {
+		                     $e["message"] = $message->getMessage();
+		                     $e["field"] = $message->getField();
+		                      $errors[] = $e;
+		                    }
+		               $dbTransaction->rollback("Item update failed " . json_encode($errors));
+		    }
+		return true;
+	}
+
+
+	public function issueItem(){//{salesID,ItemID,userID,contactsID}
+		    $jwtManager = new JwtManager();
+	    	$request = new Request();
+	    	$res = new SystemResponses();
+	    	$json = $request->getJsonRawBody();
+	    	$transactionManager = new TransactionManager(); 
+		    $dbTransaction = $transactionManager->get();
+
+		    $salesID = $json->salesID;
+		    $itemID = $json->itemID;
+		    $userID = $json->userID;
+		    $token = $json->token;
+		    $contactsID = $json->contactsID;
+
+
+
+		    if(!$token || !$salesID || !$itemID || !$userID || !$contactsID){
+		    	return $res->dataError("Missing data ");
+		    }
+		     $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+		    if(!$tokenData){
+		        return $res->dataError("Data compromised");
+		      }
+
+			$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status=0",
+		    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID)));
+
+			$item = Item::findFirst(array("itemID=:itemId: AND status=0 ",
+			    					'bind'=>array("itemId"=>$itemID)));
+			$sale = Sales::findFirst(array("salesID=:id: ",
+			    					'bind'=>array("id"=>$salesID)));
+
+			if($userItem && $item && $sale){
+				$userItem ->status = $this->sold;
+				$item->status = $this->sold;
+
+				$saleItem = SalesItem::findFirst(array("itemID=:i_id:",
+			    					'bind'=>array('i_id'=>$itemID)));
+
+				if($saleItem){
+						return $res->dataError("Item already sold");
+					}
+				else{
+
+					$saleItem = new SalesItem();
+					$saleItem->salesID=$salesID;
+					$saleItem->itemID=$itemID;
+					$saleItem->createdAt = date("Y-m-d H:i:s");
+
+					if($saleItem->save()===false){
+			            $errors = array();
+			            $messages = $saleItem->getMessages();
+			            foreach ($messages as $message) 
+			                  {
+			                     $e["message"] = $message->getMessage();
+			                     $e["field"] = $message->getField();
+			                      $errors[] = $e;
+			                    }
+			              $dbTransaction->rollback("Item update failed " . json_encode($errors));
+			          }
+			          elseif ($item->save()===false){
+				            $errors = array();
+				            $messages = $item->getMessages();
+				            foreach ($messages as $message) 
+				                  {
+				                     $e["message"] = $message->getMessage();
+				                     $e["field"] = $message->getField();
+				                      $errors[] = $e;
+				                    }
+				              $dbTransaction->rollback("Item update failed " . json_encode($errors));
+			          }
+			          elseif ($userItem->save()===false){
+				            $errors = array();
+				            $messages = $userItem->getMessages();
+				            foreach ($messages as $message) 
+				                  {
+				                     $e["message"] = $message->getMessage();
+				                     $e["field"] = $message->getField();
+				                      $errors[] = $e;
+				                    }
+				              $dbTransaction->rollback("Item update failed " . json_encode($errors));
+			          }
+
+			          $dbTransaction->commit();
+			          return $res->success("Item issued successfully ");
+				}
+
+			}
+			return $res->dataError("Item not found");
+
+
+	}
  
 
 }

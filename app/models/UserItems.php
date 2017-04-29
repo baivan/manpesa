@@ -28,6 +28,13 @@ class UserItems extends \Phalcon\Mvc\Model
 
     /**
      *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $status;
+
+    /**
+     *
      * @var string
      * @Column(type="string", nullable=false)
      */

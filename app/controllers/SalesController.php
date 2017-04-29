@@ -606,33 +606,25 @@ class SalesController extends Controller
 
         $countQuery = "SELECT count(s.salesID) as totalSales ";
 
-        $defaultQuery = " FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
+        $defaultQuery = " FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID WHERE s.status=1 ";
 
         $selectQuery ="SELECT s.salesID,s.userID as agentID , si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName ";
           $condition ="";
 
        if($userID && $filter){
-       	    $condition = " WHERE s.userID=$userID AND ";
-        	//$countQuery=$countQuery.$defaultQuery.
-        	//$selectQuery=$selectQuery.$defaultQuery." WHERE s.userID=$userID  ";
+       	    $condition = "  AND s.userID=$userID AND ";
         }
         elseif ($userID && !$filter) {
-            $condition = " WHERE s.userID=$userID ";
+            $condition = " AND s.userID=$userID ";
         }
         elseif (!$userID && $filter) {
-            $condition = " WHERE ";
-        	
+
+            $condition = " AND ";
+    
         }
         elseif(!$userID && !$filter){
-        	$condition = " ";
+        	$condition = "  ";
         }
-
-
-        // else {
-        // 	$selectQuery=$selectQuery.$defaultQuery." WHERE ";
-        // 	$countQuery = $countQuery.$defaultQuery." WHERE ";
-        // }
-
         
 		      
 
@@ -640,7 +632,6 @@ class SalesController extends Controller
 
         if($queryBuilder){
         	$selectQuery=$selectQuery.$defaultQuery.$condition." ".$queryBuilder;
-        	//$countQuery = $countQuery." ".$queryBuilder;
         	if($filter){
         		$countQuery = $countQuery.$defaultQuery.$condition." ".$queryBuilder;
         	}
@@ -652,12 +643,11 @@ class SalesController extends Controller
         	$selectQuery=$selectQuery.$defaultQuery.$condition;
         	$countQuery=$countQuery.$defaultQuery.$condition;
         }
-        //return $res->success($selectQuery);
+        return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
 		$sales= $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
 		$data["totalSales"] = $count[0]['totalSales'];
 		$data["sales"] = $sales;
 

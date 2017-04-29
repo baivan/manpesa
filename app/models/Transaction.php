@@ -17,7 +17,7 @@ class Transaction extends \Phalcon\Mvc\Model
      * @var string
      * @Column(type="string", length=50, nullable=true)
      */
-    public $nationalIDNumber;
+    public $nationalID;
 
     /**
      *
@@ -50,7 +50,7 @@ class Transaction extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
     public $salesID;
 

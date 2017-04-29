@@ -70,6 +70,9 @@ $item_route ->get('all','getAllItems');
 $item_route ->post('assign','assignItem');//{itemID,userID,token}
 $item_route ->get('crm/all','getTableItems');
 $item_route ->post('crm/all','getTableItems');
+$item_route ->post('return','returnItem');
+$item_route ->post('receive','receiveItem');
+$item_route ->pot('issue','issueItem');//{salesID,ItemID,userID,contactsID}
 
 $prospect_route = new MicroCollection();
 $prospect_route ->setPrefix('/prospect/');
@@ -178,6 +181,9 @@ $transaction_route = new MicroCollection();
 $transaction_route ->setPrefix('/transaction/');
 $transaction_route ->setHandler(new TransactionsController());
 $transaction_route ->post('create','create');//workMobile,nationalIdNumber,fullName,location
+$transaction_route ->post('crm/all','getTableTransactions');
+$transaction_route ->get('crm/all','getTableTransactions');
+$transaction_route ->post('checkpayment','checkPayment');
 
 
 $app->mount($user_route);
