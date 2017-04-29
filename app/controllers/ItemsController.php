@@ -535,6 +535,8 @@ class ItemsController extends Controller
 		    $jwtManager = new JwtManager();
 	    	$request = new Request();
 	    	$res = new SystemResponses();
+	    	$trasaction = new TransactionsController();
+
 	    	$json = $request->getJsonRawBody();
 	    	$transactionManager = new TransactionManager(); 
 		    $dbTransaction = $transactionManager->get();
@@ -544,6 +546,7 @@ class ItemsController extends Controller
 		    $userID = $json->userID;
 		    $token = $json->token;
 		    $contactsID = $json->contactsID;
+
 
 
 
@@ -565,6 +568,13 @@ class ItemsController extends Controller
 			    					'bind'=>array("id"=>$salesID)));
 
 			if($userItem && $item && $sale){
+
+				$isPaid = $trasaction->checkSalePaid($salesID);
+
+				if(!$isPaid){
+					return $res->dataError("Sale minimum amount not settled ");
+				}
+
 				$userItem ->status = $this->sold;
 				$item->status = $this->sold;
 
