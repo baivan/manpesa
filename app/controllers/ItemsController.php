@@ -579,7 +579,7 @@ class ItemsController extends Controller
 					$isPaid = $trasaction->checkSalePaid($salesID);
 
 					if(!$isPaid){
-						return $res->dataError("Sale minimum amount not settled ");
+						return $res->success("Sale minimum amount not settled ",$isPaid);
 					}
 
 					$userItem ->status = $this->sold;
@@ -633,12 +633,12 @@ class ItemsController extends Controller
 				          }
 
 				          $dbTransaction->commit();
-				          return $res->success("Item issued successfully ");
+				          return $res->success("Item issued successfully ",$isPaid);
 					}
 
 				}
 				else{
-					return $res->dataError("Item not found");
+					return $res->success("Item not found ",false);
 				}
 
 		    }
