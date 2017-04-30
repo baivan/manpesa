@@ -480,7 +480,7 @@ class UsersController extends Controller
 
 	    foreach ($saleTypes as $saleType) {
 	    	$salesTypeID = $saleType['salesTypeID'];
-	    	$saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID";
+	    	$saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID AND s.userID=$userID";
 	    	$typeData = $this->rawSelect($saleTypeQuery);
 	    	//array_push($salesTypeSummary,$typeData[0]);
 	    	$data[$typeData[0]['salesTypeName']]=$typeData[0]['amount'];

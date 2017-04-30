@@ -138,8 +138,6 @@ class TransactionsController extends Controller
 	public function checkSalePaid($salesID){
 			$transactionQuery = "SELECT SUM(t.depositAmount) amount, s.amount as saleAmount, st.salesTypeDeposit FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID WHERE t.salesID=$salesID ";
 
-       // $transaction = Transaction::findFirst(array("salesID=:id: ",
-	    					//'bind'=>array("id"=>$salesID))); 
         $transaction = $this->rawSelect($transactionQuery);
     if($transaction[0]["amount"] >= $transaction[0]["saleAmount"] || $transaction[0]["amount"] >= $transaction[0]["salesTypeDeposit"] )
         {
