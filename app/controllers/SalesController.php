@@ -36,7 +36,15 @@ class SalesController extends Controller
     	$contactsID = $json->contactsID;
     	$userID = $json->userID;
     	$amount = $json->amount;
+
+    	$location = $json->location;
+    	$workMobile = $json->workMobile;
+    	$fullName = $json->fullName;
+    	$nationalIdNumber = $json->nationalIdNumber;
+
     	$token = $json->token;
+
+
 
     	if(!$token ){
 	    	return $res->dataError("Token missing er".json_encode($json));
@@ -54,9 +62,8 @@ class SalesController extends Controller
 	    	//return $res->dataError("frequencyID missing ");
 	    	$frequencyID=0;
 	    }
-	    if(!$contactsID){
-	    	return $res->dataError("Customer missing ");
-	    }
+	    
+
 
 
 	    $tokenData = $jwtManager->verifyToken($token,'openRequest');
@@ -67,6 +74,12 @@ class SalesController extends Controller
 
 
 	      try {
+	      	 if(!$contactsID){
+			    	if($workMobile && $fullName && $location && $nationalIdNumber){ //createContact 
+			    		$contactsID=$this->createContact($workMobile,$nationalIdNumber,$fullName,$location,$dbTransaction);
+			    	}
+			    
+			   }
 	      	$paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit,$salesTypeID,$frequencyID,$dbTransaction);
 	      	$customerID = $this->createCustomer($userID,$contactsID,$dbTransaction);
 
@@ -174,7 +187,7 @@ class SalesController extends Controller
 	       	}
     }
 
-    public function createContact($workMobile,$nationalIdNumber,$fullName,$location,$homeMobile=null,
+    public function createContact($workMobile,$nationalIdNumber,$fullName,$location,$dbTransaction,$homeMobile=null,
     						$homeEmail=null,$workEmail=null,$passportNumber=0,$locationID=0){
     	$res = new SystemResponses();
     	 $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
@@ -183,33 +196,38 @@ class SalesController extends Controller
     	 	return $contact->contactsID;
     	 }
     	 else{
-    	 	$contact = new Contacts();
-	    	$contact->workEmail = $workEmail;
-	    	$contact->homeEmail=$homeEmail;
-	    	$contact->workMobile = $workMobile;
-	    	$contact->homeMobile=$homeMobile;
-	    	$contact->fullName = $fullName;
-	    	$contact->location = $location;
-	    	$contact->nationalIdNumber = $nationalIdNumber;
-	    	$contact->passportNumber=$passportNumber;
-	    	$contact->locationID=$locationID;
-	    	$contact->createdAt = date("Y-m-d H:i:s");
 
-	    	if($contact->save()===false){
-	            $errors = array();
-	                    $messages = $contact->getMessages();
-	                    foreach ($messages as $message) 
-	                       {
-	                         $e["message"] = $message->getMessage();
-	                         $e["field"] = $message->getField();
-	                          $errors[] = $e;
-	                        }
-	                 $res->dataError('contact create failed',$errors);
-	                 return 0;
-	          }
+    	 	
+    	 		$contact = new Contacts();
+		    	$contact->workEmail = $workEmail;
+		    	$contact->homeEmail=$homeEmail;
+		    	$contact->workMobile = $workMobile;
+		    	$contact->homeMobile=$homeMobile;
+		    	$contact->fullName = $fullName;
+		    	$contact->location = $location;
+		    	$contact->nationalIdNumber = $nationalIdNumber;
+		    	$contact->passportNumber=$passportNumber;
+		    	$contact->locationID=$locationID;
+		    	$contact->createdAt = date("Y-m-d H:i:s");
 
-	         $res->sendMessage($workMobile,"Dear ".$fullName.", welcome to Envirofit. For any questions or comments call 0800722700 ");
-	         return $contact->contactsID;
+		    	if($contact->save()===false){
+		            $errors = array();
+		                    $messages = $contact->getMessages();
+		                    foreach ($messages as $message) 
+		                       {
+		                         $e["message"] = $message->getMessage();
+		                         $e["field"] = $message->getField();
+		                          $errors[] = $e;
+		                        }
+		                // $res->dataError('contact create failed',$errors);
+		                $dbTransaction->rollback('paymentPlan create failed' . json_encode($errors)); 
+		                // return 0;
+		          }
+
+		         $res->sendMessage($workMobile,"Dear ".$fullName.", welcome to Envirofit. For any questions or comments call 0800722700 ");
+		         return $contact->contactsID;
+    	 
+    	 	
     	 }
 
 
