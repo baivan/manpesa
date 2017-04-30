@@ -190,6 +190,7 @@ class ItemsController extends Controller
         $itemID = $request->getQuery('itemID');
         $productID = $request->getQuery('productID');
         $status = $request->getQuery('status');
+        $action = $request->getQuery('action');
 
      //   $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND
 
@@ -206,11 +207,16 @@ class ItemsController extends Controller
 	       $itemsQuery ="SELECT * FROM item ";
 	       $condition = " ";
 
-	       if($productID && $itemID && $status >= 0 && $status >=0){
+	       if($productID && $itemID && $status >= 0 && $status >=0 ){
 	       	  $condition = " WHERE productID=$productID AND itemID=$itemID AND status = $status ";
 	       }
+
 	       elseif ($productID && $itemID  && $status < 0) {
 	       	    $condition = " WHERE productID=$productID AND itemID=$itemID  ";
+	       }
+	      
+	       elseif($productID && $action && !$itemID && !$status ){  
+	       	     $condition = " WHERE productID=$productID AND status <= 1";
 	       }
 	       elseif($productID && !$itemID && !$status ){
 	       	     $condition = " WHERE productID=$productID ";
@@ -546,9 +552,6 @@ class ItemsController extends Controller
 		    $userID = $json->userID;
 		    $token = $json->token;
 		    $contactsID = $json->contactsID;
-
-
-
 
 		    if(!$token || !$salesID || !$itemID || !$userID || !$contactsID){
 		    	return $res->dataError("Missing data ");
