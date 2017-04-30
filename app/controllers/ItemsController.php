@@ -566,10 +566,10 @@ class ItemsController extends Controller
 
 		   try {
 
-				$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status=0",
+				$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status=1",
 			    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID)));
 
-				$item = Item::findFirst(array("itemID=:itemId: AND status=0 ",
+				$item = Item::findFirst(array("itemID=:itemId: AND status=1 ",
 				    					'bind'=>array("itemId"=>$itemID)));
 				$sale = Sales::findFirst(array("salesID=:id: ",
 				    					'bind'=>array("id"=>$salesID)));
