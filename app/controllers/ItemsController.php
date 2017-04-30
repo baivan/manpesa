@@ -566,7 +566,7 @@ class ItemsController extends Controller
 
 		   try {
 
-				$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status=1",
+				$userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status<=1",
 			    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID)));
 
 				$item = Item::findFirst(array("itemID=:itemId: AND status=1 ",
