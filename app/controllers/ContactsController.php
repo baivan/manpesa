@@ -40,7 +40,7 @@ class ContactsController extends Controller
         $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber, c.nationalIdNumber, p.prospectsID,cu.customerID from contacts c LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID ";
 
         if($filter && $userID){
-        	$searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter' AND (p.userID=$userID OR cu.userID=$userID) ";
+        	$searchQuery=$searchQuery." WHERE (p.userID=$userID OR cu.userID=$userID) AND (c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter') ";
         }
          elseif($filter && !$userID){
           $searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter'  ";
