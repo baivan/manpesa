@@ -68,6 +68,10 @@ class ProspectsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$json = $request->getJsonRawBody();
+
+    	$transactionManager = new TransactionManager(); 
+        $dbTransaction = $transactionManager->get();
+        
     	$userID = $json->userID;
     	$workMobile = $json->workMobile;
     	$nationalIdNumber = $json->nationalIdNumber;
@@ -80,18 +84,19 @@ class ProspectsController extends Controller
 	    }
 
 
-
 	   $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
 	    					'bind'=>array("w_mobile"=>$workMobile)));
 	   if($contact){
 	   	  $prospect = Prospects::findFirst(array("contactsID=:id: ",
 	    					'bind'=>array("id"=>$contact->contactsID)));
 	   	  if($prospect){
-	   	  	return $res->dataError("Prospect exists");
+	   	  	return $res->success("Prospect exists ",false);
 	   	  }
-	   	  return $res->dataError("Similar mobile number exists");
+	   	  return $res->success("Similar mobile number exists",false);
 	   }
 	   else{
+	   	 try {
+	   	 
 	   		$contact = new Contacts();
 	    	$contact->workEmail = "null";
 	    	$contact->workMobile = $workMobile;
@@ -114,7 +119,7 @@ class ProspectsController extends Controller
 	                         $e["field"] = $message->getField();
 	                          $errors[] = $e;
 	                        }
-	                  return $res->dataError('contact create failed',$errors);
+	                  $dbTransaction->rollback('contact create failed',json_encode($errors));
 	          }
 	        $prospect = new Prospects();
 	        $prospect->status= 0 ;
@@ -130,12 +135,20 @@ class ProspectsController extends Controller
 	                         $e["field"] = $message->getField();
 	                          $errors[] = $e;
 	                        }
-	                  return $res->dataError('prospect create failed',$errors);
+	                  $dbTransaction->rollback('prospect create failed',json_encode($errors));
 	          }
 
 	        $res->sendMessage($workMobile,"Dear ".$fullName.", welcome to Envirofit. For any questions or comments call 0800722700 ");
 
+	         $dbTransaction->commit();
+
 	        return $res->success("Prospect created successfully ",$prospect);
+	    
+	     } 
+	      catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+	       $message = $e->getMessage(); 
+	       return $res->dataError('Contacts create', $message); 
+       }
 
 	   }
 
