@@ -666,7 +666,7 @@ class SalesController extends Controller
         	$selectQuery=$selectQuery.$defaultQuery.$condition;
         	$countQuery=$countQuery.$defaultQuery.$condition;
         }
-        return $res->success($selectQuery);
+       // return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
