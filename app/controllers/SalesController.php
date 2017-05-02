@@ -631,7 +631,7 @@ class SalesController extends Controller
 
         $defaultQuery = " FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID LEFT JOIN transaction t on s.salesID=t.salesID  WHERE s.status=1  ";
 
-        $selectQuery ="SELECT s.salesID,s.userID as agentID , si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName ";
+        $selectQuery ="SELECT s.salesID,s.userID as agentID , si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
           $condition ="";
 
        if($userID && $filter){
@@ -698,18 +698,18 @@ class SalesController extends Controller
 					"st.salesTypeName REGEXP '$filter' OR ".
 					" p.productName REGEXP '$filter' OR ".
 					" ca.categoryName REGEXP '$filter' ".
-					" GROUP BY s.salesID ORDER by $sort $order LIMIT $ofset,$limit";
+					" GROUP BY salesID ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 	
 		else if($sort  && $order  && !$filter ){
-			$query = " GROUP BY s.salesID ORDER by $sort $order LIMIT $ofset,$limit";
+			$query = " GROUP BY salesID ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && !$order  && !$filter ){
-			$query = " GROUP BY s.salesID ORDER by $sort LIMIT $ofset,$limit";
+			$query = " GROUP BY salesID ORDER by $sort LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && !$filter){
-			$query = " GROUP BY s.salesID LIMIT $ofset,$limit";
+			$query = " GROUP BY salesID LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && $filter){
@@ -719,7 +719,7 @@ class SalesController extends Controller
 					"st.salesTypeName REGEXP '$filter' OR ".
 					" p.productName REGEXP '$filter' OR ".
 					" ca.categoryName REGEXP '$filter' ".
-					" GROUP BY s.salesID LIMIT $ofset,$limit";
+					" GROUP BY salesID LIMIT $ofset,$limit";
 		}
 
 		return $query;
