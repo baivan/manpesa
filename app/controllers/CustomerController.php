@@ -113,10 +113,10 @@ class CustomerController extends Controller
 	    	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID";
 	    }
         elseif($customerID && !$userID){
-        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID where cu.userID=$userID AND p.customerID=$customerID";
+        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID where  cu.customerID=$customerID";
         }
         elseif($userID && $customerID){
-        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID where p.userID=$userID AND cu.customerID=$customerID";
+        	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID where cu.userID=$userID AND cu.customerID=$customerID";
         }
         else{
         	$customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID ";

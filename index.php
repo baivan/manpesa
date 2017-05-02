@@ -163,6 +163,8 @@ $customer_route ->setPrefix('/customer/');
 $customer_route ->setHandler(new CustomerController());
 $customer_route ->post('crm/all','getTableCustomers');
 $customer_route ->get('crm/all','getTableCustomers');
+$customer_route ->get('all','getAll');
+$customer_route ->post('all','getAll');
 
 $user_item_route = new MicroCollection();
 $user_item_route ->setPrefix('/userItem/');

@@ -369,9 +369,7 @@ class ItemsController extends Controller
 	        return $res->dataError("Data compromised");
 	      }
 
-
-
-	      $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID:",
+	      $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: ",
 	    					'bind'=>array("itemId"=>$itemID,"userID"=>$userID))); 
 
 
