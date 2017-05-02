@@ -605,7 +605,7 @@ class ItemsController extends Controller
 					else{
 
 						$saleItem = new SalesItem();
-						$saleItem->salesID=$salesID;
+						$saleItem->saleID=$salesID;
 						$saleItem->itemID=$itemID;
 						$saleItem->createdAt = date("Y-m-d H:i:s");
 
@@ -618,7 +618,7 @@ class ItemsController extends Controller
 				                     $e["field"] = $message->getField();
 				                      $errors[] = $e;
 				                    }
-				              $dbTransaction->rollback("Item update failed " . json_encode($errors));
+				              $dbTransaction->rollback("sale create failed " . json_encode($errors));
 				          }
 				          elseif ($item->save()===false){
 					            $errors = array();
@@ -640,7 +640,7 @@ class ItemsController extends Controller
 					                     $e["field"] = $message->getField();
 					                      $errors[] = $e;
 					                    }
-					              $dbTransaction->rollback("Item update failed " . json_encode($errors));
+					              $dbTransaction->rollback("user item update failed " . json_encode($errors));
 				          }
 
 				          $dbTransaction->commit();
