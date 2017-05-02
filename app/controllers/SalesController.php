@@ -584,6 +584,7 @@ class SalesController extends Controller
 
         $saleQuery =" SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
+
 		if(!$token){
 		   return $res->dataError("Missing data ");
 		}
@@ -629,7 +630,9 @@ class SalesController extends Controller
 
         $countQuery = "SELECT count(s.salesID) as totalSales ";
 
-        $defaultQuery = " FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID LEFT JOIN transaction t on s.salesID=t.salesID  WHERE s.status=1  ";
+        $defaultQuery = " FROM sales s  JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN sales_item si ON s.salesID=si.saleID  LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID LEFT JOIN transaction t on s.salesID=t.salesID  WHERE s.status=1 ";
+
+        
 
         $selectQuery ="SELECT s.salesID,s.userID as agentID , si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
           $condition ="";
@@ -666,7 +669,7 @@ class SalesController extends Controller
         	$selectQuery=$selectQuery.$defaultQuery.$condition;
         	$countQuery=$countQuery.$defaultQuery.$condition;
         }
-        //return $res->success($selectQuery);
+        return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
