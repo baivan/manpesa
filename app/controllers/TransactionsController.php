@@ -165,7 +165,7 @@ class TransactionsController extends Controller
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
 
-        $selectQuery = "SELECT t.fullName as DepositorName,t.referenceNumber,t.depositAmount,s.salesID,s.paymentPlanID,s.customerID,co.homeMobile,co.fullName as CustomerName,s.amount,st.salesTypeName,st.salesTypeDeposit ";
+        $selectQuery = "SELECT t.fullName as DepositorName,t.referenceNumber,t.depositAmount,s.salesID,s.paymentPlanID,s.customerID,co.homeMobile,co.fullName as CustomerName,s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
 
         $countQuery = "SELECT count(t.transactionID) as totalTransaction ";
         $condition = " ";
