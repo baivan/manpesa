@@ -22,7 +22,7 @@ class SalesController extends Controller
           $success = $success->fetchAll($success); 
           return $success;
        }
-    public function create(){ //{contactsID,amount,userID,salesTypeID,frequencyID}
+    public function create(){ //{contactsID,amount,userID,salesTypeID,frequencyID,productID}
     	$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
@@ -36,6 +36,7 @@ class SalesController extends Controller
     	$contactsID = $json->contactsID;
     	$userID = $json->userID;
     	$amount = $json->amount;
+    	$productID = $json->productID;
 
     	$location = $json->location;
     	$workMobile = $json->workMobile;
@@ -61,6 +62,9 @@ class SalesController extends Controller
 	     if(!$frequencyID ){
 	    	//return $res->dataError("frequencyID missing ");
 	    	$frequencyID=0;
+	    }
+	    if(!$productID){
+	    	return $res->dataError("product missing ");
 	    }
 	    
 
@@ -89,6 +93,7 @@ class SalesController extends Controller
 	         $sale->userID = $userID;
 	         $sale->customerID = $customerID;
 	         $sale->amount = $amount;
+	         $sale->productID = $productID;
 	         $sale->createdAt = date("Y-m-d H:i:s");
 
 	         if($sale->save()===false){
@@ -577,7 +582,7 @@ class SalesController extends Controller
         $customerID = $request->getQuery('customerID');
         $userID = $request->getQuery('userID');
 
-        $saleQuery =" SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID  ";
+        $saleQuery =" SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
 		if(!$token){
 		   return $res->dataError("Missing data ");
