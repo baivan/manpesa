@@ -607,6 +607,7 @@ class ItemsController extends Controller
 						$saleItem = new SalesItem();
 						$saleItem->saleID=$salesID;
 						$saleItem->itemID=$itemID;
+						$saleItem->status = $this->sold;
 						$saleItem->createdAt = date("Y-m-d H:i:s");
 
 						if($saleItem->save()===false){
@@ -618,7 +619,7 @@ class ItemsController extends Controller
 				                     $e["field"] = $message->getField();
 				                      $errors[] = $e;
 				                    }
-				              $dbTransaction->rollback("sale create failed " . json_encode($errors));
+				              $dbTransaction->rollback("sale item create failed " . json_encode($errors));
 				          }
 				          elseif ($item->save()===false){
 					            $errors = array();
