@@ -634,7 +634,7 @@ class SalesController extends Controller
 
 
 
-        $selectQuery ="SELECT s.salesID,s.userID as agentID , si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
+        $selectQuery ="SELECT s.salesID,s.userID as agentID, si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
           $condition ="";
 
        if($userID && $filter){
