@@ -30,7 +30,7 @@ class CustomerController extends Controller
 
         $countQuery = "SELECT count(c.customerID) as totalCustomers ";
         $baseQuery = " from customer  c join contacts co on c.contactsID=co.contactsID ";
-        $selectQuery = "SELECT c.customerID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, c.createdAt  ";
+        $selectQuery = "SELECT c.customerID,co.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, c.createdAt  ";
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
