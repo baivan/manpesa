@@ -627,28 +627,39 @@ class SalesController extends Controller
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
+        $customerID = $request->getQuery('customerID');
 
         $countQuery = "SELECT count(s.salesID) as totalSales ";
 
         $defaultQuery = " FROM sales s  JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN sales_item si ON s.salesID=si.saleID  LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID LEFT JOIN transaction t on s.salesID=t.salesID  WHERE s.status=1 ";
 
 
-
         $selectQuery ="SELECT s.salesID,s.userID as agentID, si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
           $condition ="";
 
-       if($userID && $filter){
+       if($userID && $filter && $customerID){
+       	    $condition = "  AND s.userID=$userID AND s.customerID=$customerID AND ";
+        }
+        elseif($userID && $filter && !$customerID){
        	    $condition = "  AND s.userID=$userID AND ";
         }
-        elseif ($userID && !$filter) {
+        elseif ($userID && !$filter && $customerID) {
+            $condition = " AND s.userID=$userID AND s.customerID=$customerID ";
+        }
+        elseif ($userID && !$filter && !$customerID) {
             $condition = " AND s.userID=$userID ";
         }
-        elseif (!$userID && $filter) {
+        elseif (!$userID && $filter && $customerID) {
+
+            $condition = " AND s.customerID=$customerID ";
+    
+        }
+        elseif (!$userID && $filter && !$customerID) {
 
             $condition = " AND ";
     
         }
-        elseif(!$userID && !$filter){
+        elseif(!$userID && !$filter && !$customerID){
         	$condition = "  ";
         }
         
