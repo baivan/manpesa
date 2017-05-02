@@ -698,18 +698,18 @@ class SalesController extends Controller
 					"st.salesTypeName REGEXP '$filter' OR ".
 					" p.productName REGEXP '$filter' OR ".
 					" ca.categoryName REGEXP '$filter' ".
-					" ORDER by $sort $order LIMIT $ofset,$limit";
+					" GROUP BY s.salesID ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 	
 		else if($sort  && $order  && !$filter ){
-			$query = " ORDER by $sort $order LIMIT $ofset,$limit";
+			$query = " GROUP BY s.salesID ORDER by $sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && !$order  && !$filter ){
-			$query = " ORDER by $sort LIMIT $ofset,$limit";
+			$query = " GROUP BY s.salesID ORDER by $sort LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && !$filter){
-			$query = " LIMIT $ofset,$limit";
+			$query = " GROUP BY s.salesID LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && $filter){
@@ -719,7 +719,7 @@ class SalesController extends Controller
 					"st.salesTypeName REGEXP '$filter' OR ".
 					" p.productName REGEXP '$filter' OR ".
 					" ca.categoryName REGEXP '$filter' ".
-					" LIMIT $ofset,$limit";
+					" GROUP BY s.salesID LIMIT $ofset,$limit";
 		}
 
 		return $query;
