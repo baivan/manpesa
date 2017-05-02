@@ -123,15 +123,12 @@ class TransactionsController extends Controller
       //  $userID = $json->userID;
         $salesID = $json->salesID;
 
-        $isPaid = $this->checkSalePaid($salesID);
-        if($isPaid === true){
-        	return $res->success("Sale paid",$transaction);
-        }
-        else{
-        	return $res->dataError("Sale not completely paid");
-        }
+       // $isPaid = $this->checkSalePaid($salesID);
         
-        
+        $getAmountQuery = "SELECT SUM(t.depositAmount) amount, s.amount as saleAmount, st.salesTypeDeposit FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID WHERE t.salesID=$salesID ";
+        	$transaction = $this->rawSelect($getAmountQuery);
+
+        	return $res->success("Sale paid",$transaction[0]);  
        
 	}
 
