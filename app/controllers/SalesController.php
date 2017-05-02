@@ -649,7 +649,7 @@ class SalesController extends Controller
         elseif ($userID && !$filter && !$customerID) {
             $condition = " AND s.userID=$userID ";
         }
-        elseif (!$userID && $filter && $customerID) {
+        elseif (!$userID && !$filter && $customerID) {
 
             $condition = " AND s.customerID=$customerID ";
     
