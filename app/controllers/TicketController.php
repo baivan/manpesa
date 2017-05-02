@@ -9,10 +9,14 @@ use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 class TicketController extends Controller
 {
 
-    public function indexAction()
-    {
-
-    }
+   protected function rawSelect($statement)
+           { 
+              $connection = $this->di->getShared("db"); 
+              $success = $connection->query($statement);
+              $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
+              $success = $success->fetchAll($success); 
+              return $success;
+           }
 
      public function create(){ //{ticketTitle,ticketDescription,customerID,assigneeID,ticketCategoryID,priorityID,status}
 	   $jwtManager = new JwtManager();

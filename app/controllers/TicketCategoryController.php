@@ -9,12 +9,16 @@ use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 class TicketCategoryController extends Controller
 {
 
-    public function indexAction()
-    {
+   protected function rawSelect($statement)
+		       { 
+		          $connection = $this->di->getShared("db"); 
+		          $success = $connection->query($statement);
+		          $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
+		          $success = $success->fetchAll($success); 
+		          return $success;
+		       }
 
-    }
-
-   public function create(){
+   public function create(){ //{token,ticketCategoryName,ticketCategoryDescription}
 	    $jwtManager = new JwtManager();
 	   $request = new Request();
 	  $res = new SystemResponses();
@@ -28,8 +32,8 @@ class TicketCategoryController extends Controller
 
         $tokenData = $jwtManager->verifyToken($token,'openRequest');
 
-        if(!$token || $ticketCategoryName || $ticketCategoryDescription){
-	    	return $res->dataError("Token missing er".json_encode($json));
+        if(!$token || !$ticketCategoryName || !$ticketCategoryDescription){
+	    	return $res->dataError("Fields missing ");
 	    }
 
 
@@ -90,7 +94,7 @@ class TicketCategoryController extends Controller
 
 		        $categories = $this->rawSelect($selectQuery);
 
-		       return $res->success("Ticket cticketCategoryIDategories ",$categories);
+		       return $res->success("Ticket  ",$categories);
 		     
      }
   	

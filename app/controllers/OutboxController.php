@@ -9,10 +9,14 @@ use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 class OutboxController extends Controller
 {
 
-    public function indexAction()
-    {
-
-    }
+    protected function rawSelect($statement)
+           { 
+              $connection = $this->di->getShared("db"); 
+              $success = $connection->query($statement);
+              $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
+              $success = $success->fetchAll($success); 
+              return $success;
+           }
 
     public function create(){ //{message,contactsID,userID,status}
 	   $jwtManager = new JwtManager();
@@ -44,7 +48,7 @@ class OutboxController extends Controller
        	  $outbox = new Outbox();
        	  $outbox->message = $message;
        	  $outbox->userID =$userID;
-       	  $status->userID =$status;
+       	  $outbox->status =$status;
        	  $outbox->contactsID = $contactsID;
        	  $outbox->createdAt = date("Y-m-d H:i:s");
 
@@ -61,12 +65,15 @@ class OutboxController extends Controller
 	                $dbTransaction->rollback('outbox create failed' . json_encode($errors));  
 	          }
 	        $dbTransaction->commit();
+        $selectQuery = "SELECT workMobile FROM contacts WHERE contactsID=$contactsID";
+        $workMobile = $this->rawSelect($selectQuery);
+        $res->sendMessage($workMobile[0]['workMobile'],$message);
 
 	     return $res->success("outbox successfully created ",$outbox);
        	
        }  catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
 	       $message = $e->getMessage(); 
-	       return $res->dataError('Priority create error', $message); 
+	       return $res->dataError('outbox create error', $message); 
        }
   }
 
@@ -84,7 +91,7 @@ class OutboxController extends Controller
         //$userID = $request->getQuery('userID');
         
 
-        $countQuery = "SELECT count(outboxID) as totaloutBox ";
+        $countQuery = "SELECT count(outboxID) as totalOutBox ";
 
         $selectQuery = "SELECT o.outboxID,o.message,o.status,c.fullName,c.contactsID,c.workMobile  ";
 
@@ -116,7 +123,7 @@ class OutboxController extends Controller
 
     $messages= $this->rawSelect($selectQuery);
 //users["totalUsers"] = $count[0]['totalUsers'];
-    $data["totalIbox"] = $count[0]['totalIbox'];
+    $data["totalOutBox"] = $count[0]['totalOutBox'];
     $data["Messages"] = $messages;
 
     return $res->success("Messages ",$data);

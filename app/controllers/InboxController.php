@@ -9,10 +9,14 @@ use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 class InboxController extends Controller
 {
 
-    public function indexAction()
-    {
-
-    }
+    protected function rawSelect($statement)
+           { 
+              $connection = $this->di->getShared("db"); 
+              $success = $connection->query($statement);
+              $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
+              $success = $success->fetchAll($success); 
+              return $success;
+           }
 
     public function create(){ //{MSISDN,message,}
 	   $jwtManager = new JwtManager();
@@ -65,7 +69,7 @@ class InboxController extends Controller
        }
   }
 
-  public function getTableIbox(){ //sort, order, page, limit,filter
+  public function getTableInbox(){ //sort, order, page, limit,filter
     $jwtManager = new JwtManager();
       $request = new Request();
       $res = new SystemResponses();
@@ -81,7 +85,7 @@ class InboxController extends Controller
 
         $selectQuery = "SELECT i.inboxID,i.MSISDN,i.message,i.createdAt,c.fullName,c.contactsID  ";
 
-        $baseQuery = "FROM inbox i JOIN contacts c on i.MSISDN=c.workMobile  ";
+        $baseQuery = "FROM inbox i LEFT JOIN contacts c on i.MSISDN=c.workMobile  ";
 
         $condition ="";
          

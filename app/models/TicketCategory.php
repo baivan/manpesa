@@ -21,8 +21,8 @@ class TicketCategory extends \Phalcon\Mvc\Model
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @var string
+     * @Column(type="string", length=300, nullable=false)
      */
     public $ticketCategoryDescription;
 

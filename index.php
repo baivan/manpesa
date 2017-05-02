@@ -187,6 +187,41 @@ $transaction_route ->post('crm/all','getTableTransactions');
 $transaction_route ->get('crm/all','getTableTransactions');
 $transaction_route ->post('checkpayment','checkPayment');
 
+$inbox_route = new MicroCollection();
+$inbox_route ->setPrefix('/inbox/');
+$inbox_route ->setHandler(new InboxController());
+$inbox_route ->post('create','create');//{MSISDN,message,token}
+$inbox_route ->post('crm/all','getTableInbox');
+$inbox_route ->get('crm/all','getTableInbox');
+
+$outbox_route = new MicroCollection();
+$outbox_route ->setPrefix('/outbox/');
+$outbox_route ->setHandler(new OutboxController());
+$outbox_route ->post('create','create'); //{message,contactsID,userID,status,token}
+$outbox_route ->post('crm/all','getTableOutbox');
+$outbox_route ->get('crm/all','getTableOutbox');
+
+$ticket_category_route = new MicroCollection();
+$ticket_category_route ->setPrefix('/ticketcategory/');
+$ticket_category_route ->setHandler(new TicketCategoryController());
+$ticket_category_route ->post('create','create'); //{token,ticketCategoryName,ticketCategoryDescription}
+$ticket_category_route ->post('all','getAll');
+$ticket_category_route ->get('all','getAll');
+
+$priority_route = new MicroCollection();
+$priority_route ->setPrefix('/priority/');
+$priority_route ->setHandler(new PriorityController());
+$priority_route ->post('create','create'); //{priorityName,priorityDescription,token}
+$priority_route ->post('all','getAll');
+$priority_route ->get('all','getAll');
+
+$ticket_route = new MicroCollection();
+$ticket_route ->setPrefix('/ticket/');
+$ticket_route ->setHandler(new TicketController());
+$ticket_route ->post('create','create'); //{ticketTitle,ticketDescription,customerID,assigneeID,ticketCategoryID,priorityID,status}
+$ticket_route ->post('crm/all','getTableTickets');
+$ticket_route ->get('crm/all','getTableTickets');
+
 
 $app->mount($user_route);
 $app->mount($item_route);
@@ -202,6 +237,11 @@ $app->mount($transaction_route);
 $app->mount($contacts_route);
 $app->mount($customer_route);
 $app->mount($user_item_route);
+$app->mount($ticket_route);
+$app->mount($inbox_route);
+$app->mount($outbox_route);
+$app->mount($ticket_category_route);
+$app->mount($priority_route);
 
 try {
     // Handle the request
