@@ -40,7 +40,7 @@ class ItemsController extends Controller
     	$token = $json->token;
     	$serialNumber = $json->serialNumber;
     	$productID = $json->productID;
-    	$status = $json->status;
+    	$status = $this->assigned; //$json->status;
     	$userID = $json->userID;
 
     	if(!$token || !$serialNumber || !$productID || !$userID){
@@ -110,6 +110,19 @@ class ItemsController extends Controller
 			          }
 
 			     $dbTransaction->commit();
+
+			      $pushNotificationData = array();
+			       $pushNotificationData['itemID']=$item->itemID;
+			       $pushNotificationData['productID'] = $productID;
+			       $pushNotificationData['serialNumber'] = $serialNumber;
+
+			     $res->sendPushNotification($pushNotificationData,"New Item","You have been assigned new item",$userID);
+			     $mobileNumberQuery = "select c.workMobile from users u join contacts c on u.contactID=c.contactsID where u.userID=1";
+			     $mobileNumber = $this->rawSelect($mobileNumberQuery);
+
+			     $message = "You have been assigned new item\n ".$serialNumber;
+		         $res->sendMessage($workMobile[0]['workMobile'],$message);
+
 			     return $res->success("Item created successfully ",$item);
 			}
 		catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
