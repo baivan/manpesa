@@ -32,11 +32,14 @@ class TransactionsController extends Controller
         $referenceNumber = $json->referenceNumber;
         $fullName = $json->fullName;
         $depositAmount = $json->amount;
-        $nationalID = $json->account;
+        $salesID = $json->account;
         $token = $json->token;
 
         if(!$token ){
 	    	return $res->dataError("Token missing ");
+	    }
+	    if(!$salesID ){
+	    	return $res->dataError("Account missing ");
 	    }
 
 	    $tokenData = $jwtManager->verifyToken($token,'openRequest');
@@ -51,8 +54,8 @@ class TransactionsController extends Controller
 	   	   $transaction->referenceNumber = $referenceNumber;
 	   	   $transaction->fullName=$fullName;
 	   	   $transaction->depositAmount=$depositAmount;
-	   	   $nationalID ->nationalID = $nationalID;
-	   	   $transaction->salesID=0;
+	   	   $nationalID ->nationalID = 0;
+	   	   $transaction->salesID=$salesID;
 	   	   $transaction->createdAt = date("Y-m-d H:i:s");
 
 	   	   if($transaction->save()===false){
@@ -69,7 +72,9 @@ class TransactionsController extends Controller
 	          }
 	        $sale = Sales::findFirst(array("salesID=:id: ",
 	    					'bind'=>array("id"=>$salesID))); 
-	       $sale->status = $this->$salePaid;
+	       
+
+	         $sale->status = $this->salePaid;
 
 	        if($sale->save()===false){
 	            $errors = array();
@@ -102,12 +107,12 @@ class TransactionsController extends Controller
 	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
 
 	       
-	      return $res->success("Transaction successfully done ",$transaction);
+	      return $res->success("Transaction successfully done ",true);
 
 	   }
 	    catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
 	       $message = $e->getMessage(); 
-	       return $res->dataError('sale create error', $message); 
+	       return $res->dataError('Transaction create error', $message); 
        }
 
 	}
