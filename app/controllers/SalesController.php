@@ -635,7 +635,7 @@ class SalesController extends Controller
 
 
         $selectQuery ="SELECT s.salesID,s.userID as agentID, si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
-          $condition ="";
+          $condition =" AND ";
 
        if($userID && $filter && $customerID){
        	    $condition = "  AND s.userID=$userID AND s.customerID=$customerID AND ";
@@ -660,7 +660,7 @@ class SalesController extends Controller
     
         }
         elseif(!$userID && !$filter && !$customerID){
-        	$condition = "  ";
+        	$condition = " ";
         }
         
 		      
@@ -668,19 +668,21 @@ class SalesController extends Controller
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
         if($queryBuilder){
-        	$selectQuery=$selectQuery.$defaultQuery.$condition." ".$queryBuilder;
+        	
         	if($filter){
         		$countQuery = $countQuery.$defaultQuery.$condition." ".$queryBuilder;
+        		$selectQuery=$selectQuery.$defaultQuery.$condition." ".$queryBuilder;
         	}
         	else{
-        		$countQuery=$countQuery.$defaultQuery.$condition;
+        		$countQuery=$countQuery.$defaultQuery;
         	}
         }
         else{
         	$selectQuery=$selectQuery.$defaultQuery.$condition;
         	$countQuery=$countQuery.$defaultQuery.$condition;
         }
-        //return $res->success($selectQuery);
+
+        //return $res->success($countQuery);
 
         $count = $this->rawSelect($countQuery);
 
@@ -712,18 +714,18 @@ class SalesController extends Controller
 					"st.salesTypeName REGEXP '$filter' OR ".
 					" p.productName REGEXP '$filter' OR ".
 					" ca.categoryName REGEXP '$filter' ".
-					" GROUP BY salesID ORDER by $sort $order LIMIT $ofset,$limit";
+					" GROUP BY s.salesID ORDER by s.$sort $order LIMIT $ofset,$limit";
 		}
 	
 		else if($sort  && $order  && !$filter ){
-			$query = " GROUP BY salesID ORDER by $sort $order LIMIT $ofset,$limit";
+			$query = " GROUP BY s.salesID ORDER by s.$sort $order LIMIT $ofset,$limit";
 		}
 		else if($sort  && !$order  && !$filter ){
-			$query = " GROUP BY salesID ORDER by $sort LIMIT $ofset,$limit";
+			$query = " GROUP BY s.salesID ORDER by s.$sort LIMIT $ofset,$limit";
 		}
 
 		else if(!$sort && !$order && !$filter){
-			$query = " GROUP BY salesID LIMIT $ofset,$limit";
+			$query = " GROUP BY s.salesID LIMIT s.$ofset,$limit";
 		}
 
 		else if(!$sort && !$order && $filter){
@@ -733,11 +735,59 @@ class SalesController extends Controller
 					"st.salesTypeName REGEXP '$filter' OR ".
 					" p.productName REGEXP '$filter' OR ".
 					" ca.categoryName REGEXP '$filter' ".
-					" GROUP BY salesID LIMIT $ofset,$limit";
+					" GROUP BY s.salesID LIMIT $ofset,$limit";
 		}
 
 		return $query;
 
+	}
+
+	public function dashBoardSummary(){
+		$jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$json = $request->getJsonRawBody();
+    	$transactionManager = new TransactionManager(); 
+        $dbTransaction = $transactionManager->get();
+        $date = $request->getQuery('date');
+        $token = $request->getQuery('token');
+
+        if(!$token ){
+	    	return $res->dataError("Token missing ".json_encode($json));
+	    }
+	    if(!$date){
+	    	$date = date("Y-m-d ");
+	    }
+
+	    $totalSalesQuery = "SELECT sum(t.depositAmount) as totalSales FROM transaction t ";
+	    $todaysSalesQuery = "SELECT sum(t.depositAmount) as todaysSale FROM transaction t where date(t.createdAt)=$date";
+
+	    $totalSaleType  ="SELECT st.salesTypeID,st.salesTypeName,sum(t.depositAmount) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID group by st.salesTypeID";
+	    $todaysSaleType  ="SELECT st.salesTypeID,st.salesTypeName,sum(t.depositAmount) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID  where date(t.createdAt)=$date group by st.salesTypeID ";
+
+	    $totalProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,sum(t.depositAmount) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID group by p.productID ";
+	    $todaysProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,sum(t.depositAmount) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID where date(t.createdAt)=$date group by p.productID ";
+
+	    $ticketsQuery = "SELECT * from ticket ";
+
+	    $totalSales = $this->rawSelect($totalSalesQuery);
+	    $todaysSales = $this->rawSelect($todaysSalesQuery);
+	    $totalSaleType = $this->rawSelect($totalSaleType);
+	    $todaysSaleType = $this->rawSelect($todaysSaleType);
+	    $totalProductSales = $this->rawSelect($totalProductSales);
+	    $todaysProductSales = $this->rawSelect($todaysProductSales);
+	    $tickets = $this->rawSelect($ticketsQuery);
+
+	    $summaryData = array();
+	    $summaryData['totalSales'] = $totalSales[0]['totalSales'];
+	    $summaryData['todaysSales'] = $todaysSale[0]['todaysSales'];
+	    $summaryData['totalSaleType']=$totalSaleType;
+	    $summaryData['todaysSaleType']=$todaysSaleType;
+	    $summaryData['totalProductSales']=$totalProductSales;
+	    $summaryData['todaysProductSales']=$todaysProductSales;
+	    $summaryData['tickets']=$tickets;
+
+	    return $res->success("Summary data ",$summaryData);
 	}
 
 

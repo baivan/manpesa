@@ -95,6 +95,7 @@ $sale_route ->post('all','getSales');
 $sale_route ->get('all','getSales');
 $sale_route ->post('crm/all','getTableSales'); 
 $sale_route ->get('crm/all','getTableSales');
+$sale_route ->post('summary','dashBoardSummary');
 
 $category_route = new MicroCollection();
 $category_route ->setPrefix('/category/');
