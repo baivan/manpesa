@@ -98,7 +98,7 @@ public function getTableTickets(){ //sort, order, page, limit,filter
 
         $countQuery = "SELECT count(ticketID) as totalTickets ";
 
-        $selectQuery = "SELECT t.ticketID,t.ticketTitle,tc.ticketCategoryName,tc.ticketCategoryDescription,p.priorityName,p.priorityDescription,t.createdAt  ";
+        $selectQuery = "SELECT t.ticketID,t.ticketTitle,t.status,tc.ticketCategoryID,tc.ticketCategoryName,tc.ticketCategoryDescription,p.priorityID,t.assigneeID,t.customerID,co.fullName,p.priorityName,p.priorityDescription,t.createdAt  ";
 
         $baseQuery = " FROM ticket t JOIN customer cu on t.customerID=cu.customerID LEFT JOIN ticket_category tc on t.ticketCategoryID=tc.ticketCategoryID LEFT JOIN priority p on t.priorityID=p.priorityID LEFT JOIN contacts co on cu.contactsID=co.contactsID  ";
 
