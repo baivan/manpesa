@@ -690,8 +690,17 @@ class SalesController extends Controller
         $count = $this->rawSelect($countQuery);
 
 		$sales= $this->rawSelect($selectQuery);
+
+		foreach ($sales as $sale) {
+			$items = $this->getSaleItems($sale['salesID']);
+			$transactions = $this->getSalesTransactions($sale['salesID']);
+			$sale['items'] = $items;
+			$sale['transactions'] = $transactions;	//return $res->success("salesID",$items);
+		}
+
 		$data["totalSales"] = $count[0]['totalSales'];
 		$data["sales"] = $sales;
+
 
 		return $res->success("Sales ",$data);
 

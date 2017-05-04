@@ -72,6 +72,7 @@ class TransactionsController extends Controller
 	          }
 	        $sale = Sales::findFirst(array("salesID=:id: ",
 	    					'bind'=>array("id"=>$salesID))); 
+
 	       
 
 	         $sale->status = $this->salePaid;
@@ -241,8 +242,106 @@ class TransactionsController extends Controller
 
 	}
 
-	
 
+
+	
+//dummy transactions
+	public function dummyTransaction(){ //{mobile,account,referenceNumber,amount,fullName,token}
+	    $jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$transactionManager = new TransactionManager(); 
+        $dbTransaction = $transactionManager->get();
+
+        $mobile = $request->getQuery("mobile");
+        $referenceNumber = $request->getQuery("referenceNumber");
+        $fullName = $request->getQuery("fullName");
+        $depositAmount = $request->getQuery("amount");
+        $salesID = $request->getQuery("account");
+        $token = $request->getQuery("token");
+
+        if(!$token ){
+	    	return $res->dataError("Token missing ");
+	    }
+	    if(!$salesID ){
+	    	return $res->dataError("Account missing ");
+	    }
+
+	    $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+	   try {
+	   	   $transaction = new Transaction();
+	   	   $transaction->mobile=$mobile;
+	   	   $transaction->referenceNumber = $referenceNumber;
+	   	   $transaction->fullName=$fullName;
+	   	   $transaction->depositAmount=$depositAmount;
+	   	   $nationalID ->nationalID = 0;
+	   	   $transaction->salesID=$salesID;
+	   	   $transaction->createdAt = date("Y-m-d H:i:s");
+
+	   	   if($transaction->save()===false){
+	            $errors = array();
+	                    $messages = $transaction->getMessages();
+	                    foreach ($messages as $message) 
+	                       {
+	                         $e["message"] = $message->getMessage();
+	                         $e["field"] = $message->getField();
+	                          $errors[] = $e;
+	                        }
+	               //return $res->dataError('sale create failed',$errors);
+	                $dbTransaction->rollback('transaction create failed' . json_encode($errors));  
+	          }
+	        $sale = Sales::findFirst(array("salesID=:id: ",
+	    					'bind'=>array("id"=>$salesID))); 
+
+	       
+
+	         $sale->status = $this->salePaid;
+
+	        if($sale->save()===false){
+	            $errors = array();
+	                    $messages = $sale->getMessages();
+	                    foreach ($messages as $message) 
+	                       {
+	                         $e["message"] = $message->getMessage();
+	                         $e["field"] = $message->getField();
+	                          $errors[] = $e;
+	                        }
+	               //return $res->dataError('sale create failed',$errors);
+	                $dbTransaction->rollback('transaction create failed' . json_encode($errors));  
+	          }
+	          $dbTransaction->commit();
+
+	       //$res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
+
+	       $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
+
+
+
+	       $userID = $this->rawSelect($userQuery);
+	       $pushNotificationData = array();
+	       $pushNotificationData['nationalID']=$nationalID;
+	       $pushNotificationData['mobile'] = $mobile;
+	       $pushNotificationData['amount'] = $amount;
+	       $pushNotificationData['saleAmount'] = $sale->amount;
+	       $pushNotificationData['fullName']=$fullName;
+
+	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
+
+	       
+	      return $res->success("Transaction successfully done ",true);
+
+	   }
+	    catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+	       $message = $e->getMessage(); 
+	       return $res->dataError('Transaction create error', $message); 
+       }
+
+	}
 
 
 
