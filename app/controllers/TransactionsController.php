@@ -91,7 +91,7 @@ class TransactionsController extends Controller
 	          }
 	          $dbTransaction->commit();
 
-	       //$res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
+	       
 
 	       $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
 
@@ -104,6 +104,8 @@ class TransactionsController extends Controller
 	       $pushNotificationData['amount'] = $amount;
 	       $pushNotificationData['saleAmount'] = $sale->amount;
 	       $pushNotificationData['fullName']=$fullName;
+	       
+	       $res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
 
 	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
 
@@ -316,7 +318,7 @@ class TransactionsController extends Controller
 	          }
 	          $dbTransaction->commit();
 
-	       //$res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
+	       
 
 	       $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
 
@@ -331,7 +333,7 @@ class TransactionsController extends Controller
 	       $pushNotificationData['fullName']=$fullName;
 
 	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
-
+	       $res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
 	       
 	      return $res->success("Transaction successfully done ",true);
 

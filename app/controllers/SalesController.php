@@ -704,6 +704,8 @@ class SalesController extends Controller
 
 		return $res->success("Sales ",$data);
 
+		
+
 
 	}
 
