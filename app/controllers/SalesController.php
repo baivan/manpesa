@@ -691,20 +691,22 @@ class SalesController extends Controller
 
 		$sales= $this->rawSelect($selectQuery);
 
+		$displaySales = array();
 		foreach ($sales as $sale) {
 			$items = $this->getSaleItems($sale['salesID']);
 			$transactions = $this->getSalesTransactions($sale['salesID']);
 			$sale['items'] = $items;
 			$sale['transactions'] = $transactions;	//return $res->success("salesID",$items);
+			array_push($displaySales, $sale);
 		}
 
 		$data["totalSales"] = $count[0]['totalSales'];
-		$data["sales"] = $sales;
+		$data["sales"] = $displaySales;
 
 
 		return $res->success("Sales ",$data);
 
-		
+
 
 
 	}
