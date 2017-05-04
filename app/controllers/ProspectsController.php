@@ -201,7 +201,6 @@ class ProspectsController extends Controller
     	$request = new Request();
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
-        $productID = $request->getQuery('productID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
