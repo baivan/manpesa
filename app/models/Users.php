@@ -28,6 +28,13 @@ class Users extends \Phalcon\Mvc\Model
 
     /**
      *
+     * @var string
+     * @Column(type="string", length=15, nullable=true)
+     */
+    public $targetSale;
+
+    /**
+     *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
@@ -46,6 +53,20 @@ class Users extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $contactID;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $status;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $code;
 
     /**
      *

@@ -77,6 +77,9 @@ class OutboxController extends Controller
        }
   }
 
+
+
+
   public function getTableOutbox(){ //sort, order, page, limit,filter
     $jwtManager = new JwtManager();
       $request = new Request();
@@ -93,9 +96,9 @@ class OutboxController extends Controller
 
         $countQuery = "SELECT count(outboxID) as totalOutBox ";
 
-        $selectQuery = "SELECT o.outboxID,o.message,o.status,c.fullName,c.contactsID,c.workMobile  ";
+        $selectQuery = "SELECT o.outboxID,o.message,o.status,c.fullName,c.contactsID,c.workMobile,o.createdAt ";
 
-        $baseQuery = "FROM outbox o JOIN contacts c on o.contactsID=c.contactsID ";
+        $baseQuery = " FROM outbox o JOIN contacts c on o.contactsID=c.contactsID ";
 
         $condition ="";
          

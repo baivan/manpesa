@@ -107,7 +107,7 @@ class UsersController extends Controller
 			                  $dbTransaction->rollback("contact create failed " . json_encode($errors));
 			          }
 
-			          $code = rand(9999,99999);
+			         $code = rand(9999,99999);
 
 			          $user = new Users();
 			          $user->username = $workMobile;
@@ -115,6 +115,7 @@ class UsersController extends Controller
 			          $user->contactID = $contact->contactsID;
 			          $user->roleID=$roleID;
 			          $user->status=$status;
+			          $user->code = $code;
 			          $user->createdAt = date("Y-m-d H:i:s");
 			          $user->password = $this->security->hash($code);
 
@@ -133,6 +134,7 @@ class UsersController extends Controller
 			          }
 			          
 			          $dbTransaction->commit();
+
 
 			          $message = "Envirofit verification code is \n ".$code;
 		              $res->sendMessage($workMobile,$message);
@@ -419,6 +421,7 @@ class UsersController extends Controller
 				//generate code
 				$code = rand(9999,99999);
 	 			$user->password = $this->security->hash($code);
+	 			$user->code = $code;
 
 	 			 if($user->save()===false){
 		            $errors = array();

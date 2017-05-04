@@ -70,7 +70,7 @@ class InboxController extends Controller
   }
 
   public function getTableInbox(){ //sort, order, page, limit,filter
-    $jwtManager = new JwtManager();
+      $jwtManager = new JwtManager();
       $request = new Request();
       $res = new SystemResponses();
       $token = $request->getQuery('token');
@@ -79,7 +79,6 @@ class InboxController extends Controller
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
-        
 
         $countQuery = "SELECT count(inboxID) as totalInbox ";
 
@@ -150,6 +149,8 @@ class InboxController extends Controller
     return $query;
 
   }
+
+  
 
 }
 

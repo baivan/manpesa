@@ -631,10 +631,10 @@ class SalesController extends Controller
 
         $countQuery = "SELECT count(s.salesID) as totalSales ";
 
-        $defaultQuery = " FROM sales s  JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN sales_item si ON s.salesID=si.saleID  LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID LEFT JOIN transaction t on s.salesID=t.salesID  WHERE s.status=1 ";
+        $defaultQuery = " FROM sales s join customer c on s.customerID=c.customerID JOIN contacts co on c.contactsID=co.contactsID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where s.status=1 ";
 
 
-        $selectQuery ="SELECT s.salesID,s.userID as agentID, si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit,sum(t.depositAmount) as depositAmount ,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName,s.createdAt ";
+        $selectQuery ="SELECT s.salesID,s.userID as agentID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit ";
           $condition =" AND ";
 
        if($userID && $filter && $customerID){
@@ -660,18 +660,21 @@ class SalesController extends Controller
     
         }
         elseif(!$userID && !$filter && !$customerID){
-        	$condition = " ";
+        	$condition = "  ";
         }
         
 		      
 
         $queryBuilder = $this->tableQueryBuilder($sort,$order,$page,$limit,$filter);
 
+
+
         if($queryBuilder){
-        	
+        	$selectQuery=$selectQuery.$defaultQuery.$condition." ".$queryBuilder;
+        	//$countQuery = $countQuery.$defaultQuery.$condition." ".$queryBuilder;
         	if($filter){
         		$countQuery = $countQuery.$defaultQuery.$condition." ".$queryBuilder;
-        		$selectQuery=$selectQuery.$defaultQuery.$condition." ".$queryBuilder;
+        	
         	}
         	else{
         		$countQuery=$countQuery.$defaultQuery;
@@ -682,7 +685,7 @@ class SalesController extends Controller
         	$countQuery=$countQuery.$defaultQuery.$condition;
         }
 
-        //return $res->success($countQuery);
+        //return $res->success($countQuery ."    ".$selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
@@ -711,9 +714,7 @@ class SalesController extends Controller
 			$query = "  co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
-					"st.salesTypeName REGEXP '$filter' OR ".
-					" p.productName REGEXP '$filter' OR ".
-					" ca.categoryName REGEXP '$filter' ".
+					"st.salesTypeName REGEXP '$filter' ".
 					" GROUP BY s.salesID ORDER by s.$sort $order LIMIT $ofset,$limit";
 		}
 	
@@ -724,6 +725,7 @@ class SalesController extends Controller
 			$query = " GROUP BY s.salesID ORDER by s.$sort LIMIT $ofset,$limit";
 		}
 
+
 		else if(!$sort && !$order && !$filter){
 			$query = " GROUP BY s.salesID LIMIT s.$ofset,$limit";
 		}
@@ -732,10 +734,18 @@ class SalesController extends Controller
 			$query =  " co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
-					"st.salesTypeName REGEXP '$filter' OR ".
-					" p.productName REGEXP '$filter' OR ".
-					" ca.categoryName REGEXP '$filter' ".
+					"st.salesTypeName REGEXP '$filter' ".
 					" GROUP BY s.salesID LIMIT $ofset,$limit";
+		}
+		else if($sort && !$order && $filter){
+			$query =  " co.fullName REGEXP '$filter' OR ".
+					"co.workMobile REGEXP '$filter' OR ".
+					" co.nationalIdNumber REGEXP '$filter' OR ".
+					"st.salesTypeName REGEXP '$filter' ".
+					" GROUP BY s.salesID ORDER by s.$sort LIMIT $ofset,$limit";
+		}
+		elseif (!$sort && $order && !$filter) {
+			$query = " GROUP BY s.salesID LIMIT s.$ofset,$limit";
 		}
 
 		return $query;
@@ -788,6 +798,18 @@ class SalesController extends Controller
 	    $summaryData['tickets']=$tickets;
 
 	    return $res->success("Summary data ",$summaryData);
+	}
+
+	public function getSaleItems($salesID){
+		$selectQuery = "select i.serialNumber, p.productName, c.categoryName from sales_item si join item i on si.itemID=i.itemID join product p on i.productID=p.productID join category c on p.categoryID=c.categoryID where saleID = $salesID";
+		 $items = $this->rawSelect($selectQuery);
+		 return $items;
+	}
+
+	public function getSalesTransactions($salesID){
+		$selectQuery = "select * from transaction t where salesID=$salesID";
+		 $transactions = $this->rawSelect($selectQuery);
+		 return $transactions;
 	}
 
 
