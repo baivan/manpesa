@@ -36,7 +36,9 @@ class UsersController extends Controller
     	$locationID = $json->locationID;
     	$status = $json->status;
     	$location = $json->location;
+    	$agentNumber = $json->agentNumber;
 	    $token = $json->token;
+
 
 	    if(!$token || !$workMobile || !$workEmail || !$fullName ){
 	    	return $res->dataError("Missing data ");
@@ -56,6 +58,8 @@ class UsersController extends Controller
 	    if(!$status){
 	    	$status=0;
 	    }
+	    
+
 	    $workMobile = $res->formatMobileNumber($workMobile);
 
 		 try {
@@ -109,6 +113,14 @@ class UsersController extends Controller
 
 			         $code = rand(9999,99999);
 
+			         if($roleID >= 1 ){
+			          		$agentNumber = $this->generateAgentCode($agentNumber,$roleID);
+			          	}
+			          else{
+			          	$agentNumber = 'N/A';
+			          }
+
+
 			          $user = new Users();
 			          $user->username = $workMobile;
 			          $user->locationID = $locationID;
@@ -116,8 +128,10 @@ class UsersController extends Controller
 			          $user->roleID=$roleID;
 			          $user->status=$status;
 			          $user->code = $code;
+			          $user->agentNumber = $agentNumber;
 			          $user->createdAt = date("Y-m-d H:i:s");
 			          $user->password = $this->security->hash($code);
+
 
 
 			          if($user->save()===false){
@@ -673,6 +687,33 @@ class UsersController extends Controller
 			   return $res->dataError('user status change error', $message); 
 			}
 
+	}
+
+	/**
+	*create agent code by adding 0s to the agent id and passed prefix
+	*/
+
+	public function generateAgentCode($numberPrefix,$roleID){
+		
+		$userQuery = "SELECT userID from users WHERE roleID=$roleID order by userID DESC limit 1";
+	    $lastID = $this->rawSelect($userQuery);
+	    $agentNumber=$lastID[0]['userID']+1;
+
+
+		 $length =4;
+		 $prefix = "0";
+		 //$agentNumber = "";
+
+		$numlength = strlen((string)$agentNumber);
+
+		if($length-$numlength){
+		     $agentNumber=$numberPrefix.str_repeat("0", ($length-$numlength)).$agentNumber;
+		}
+		else{
+			$agentNumber=$numberPrefix.str_repeat("0", ($length-$numlength)).$agentNumber;
+		}
+
+		return $agentNumber;
 	}
 
 

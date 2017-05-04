@@ -631,10 +631,10 @@ class SalesController extends Controller
 
         $countQuery = "SELECT count(s.salesID) as totalSales ";
 
-        $defaultQuery = " FROM sales s join customer c on s.customerID=c.customerID JOIN contacts co on c.contactsID=co.contactsID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where s.status=1 ";
+        $defaultQuery = " FROM sales s join customer c on s.customerID=c.customerID JOIN contacts co on c.contactsID=co.contactsID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID JOIN users u on s.userID=u.userID where s.status=1 ";
 
 
-        $selectQuery ="SELECT s.salesID,s.userID as agentID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit ";
+        $selectQuery ="SELECT s.salesID,s.userID as agentID,u.agentNumber,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit ";
           $condition =" AND ";
 
        if($userID && $filter && $customerID){
@@ -727,7 +727,8 @@ class SalesController extends Controller
 			$query = "  co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
-					"st.salesTypeName REGEXP '$filter' ".
+					"st.salesTypeName REGEXP '$filter' OR ".
+					"u.agentNumber REGEXP '$filter' ".
 					" GROUP BY s.salesID ORDER by s.$sort $order LIMIT $ofset,$limit";
 		}
 	
@@ -747,14 +748,16 @@ class SalesController extends Controller
 			$query =  " co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
-					"st.salesTypeName REGEXP '$filter' ".
+					"st.salesTypeName REGEXP '$filter' OR ".
+					"u.agentNumber REGEXP '$filter' ".
 					" GROUP BY s.salesID LIMIT $ofset,$limit";
 		}
 		else if($sort && !$order && $filter){
 			$query =  " co.fullName REGEXP '$filter' OR ".
 					"co.workMobile REGEXP '$filter' OR ".
 					" co.nationalIdNumber REGEXP '$filter' OR ".
-					"st.salesTypeName REGEXP '$filter' ".
+					"st.salesTypeName REGEXP '$filter' OR ".
+					"u.agentNumber REGEXP '$filter' ".
 					" GROUP BY s.salesID ORDER by s.$sort LIMIT $ofset,$limit";
 		}
 		elseif (!$sort && $order && !$filter) {

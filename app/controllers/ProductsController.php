@@ -43,6 +43,7 @@ class ProductsController extends Controller
 		       if($product){
 		       	return $res->dataError("Product with similar name exists");
 		       }
+		      
 
 		       $product = new Product();
 		       $product->productName = $productName;
