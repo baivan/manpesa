@@ -212,7 +212,7 @@ class ProspectsController extends Controller
 
         $baseQuery = " FROM prospects  p join contacts co on p.contactsID=co.contactsID " ;
 
-        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location  ";
+        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location,p.createdAt  ";
 
       	$countQuery = $countQuery.$baseQuery;
       	$selectQuery = $selectQuery.$baseQuery;
