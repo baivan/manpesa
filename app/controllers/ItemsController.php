@@ -204,6 +204,7 @@ class ItemsController extends Controller
         $productID = $request->getQuery('productID');
         $status = $request->getQuery('status');
         $action = $request->getQuery('action');
+        $userID = $request->getQuery('userID');
        
 
      //   $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND
@@ -229,11 +230,11 @@ class ItemsController extends Controller
 	       	    $condition = " WHERE i.productID=$productID AND i.itemID=$itemID  ";
 	       }
 	      
-	       elseif($productID && $action && !$itemID && !$status ){  
-	       	     $condition = " WHERE i.productID=$productID AND i.status <= 1";
+	       elseif($productID && $action && $userID && !$itemID && !$status ){  
+	       	     $condition = " JOIN user_items ui on i.itemID=ui.itemID WHERE ui.userID=$userID AND i.productID=$productID AND i.status <= 1";
 	       }
-	       elseif(!$productID && $action && !$itemID && !$status ){  
-	       	     $condition = " WHERE i.status <= 1";
+	       elseif(!$productID && $action && $userID && !$itemID && !$status  ){  
+	       	     $condition = " JOIN user_items ui on i.itemID=ui.itemID WHERE ui.userID=$userID AND i.status <= 1";
 	       }
 	       elseif($productID && !$itemID && !$status ){
 	       	     $condition = " WHERE i.productID=$productID ";

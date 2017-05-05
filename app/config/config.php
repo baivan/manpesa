@@ -50,7 +50,7 @@ else if ($host=='jamess-air' )
 
        $logPath = array('location'  => "../logs/envirofit/");
     }
-else if ($host=='Jamess-Air' ) 
+else if ($host=='192.168.1.4' ) 
     {
         $connection = array(
             'adapter'     => 'mysql',
