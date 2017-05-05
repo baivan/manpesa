@@ -677,7 +677,7 @@ class SalesController extends Controller
         	
         	}
         	else{
-        		$countQuery=$countQuery.$defaultQuery;
+        		$countQuery=$countQuery.$defaultQuery.$condition;
         	}
         }
         else{
