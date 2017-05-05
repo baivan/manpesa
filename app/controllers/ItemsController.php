@@ -204,6 +204,7 @@ class ItemsController extends Controller
         $productID = $request->getQuery('productID');
         $status = $request->getQuery('status');
         $action = $request->getQuery('action');
+       
 
      //   $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND
 
@@ -217,29 +218,36 @@ class ItemsController extends Controller
 	        return $res->dataError("Data compromised");
 	      }
 
-	       $itemsQuery ="SELECT * FROM item ";
+	       $itemsQuery ="SELECT i.itemID,i.serialNumber,i.status,i.createdAt,p.productID,p.productName FROM item i join product p on i.productID=p.productID";
 	       $condition = " ";
 
 	       if($productID && $itemID && $status >= 0 && $status >=0 ){
-	       	  $condition = " WHERE productID=$productID AND itemID=$itemID AND status = $status ";
+	       	  $condition = " WHERE i.productID=$productID AND i.itemID=$itemID AND i.status = $status ";
 	       }
 
 	       elseif ($productID && $itemID  && $status < 0) {
-	       	    $condition = " WHERE productID=$productID AND itemID=$itemID  ";
+	       	    $condition = " WHERE i.productID=$productID AND i.itemID=$itemID  ";
 	       }
 	      
 	       elseif($productID && $action && !$itemID && !$status ){  
-	       	     $condition = " WHERE productID=$productID AND status <= 1";
+	       	     $condition = " WHERE i.productID=$productID AND i.status <= 1";
+	       }
+	       elseif(!$productID && $action && !$itemID && !$status ){  
+	       	     $condition = " WHERE i.status <= 1";
 	       }
 	       elseif($productID && !$itemID && !$status ){
-	       	     $condition = " WHERE productID=$productID ";
+	       	     $condition = " WHERE i.productID=$productID ";
 	       }
 	       elseif(!$productID  && $itemID  && !$status){
-	       		$condition = " WHERE itemID=$itemID ";
+	       		$condition = " WHERE i.itemID=$itemID ";
 	       }
-	       elseif(!$productID  && !$itemID  && $status >=  0){
-	       	    $condition = " WHERE status=$status ";
+	       elseif(!$productID  && !$itemID  && !$status ){
+	       	    $condition = " WHERE i.status >= 0 ";
 	       }
+	       elseif(!$productID  && !$itemID  && $status >= 0){
+	       	    $condition = " WHERE i.status=$status ";
+	       }
+	       
 	       else{
 	       	  $condition="";
 	       }
@@ -247,7 +255,7 @@ class ItemsController extends Controller
 
 	     
 	     
-	    // return $res->success($itemsQuery);
+	     //return $res->success($itemsQuery);
 
 
 		$items= $this->rawSelect($itemsQuery);
