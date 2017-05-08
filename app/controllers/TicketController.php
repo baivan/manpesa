@@ -274,9 +274,9 @@ class TicketController extends Controller {
 
 //        $condition = "";
         $whereArray = [
-            'status' => $status,
+            't.status' => $status,
             'filter' => $filter,
-            'ticketID' => $ticketID,
+            't.ticketID' => $ticketID,
             't.customerID' => $customerID,
             'date' => [$startDate, $endDate]
         ];
