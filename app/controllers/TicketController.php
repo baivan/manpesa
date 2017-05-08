@@ -266,7 +266,7 @@ class TicketController extends Controller {
                 . "t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
 
         $baseQuery = "FROM ticket t LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c "
-                . "ON u.contactID=c.contactsID INNER JOIN customer cust ON t.customerID=cust.customerID "
+                . "ON u.contactID=c.contactsID LEFT JOIN customer cust ON t.customerID=cust.customerID "
                 . "LEFT JOIN contacts c1 ON cust.contactsID=c1.contactsID LEFT JOIN users u1 "
                 . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
                 . "INNER JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
