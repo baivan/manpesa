@@ -1,7 +1,6 @@
 <?php
 
-class Category extends \Phalcon\Mvc\Model
-{
+class Category extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -10,14 +9,14 @@ class Category extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $categoryID;
+    public $promoterID;
 
     /**
      *
      * @var string
      * @Column(type="string", length=20, nullable=false)
      */
-    public $categoryName;
+    public $promoterName;
 
     /**
      *
@@ -38,9 +37,8 @@ class Category extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
-        return 'category';
+    public function getSource() {
+        return 'promoter';
     }
 
     /**
@@ -49,8 +47,7 @@ class Category extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Category[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -60,8 +57,7 @@ class Category extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Category
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 

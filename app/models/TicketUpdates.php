@@ -1,7 +1,6 @@
 <?php
 
-class Category extends \Phalcon\Mvc\Model
-{
+class TicketUpdates extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -10,14 +9,39 @@ class Category extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $categoryID;
+    public $ticketUpdateID;
 
     /**
      *
      * @var string
      * @Column(type="string", length=20, nullable=false)
      */
-    public $categoryName;
+    public $updateMessage;
+
+    /**
+     *
+     * @var integer
+     * @Primary
+     * @Identity
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $ticketID;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", nullable=false)
+     */
+    public $callback;
+    
+    /**
+     *
+     * @var integer
+     * @Primary
+     * @Identity
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $userID;
 
     /**
      *
@@ -38,9 +62,8 @@ class Category extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
-        return 'category';
+    public function getSource() {
+        return 'ticket_updates';
     }
 
     /**
@@ -49,8 +72,7 @@ class Category extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Category[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -60,8 +82,7 @@ class Category extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Category
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 

@@ -25,6 +25,13 @@ class Ticket extends \Phalcon\Mvc\Model
      * @Column(type="string", length=500, nullable=false)
      */
     public $ticketDescription;
+    
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $userID;
 
     /**
      *
