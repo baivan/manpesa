@@ -301,7 +301,7 @@ class TicketController extends Controller {
                 }
                 $whereQuery .= $valueString;
                 $logger->log("Filter Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
-            } else if($key == 'status' && $value == 404) {
+            } else if($key == 't.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
                  $logger->log("Status Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
