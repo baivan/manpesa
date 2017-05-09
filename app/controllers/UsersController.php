@@ -41,7 +41,7 @@ class UsersController extends Controller {
         $token = $json->token;
 
 
-        if (!$token || !$workMobile || !$workEmail || !$fullName) {
+        if (!$token || !$workMobile || !$fullName) {
             return $res->dataError("Missing data ");
         }
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -64,8 +64,8 @@ class UsersController extends Controller {
         $workMobile = $res->formatMobileNumber($workMobile);
 
         try {
-            $contact = Contacts::findFirst(array("workMobile=:w_mobile: OR workEmail=:w_email: ",
-                        'bind' => array("w_mobile" => $workMobile, "w_email" => $workEmail)));
+            $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
+                        'bind' => array("w_mobile" => $workMobile)));
 
             if ($contact) {
                 $user = Users::findFirst(array("contactID=:contactID:",
