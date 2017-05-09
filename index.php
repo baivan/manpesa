@@ -208,6 +208,8 @@ $call_route->post('create', 'create'); //
 $call_route->get('crm/all', 'getTableCalls');
 $call_route->get('crm/disposition', 'dispositions');
 $call_route->get('crm/promoter', 'promoters');
+$call_route->get('crm/promoterscore', 'promoterScores');
+$call_route->post('score/create', 'createScores');
 
 $ticket_category_route = new MicroCollection();
 $ticket_category_route->setPrefix('/ticketcategory/');

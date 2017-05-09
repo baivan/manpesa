@@ -236,6 +236,192 @@ class CallController extends Controller {
         return $res->getSalesSuccess($promoters);
     }
 
+    public function createScores() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $token = isset($json->token) ? $json->token : '';
+        $productExperience = $json->productExperience ? $json->productExperience : '';
+        $recommendation = $json->recommendation ? (int) $json->recommendation : '';
+        $referralScheme = $json->referralScheme ? (int) $json->referralScheme : 0;
+        $agentBehaviour = $json->agentBehaviour ? (int) $json->agentBehaviour : '';
+        $customerID = $json->customerID ? $json->customerID : '';
+        $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : '';
+        $deliveryReason = $json->deliveryReason ? $json->deliveryReason : '';
+        $overalExperience = $json->overalExperience ? (int) $json->overalExperience : '';
+        $userID = $json->userID ? $json->userID : '';
+
+
+        if (!$token || !$productExperience || !$userID || !$recommendation || !$customerID ||
+                !$agentBehaviour || !$deliveryRating || !$deliveryReason || !$overalExperience) {
+            return $res->dataError("Fields missing ", []);
+        }
+
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        try {
+            $score = new PromoterScore();
+            $score->scoreCategoryID = 1;
+            $score->scoreResponse = $agentBehaviour;
+            $score->extra = NULL;
+            $score->userID = $userID;
+            $score->customerID = $customerID;
+            $score->createdAt = date("Y-m-d H:i:s");
+
+
+            $score1 = new PromoterScore();
+            $score1->scoreCategoryID = 2;
+            $score1->scoreResponse = $deliveryRating;
+            $score1->extra = $deliveryReason;
+            $score1->userID = $userID;
+            $score1->customerID = $customerID;
+            $score1->createdAt = date("Y-m-d H:i:s");
+
+            $score2 = new PromoterScore();
+            $score2->scoreCategoryID = 3;
+            $score2->scoreResponse = $referralScheme;
+            $score2->extra = NULL;
+            $score2->userID = $userID;
+            $score2->customerID = $customerID;
+            $score2->createdAt = date("Y-m-d H:i:s");
+
+            $score3 = new PromoterScore();
+            $score3->scoreCategoryID = 4;
+            $score3->scoreResponse = $recommendation;
+            $score3->extra = NULL;
+            $score3->userID = $userID;
+            $score3->customerID = $customerID;
+            $score3->createdAt = date("Y-m-d H:i:s");
+
+            $score4 = new PromoterScore();
+            $score4->scoreCategoryID = 5;
+            $score4->scoreResponse = $overalExperience;
+            $score4->extra = NULL;
+            $score4->userID = $userID;
+            $score4->customerID = $customerID;
+            $score4->createdAt = date("Y-m-d H:i:s");
+
+            $score5 = new PromoterScore();
+            $score5->scoreCategoryID = 6;
+            $score5->scoreResponse = NULL;
+            $score5->extra = $productExperience;
+            $score5->userID = $userID;
+            $score5->customerID = $customerID;
+            $score5->createdAt = date("Y-m-d H:i:s");
+
+            if ($score->save() === false) {
+                $errors = array();
+                $messages = $score->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('call log failed', $errors);
+            }
+
+            if ($score1->save() === false) {
+                $errors = array();
+                $messages = $score1->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('call log failed', $errors);
+            }
+
+            if ($score2->save() === false) {
+                $errors = array();
+                $messages = $score2->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('call log failed', $errors);
+            }
+
+            if ($score3->save() === false) {
+                $errors = array();
+                $messages = $score3->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('call log failed', $errors);
+            }
+
+            if ($score4->save() === false) {
+                $errors = array();
+                $messages = $score4->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('call log failed', $errors);
+            }
+
+            if ($score5->save() === false) {
+                $errors = array();
+                $messages = $score5->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('call log failed', $errors);
+            }
+
+            return $res->success("call successfully created ", $score);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('call log error', $message);
+        }
+    }
+
+    public function promoterScores() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
+
+        $promoterScoreQuery = "SELECT ps.promoterScoreID, ps.scoreCategoryID, "
+                . "sc.scoreCategoryName,sc.scoreCategoryDescription, sc.scoreTypeID, "
+                . "ps.scoreResponse,ps.extra, ps.customerID,ps.createdAt FROM promoter_score ps "
+                . "INNER JOIN promoter_score_category sc ON ps.scoreCategoryID=sc.scoreCategoryID";
+
+        if (!$token) {
+            return $res->dataError("Missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        if ($customerID) {
+            $promoterScoreQuery = "SELECT ps.promoterScoreID, ps.scoreCategoryID, "
+                    . "sc.scoreCategoryName,sc.scoreCategoryDescription, sc.scoreTypeID, "
+                    . "ps.scoreResponse,ps.extra, ps.customerID,ps.createdAt FROM promoter_score ps "
+                    . "INNER JOIN promoter_score_category sc ON ps.scoreCategoryID=sc.scoreCategoryID "
+                    . "WHERE ps.customerID=$customerID";
+        }
+
+        $promoterScores = $this->rawSelect($promoterScoreQuery);
+
+        return $res->getSalesSuccess($promoterScores);
+    }
+
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = $sort ? "ORDER BY $sort $order" : '';
