@@ -79,7 +79,7 @@ class SystemResponses extends Controller {
     }
 
     public function success($message, $data) {
-        $file = "test"; //$this->config->senderIds->mediamax;
+        $file = $this->config->senderIds->mediamax;
 
 
         $response = new Response();
@@ -98,7 +98,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($success));
         $logger = new FileAdapter($this->getLogFile('success'));
         $logger->log($file . ' ty ' . $message . ' ' . json_encode($data));
-        //$this->composePushLog("success  " . $message, $data);
+        $this->composePushLog("success  " . $message, $data);
 
         return $response;
     }
