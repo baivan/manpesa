@@ -17,7 +17,7 @@ class ProductSaleTypePriceController extends Controller
           $success = $success->fetchAll($success); 
           return $success;
        }
-	public function create(){ //{productID,salesTypeID,categoryID,price}
+	public function create(){ //{productID,salesTypeID,categoryID,price,deposit}
 		 $jwtManager = new JwtManager();
 		$request = new Request();
 		$res = new SystemResponses();
@@ -28,7 +28,7 @@ class ProductSaleTypePriceController extends Controller
 		$categoryID = $json->categoryID;
 		$price = $json->price;
 
-		if(!$token || !$salesTypeID || !$productID || !$categoryID || !$price ){
+		if(!$token || !$salesTypeID || !$productID || !$categoryID || !$price || !$deposit ){
 	    	return $res->dataError("Missing data ");
 	    }
 	     $tokenData = $jwtManager->verifyToken($token,'openRequest');
@@ -49,6 +49,7 @@ class ProductSaleTypePriceController extends Controller
 	      $productSaleTypePrice->salesTypeID = $salesTypeID;
 	      $productSaleTypePrice->categoryID = $categoryID;
 	      $productSaleTypePrice->price = $price;
+	      $productSaleTypePrice->deposit = $deposit;
 	      $productSaleTypePrice->createdAt= date("Y-m-d H:i:s");
 
 	      if($productSaleTypePrice->save()===false){
@@ -67,7 +68,7 @@ class ProductSaleTypePriceController extends Controller
 
 
 	}       
-	public function update(){//{productID,salesTypeID,categoryID,price,productSaleTypePriceID}
+	public function update(){//{productID,salesTypeID,categoryID,price,productSaleTypePriceID,$deposit}
 		 $jwtManager = new JwtManager();
 		$request = new Request();
 		$res = new SystemResponses();
@@ -77,6 +78,7 @@ class ProductSaleTypePriceController extends Controller
 		$salesTypeID = $json->salesTypeID;
 		$categoryID = $json->categoryID;
 		$price = $json->price;
+		$deposit = $json->deposit;
 		$productSaleTypePriceID = $json->productSaleTypePriceID;
 
 		if(!$token || !$productSaleTypePriceID ){
@@ -106,6 +108,9 @@ class ProductSaleTypePriceController extends Controller
 	      }
 	      if($price){
 	      	 $productSaleTypePrice->price = $price;
+	      }
+	      if($deposit){
+	      	$productSaleTypePrice->deposit=$deposit;
 	      }
 	      
 
@@ -167,7 +172,7 @@ class ProductSaleTypePriceController extends Controller
         $countQuery = "SELECT count(productSaleTypePriceID) as totalPrices ";
         $baseQuery = " FROM product_sale_type_price ps join product p on ps.productID=p.productID LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID ";
 
-        $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,st.salesTypeDeposit ,ps.price  ";
+        $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,ps.deposit ,ps.price  ";
         $condition = "";
 
         //$countQuery = $countQuery.$baseQuery;
