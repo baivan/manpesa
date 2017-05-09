@@ -43,6 +43,13 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
+     * @Column(type="string", length=10, nullable=false)
+     */
+    public $deposit;
+
+    /**
+     *
+     * @var string
      * @Column(type="string", nullable=false)
      */
     public $createdAt;

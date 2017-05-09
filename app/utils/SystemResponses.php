@@ -79,7 +79,7 @@ class SystemResponses extends Controller {
     }
 
     public function success($message, $data) {
-        $file = "test";//$this->config->senderIds->mediamax;
+        $file = "test"; //$this->config->senderIds->mediamax;
 
 
         $response = new Response();
@@ -297,6 +297,16 @@ class SystemResponses extends Controller {
             $number = $mobile;
         }
         return $number;
+    }
+
+    protected function mobile($number) {
+        $regex = '/^(?:\+?(?:[1-9]{3})|0)?7([0-9]{8})$/';
+        if (preg_match_all($regex, $number, $capture)) {
+            $msisdn = '2547' . $capture[1][0];
+        } else {
+            $msisdn = false;
+        }
+        return $msisdn;
     }
 
 }
