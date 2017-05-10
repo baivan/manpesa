@@ -74,10 +74,9 @@ class TransactionsController extends Controller
 	    					'bind'=>array("id"=>$salesID))); 
 
 	       
-
+	        if($sale){
 	         $sale->status = $this->salePaid;
-
-	        if($sale->save()===false){
+	         if($sale->save()===false){
 	            $errors = array();
 	                    $messages = $sale->getMessages();
 	                    foreach ($messages as $message) 
@@ -89,26 +88,26 @@ class TransactionsController extends Controller
 	               //return $res->dataError('sale create failed',$errors);
 	                $dbTransaction->rollback('transaction create failed' . json_encode($errors));  
 	          }
-	          $dbTransaction->commit();
 
-	       
-
-	       $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
+		          $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
 
 
+		       $userID = $this->rawSelect($userQuery);
+		       
+		       $pushNotificationData = array();
+		       $pushNotificationData['nationalID']=$nationalID;
+		       $pushNotificationData['mobile'] = $mobile;
+		       $pushNotificationData['amount'] = $amount;
+		       $pushNotificationData['saleAmount'] = $sale->amount;
+		       $pushNotificationData['fullName']=$fullName;
+		       
+		      
 
-	       $userID = $this->rawSelect($userQuery);
-	       $pushNotificationData = array();
-	       $pushNotificationData['nationalID']=$nationalID;
-	       $pushNotificationData['mobile'] = $mobile;
-	       $pushNotificationData['amount'] = $amount;
-	       $pushNotificationData['saleAmount'] = $sale->amount;
-	       $pushNotificationData['fullName']=$fullName;
-	       
-	       $res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
+		       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
+	        }
 
-	       $res->sendPushNotification($pushNotificationData,"New payment","There is a new payment from a sale you made",$userID);
-
+           $res->sendMessage($mobile,"Dear ".$fullName.", your payment has been received");
+	       $dbTransaction->commit();
 	       
 	      return $res->success("Transaction successfully done ",true);
 
