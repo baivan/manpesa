@@ -601,7 +601,7 @@ class SalesController extends Controller {
                 . "INNER JOIN contacts c ON u.contactID=c.contactsID INNER JOIN customer cust "
                 . "ON s.customerID=cust.customerID INNER JOIN contacts c1 ON cust.contactsID=c1.contactsID "
                 . "INNER JOIN product p ON s.productID=p.productID INNER JOIN product_sale_type_price AS psp "
-                . "ON (pp.salesTypeID=psp.salesTypeID AND s.productID=psp.productID) WHERE status=1 ";
+                . "ON (pp.salesTypeID=psp.salesTypeID AND s.productID=psp.productID) WHERE s.status=1 ";
 
         $selectQuery = "SELECT s.salesID, s.paymentPlanID, pp.paymentPlanDeposit, "
                 . "pp.salesTypeID, st.salesTypeName, psp.price,pp.frequencyID,"
