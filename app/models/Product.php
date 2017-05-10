@@ -22,6 +22,13 @@ class Product extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
+     * @Column(type="string", length=600, nullable=true)
+     */
+    public $description;
+
+    /**
+     *
+     * @var string
      * @Column(type="string", length=100, nullable=true)
      */
     public $productImage;

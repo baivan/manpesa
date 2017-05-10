@@ -17,13 +17,14 @@ class ProductsController extends Controller {
         return $success;
     }
 
-    public function create() { //{productName,productImage,categoryID,token}
+    public function create() { //{productName,productImage,categoryID,description,token}
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
         $productName = $json->productName;
         $productImage = $json->productImage;
+        $description = $join->description;
         $categoryID = $json->categoryID;
         $token = $json->token;
 
@@ -47,6 +48,7 @@ class ProductsController extends Controller {
         $product->productName = $productName;
         $product->productImage = $productImage;
         $product->categoryID = $categoryID;
+        $product->description = $description;
         $product->createdAt = date("Y-m-d H:i:s");
 
         if ($product->save() === false) {
@@ -63,7 +65,7 @@ class ProductsController extends Controller {
         return $res->success("Product saved successfully", $product);
     }
 
-    public function edit() {//productName,productImage,categoryID,productID,token
+    public function edit() {//productName,productImage,categoryID,productID,description,token
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -72,6 +74,7 @@ class ProductsController extends Controller {
         $productID = $json->productID;
         $productImage = $json->productImage;
         $categoryID = $json->categoryID;
+        $description = $join->description;
         $token = $json->token;
 
         if (!$token || !$workMobile || !$fullName) {
@@ -97,6 +100,10 @@ class ProductsController extends Controller {
         }
         if ($categoryID) {
             $product->categoryID = $categoryID;
+        }
+
+        if($description){
+            $product->description = $description;
         }
 
 
