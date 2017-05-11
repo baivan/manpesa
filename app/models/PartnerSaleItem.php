@@ -1,7 +1,6 @@
 <?php
 
-class SalesItem extends \Phalcon\Mvc\Model
-{
+class PartnerSaleItem extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -10,26 +9,40 @@ class SalesItem extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $saleItemID;
+    public $partnerSaleItemID;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="string", length=150, nullable=false)
+     */
+    public $serialNumber;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $saleID;
+    public $productID;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $itemID;
+    public $customerID;
 
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="string", length=200, nullable=false)
+     */
+    public $salesPartner;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=3, nullable=false)
      */
     public $status;
 
@@ -52,9 +65,8 @@ class SalesItem extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
-        return 'sales_item';
+    public function getSource() {
+        return 'partner_sale_item';
     }
 
     /**
@@ -63,8 +75,7 @@ class SalesItem extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return SalesItem[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -74,8 +85,7 @@ class SalesItem extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return SalesItem
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 

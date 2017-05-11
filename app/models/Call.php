@@ -13,17 +13,24 @@ class Call extends \Phalcon\Mvc\Model {
 
     /**
      *
-     * @var string
-     * @Column(type="string", length=3, nullable=false)
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
      */
-    public $status;
+    public $callTypeID;
 
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
-    public $disposition;
+    public $ticketID;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=3, nullable=false)
+     */
+    public $status;
 
     /**
      *
@@ -35,37 +42,9 @@ class Call extends \Phalcon\Mvc\Model {
     /**
      *
      * @var integer
-     * @Column(type="string", length=200, nullable=false)
-     */
-    public $previousTool;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $promoterID;
-
-    /**
-     *
-     * @var integer
      * @Column(type="string", length=500, nullable=true)
      */
     public $comment;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $customerID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $ticketID;
 
     /**
      *

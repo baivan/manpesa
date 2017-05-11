@@ -576,7 +576,6 @@ class SalesController extends Controller {
     public function getTableSales() { //sort, order, page, limit,filter,userID
 //        $logPathLocation = $this->config->logPath->location . 'error.log';
 //        $logger = new FileAdapter($logPathLocation);
-
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -711,6 +710,95 @@ class SalesController extends Controller {
 
         $data["totalSales"] = $count[0]['totalSales'];
         $data["sales"] = $displaySales;
+
+
+        return $res->success("Sales ", $data);
+    }
+
+    public function getTablePartnerSales() { //sort, order, page, limit,filter,userID
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $userID = $request->getQuery('userID');
+        $sort = $request->getQuery('sort');
+        $order = $request->getQuery('order');
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+        $customerID = $request->getQuery('customerID');
+        $startDate = $request->getQuery('start');
+        $endDate = $request->getQuery('end');
+
+        $countQuery = "SELECT count(psi.partnerSaleItemID) as totalSales ";
+        $defaultQuery = "FROM partner_sale_item psi LEFT JOIN product p ON psi.productID=p.productID "
+                . "INNER JOIN customer cust ON psi.customerID=cust.customerID INNER JOIN contacts c "
+                . "ON cust.contactsID=c.contactsID ";
+
+        $selectQuery = "SELECT psi.partnerSaleItemID, psi.serialNumber, psi.productID, "
+                . "p.productName, cust.customerID, c.fullName,c.workMobile AS customerNumber, "
+                . "c.nationalIdNumber,psi.salesPartner AS partnerName, psi.status,psi.createdAt ";
+
+        $whereArray = [
+            'filter' => $filter,
+            'psi.customerID' => $customerID,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $logger->log("Sales Request Data: " . json_encode($whereArray));
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['psi.serialNumber','psi.salesPartner', 'c.fullName', 'c.workMobile','p.productName'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 't.status' && $value == 404) {
+                $valueString = "" . $key . "=0" . " AND ";
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(psi.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND");
+        }
+
+        $whereQuery = $whereQuery ? "AND $whereQuery " : "";
+
+        $countQuery = $countQuery . $defaultQuery . $whereQuery;
+        $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+        $logger->log("Sales Request Query: " . $selectQuery);
+
+        $count = $this->rawSelect($countQuery);
+        $sales = $this->rawSelect($selectQuery);
+
+        $data["totalSales"] = $count[0]['totalSales'];
+        $data["sales"] = $sales;
 
 
         return $res->success("Sales ", $data);

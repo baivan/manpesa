@@ -14,23 +14,65 @@ class PromoterScore extends \Phalcon\Mvc\Model {
     /**
      *
      * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $saleAgentBehavior;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $deliveryExperience;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $referralScheme;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $recommendation;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $overallExperience;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $productExperience;
+
+    /**
+     *
+     * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $scoreCategoryID;
+    public $promoter;
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=15, nullable=true)
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
      */
-    public $scoreResponse;
+    public $previousTool;
 
     /**
      *
-     * @var integer
-     * @Column(type="string", length=500, nullable=true)
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
      */
-    public $extra;
+    public $comment;
 
     /**
      *
@@ -38,8 +80,8 @@ class PromoterScore extends \Phalcon\Mvc\Model {
      * @Column(type="integer", length=11, nullable=false)
      */
     public $customerID;
-
-    /**
+    
+     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)

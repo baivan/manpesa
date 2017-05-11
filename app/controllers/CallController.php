@@ -19,22 +19,37 @@ class CallController extends Controller {
     }
 
     public function create() { //{message,contactsID,userID,status}
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
         $token = isset($json->token) ? $json->token : '';
+
+        $promoterID = $json->promoterID ? $json->promoterID : '';
+        $previousTool = $json->previousTool ? $json->previousTool : NULL;
+        $callback = $json->callback ? $json->callback : NULL;
+        $customerComment = $json->customerComment ? $json->customerComment : '';
+
+        $productExperience = $json->productExperience ? $json->productExperience : '';
+        $recommendation = $json->recommendation ? (int) $json->recommendation : '';
+        $referralScheme = $json->referralScheme ? (int) $json->referralScheme : 0;
+        $agentBehaviour = $json->agentBehaviour ? (int) $json->agentBehaviour : '';
+        $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : '';
+        $deliveryReason = $json->deliveryReason ? $json->deliveryReason : '';
+        $overalExperience = $json->overalExperience ? (int) $json->overalExperience : '';
+
         $customerReached = $json->customerReached ? $json->customerReached : 0;
         $callTypeID = $json->callTypeID ? $json->callTypeID : '';
-        $previousTool = $json->previousTool ? $json->previousTool : NULL;
-        $promoterID = $json->promoterID ? $json->promoterID : '';
         $customerID = $json->customerID ? $json->customerID : '';
-        $callback = $json->callback ? $json->callback : NULL;
-        $comment = $json->comment ? $json->comment : '';
+        $ticketID = $json->ticketID ? $json->ticketID : '';
         $userID = $json->userID ? $json->userID : '';
+        $userComment = $json->userComment ? $json->userComment : '';
 
 
-        if (!$token || !$callTypeID || !$userID || !$promoterID || !$customerID) {
+        if (!$token || !$callTypeID || !$userID || !$customerID || !$ticketID) {
             return $res->dataError("Fields missing ", []);
         }
 
@@ -46,16 +61,73 @@ class CallController extends Controller {
         }
 
         try {
+            
+            $logger->log("Request Data: " . json_encode($json));
             $call = new Call();
+            $call->callTypeID = $callTypeID;
+            $call->ticketID = $ticketID;
             $call->status = $customerReached;
-            $call->userID = $userID;
-            $call->disposition = $callTypeID;
             $call->callback = $callback;
-            $call->previousTool = $previousTool;
-            $call->promoterID = $promoterID;
-            $call->comment = $comment;
-            $call->customerID = $customerID;
+            $call->comment = $userComment;
+            $call->userID = $userID;
             $call->createdAt = date("Y-m-d H:i:s");
+
+            $promoterScore = PromoterScore::findFirst(array("customerID=:customerID:",
+                        'bind' => array("customerID" => $customerID)));
+            if ($promoterScore) {
+                $logger->log("Promoter score exists: " . json_encode($promoterScore));
+
+//                $scorePromoter = PromoterScore::findFirst(array("customerID=:customerID: AND promoter=:promoterID:",
+//                            'bind' => array("customerID" => $customerID, "promoterID" => $promoterID)));
+//
+//                $scoreAgent = PromoterScore::findFirst(array("customerID=:customerID: AND saleAgentBehavior=:saleAgentBehavior:",
+//                            'bind' => array("customerID" => $customerID, "saleAgentBehavior" => $agentBehaviour)));
+
+                if (!$promoterScore->promoter) {
+                    $logger->log("Promoter score promoter field does not have data: " . json_encode($promoterScore->promoter));
+                    if ($promoterID) {
+                        $promoterScore->previousTool = $previousTool;
+                        $promoterScore->promoter = $promoterID;
+                        $promoterScore->comment = $customerComment;
+                    }
+                }
+
+                if (!$promoterScore->saleAgentBehavior) {
+                     $logger->log("Rating data not exists: " . json_encode($promoterScore->saleAgentBehavior));
+                    if ($agentBehaviour) {
+                        $logger->log("Rating data to be used: ");
+                        $promoterScore->saleAgentBehavior = $agentBehaviour;
+                        $promoterScore->deliveryExperience = $deliveryRating;
+                        $promoterScore->comment = $deliveryReason;
+                        $promoterScore->overallExperience = $overalExperience;
+                        $promoterScore->productExperience = $productExperience;
+                        $promoterScore->recommendation = $recommendation;
+                        $promoterScore->referralScheme = $referralScheme;
+                    }
+                }
+            } else {
+                $logger->log("Promoter score does not exist: " . json_encode($promoterScore));
+                $promoterScore = new PromoterScore();
+
+                if ($promoterID) {
+                    $promoterScore->previousTool = $previousTool;
+                    $promoterScore->promoter = $promoterID;
+                    $promoterScore->comment = $customerComment;
+                }
+
+                if ($agentBehaviour) {
+                    $promoterScore->deliveryExperience = $deliveryRating;
+                    $promoterScore->comment = $deliveryReason;
+                    $promoterScore->overallExperience = $overalExperience;
+                    $promoterScore->productExperience = $productExperience;
+                    $promoterScore->recommendation = $recommendation;
+                    $promoterScore->referralScheme = $referralScheme;
+                }
+
+                $promoterScore->userID = $userID;
+                $promoterScore->customerID = $customerID;
+                $promoterScore->createdAt = date("Y-m-d H:i:s");
+            }
 
             if ($call->save() === false) {
                 $errors = array();
@@ -66,9 +138,22 @@ class CallController extends Controller {
                     $errors[] = $e;
                 }
                 return $res->dataError('call log failed', $errors);
+            } else {
+                if ($promoterScore->save() === false) {
+                    $errors = array();
+                    $messages = $promoterScore->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    return $res->dataError('call log failed', $errors);
+                } else {
+                    return $res->success("call successfully created ", $call);
+                }
             }
 
-            return $res->success("call successfully created ", $call);
+            //return $res->success("call successfully created ", $call);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('call log error', $message);
