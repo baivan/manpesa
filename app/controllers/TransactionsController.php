@@ -72,38 +72,39 @@ class TransactionsController extends Controller {
                         'bind' => array("id" => $salesID)));
 
 
-
-            $sale->status = $this->salePaid;
-
-            if ($sale->save() === false) {
-                $errors = array();
-                $messages = $sale->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
+            if ($sale) {
+                $sale->status = $this->salePaid;
+                if ($sale->save() === false) {
+                    $errors = array();
+                    $messages = $sale->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    //return $res->dataError('sale create failed',$errors);
+                    $dbTransaction->rollback('transaction create failed' . json_encode($errors));
                 }
-                //return $res->dataError('sale create failed',$errors);
-                $dbTransaction->rollback('transaction create failed' . json_encode($errors));
+
+                $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
+
+
+                $userID = $this->rawSelect($userQuery);
+
+                $pushNotificationData = array();
+                $pushNotificationData['nationalID'] = $nationalID;
+                $pushNotificationData['mobile'] = $mobile;
+                $pushNotificationData['amount'] = $amount;
+                $pushNotificationData['saleAmount'] = $sale->amount;
+                $pushNotificationData['fullName'] = $fullName;
+
+
+
+                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
             }
-            $dbTransaction->commit();
-
-
-
-            $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
-
-            $userID = $this->rawSelect($userQuery);
-            $pushNotificationData = array();
-            $pushNotificationData['nationalID'] = $nationalID;
-            $pushNotificationData['mobile'] = $mobile;
-            $pushNotificationData['amount'] = $amount;
-            $pushNotificationData['saleAmount'] = $sale->amount;
-            $pushNotificationData['fullName'] = $fullName;
 
             $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
-
-            $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
-
+            $dbTransaction->commit();
 
             return $res->success("Transaction successfully done ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -178,7 +179,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName', 't.mobile', 'co.fullName', 't.referenceNumber','st.salesTypeName'];
+                $searchColumns = ['t.fullName', 't.mobile', 'co.fullName', 't.referenceNumber', 'st.salesTypeName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -209,7 +210,7 @@ class TransactionsController extends Controller {
         }
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
-        
+
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
 
@@ -226,7 +227,7 @@ class TransactionsController extends Controller {
         return $res->success("Transactions get successfully ", $data);
     }
 
-public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
+    public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = "ORDER BY $sort $order";
 
