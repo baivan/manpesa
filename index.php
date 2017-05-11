@@ -91,6 +91,7 @@ $sale_route->post('all', 'getSales');
 $sale_route->get('all', 'getSales');
 $sale_route->post('crm/all', 'getTableSales');
 $sale_route->get('crm/all', 'getTableSales');
+$sale_route->get('crm/partners', 'getTablePartnerSales');
 $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
 
@@ -163,6 +164,8 @@ $customer_route->post('crm/all', 'getTableCustomers');
 $customer_route->get('crm/all', 'getTableCustomers');
 $customer_route->get('all', 'getAll');
 $customer_route->post('all', 'getAll');
+$customer_route->post('warranty', 'activateWarranty');
+$customer_route->post('partner/create', 'create');
 
 $user_item_route = new MicroCollection();
 $user_item_route->setPrefix('/userItem/');
@@ -232,6 +235,7 @@ $ticket_route->post('create', 'create'); //{ticketTitle,ticketDescription,custom
 $ticket_route->post('update', 'update');
 $ticket_route->post('crm/all', 'getTableTickets');
 $ticket_route->get('crm/all', 'getTableTickets');
+$ticket_route->get('all', 'getAll');
 $ticket_route->post('close', 'close');
 $ticket_route->post('assign', 'assign');
 $ticket_route->get('crm/updates', 'tableTicketUpdates');

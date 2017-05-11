@@ -31,6 +31,7 @@ class TicketController extends Controller {
         $ticketDescription = $json->ticketDescription;
         $customerID = $json->customerID;
         $assigneeID = $json->assigneeID;
+        $userID = $json->userID ? $json->userID : NULL;
         $ticketCategoryID = $json->ticketCategoryID;
         $priorityID = $json->priorityID;
         $status = $json->status;
@@ -56,6 +57,7 @@ class TicketController extends Controller {
             $ticket->assigneeID = $assigneeID;
             $ticket->ticketCategoryID = $ticketCategoryID;
             $ticket->priorityID = $priorityID;
+            $ticket->userID = $userID;
             $ticket->status = $status;
             $ticket->createdAt = date("Y-m-d H:i:s");
 
@@ -87,7 +89,7 @@ class TicketController extends Controller {
 
         $token = $json->token ? $json->token : '';
         $ticketUpdate = $json->ticketUpdate ? $json->ticketUpdate : '';
-        $callback = $json->callback ? $json->callback : '';
+        $callback = !empty(trim($json->callback)) ? $json->callback : NULL;
         $userID = $json->userID ? $json->userID : '';
         $ticketID = $json->ticketID ? $json->ticketID : '';
 
@@ -301,20 +303,20 @@ class TicketController extends Controller {
                 }
                 $whereQuery .= $valueString;
                 $logger->log("Filter Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
-            } else if($key == 't.status' && $value == 404) {
+            } else if ($key == 't.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
-                 $logger->log("Status Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
+                $logger->log("Status Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
                     $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
-                 $logger->log("Date Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
+                $logger->log("Date Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else {
                 $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
                 $whereQuery .= $valueString;
-                 $logger->log("Rest Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
+                $logger->log("Rest Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             }
         }
 //        $logger->log("Request Data Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
@@ -338,9 +340,8 @@ class TicketController extends Controller {
 //        } elseif (!$ticketID && $filter && !$customerID) {
 //            $condition = " WHERE ";
 //        }
-//        $countQuery = $countQuery . $baseQuery . $condition;
+
         $countQuery = $countQuery . $baseQuery . $whereQuery;
-//        $selectQuery = $selectQuery . $baseQuery . $condition;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
 
 //        $selectQuery .= $sortClause;
@@ -441,6 +442,37 @@ class TicketController extends Controller {
         $data["ticketUpdates"] = $ticketUpdates;
 
         return $res->success("ticketUpdates ", $data);
+    }
+
+    public function getAll() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token') ? $request->getQuery('token') : '';
+        $ticketID = $request->getQuery('ticketID') ? $request->getQuery('ticketID') : '';
+
+        if (!$token) {
+            return $res->dataError("Missing data ", []);
+        }
+
+        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.ticketCategoryID, "
+                . "cat.ticketCategoryName,t.priorityID,pr.priorityName, t.userID, "
+                . "c.fullName AS name, t.customerID, c1.fullName AS customerName, c1.workMobile, "
+                . "t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
+
+        $baseQuery = "FROM ticket t LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c "
+                . "ON u.contactID=c.contactsID LEFT JOIN customer cust ON t.customerID=cust.customerID "
+                . "LEFT JOIN contacts c1 ON cust.contactsID=c1.contactsID LEFT JOIN users u1 "
+                . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
+                . "INNER JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
+                . "INNER JOIN priority pr ON t.priorityID=pr.priorityID ";
+
+        $whereQuery = $ticketID ? "WHERE ticketID=$ticketID" : "";
+        $ticketQuery = "$selectQuery $baseQuery $whereQuery";
+
+        $tickets = $this->rawSelect($ticketQuery);
+
+        return $res->success("ticket retrieved", $tickets);
     }
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
