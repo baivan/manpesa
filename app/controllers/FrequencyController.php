@@ -8,6 +8,7 @@ use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
 class FrequencyController extends Controller
 {
+	protected $dailyAmount = 35;
 
     protected function rawSelect($statement){ 
 	      $connection = $this->di->getShared("db"); 
@@ -141,7 +142,13 @@ class FrequencyController extends Controller
 
 		       $frequencies = $this->rawSelect($frequencyQuery);
 
-		       return $res->getSalesSuccess($frequencies);
+		       $data = array();
+		       $data['frequencies'] = $frequencies;
+		       $data['dailyAmount'] = $dailyAmount;
+
+
+		       //return $res->getSalesSuccess($frequencies);
+		       return $res->success("Prices ", $data);
 	}
 	
 	 public function getTableFrequency(){ //sort, order, page, limit,filter
