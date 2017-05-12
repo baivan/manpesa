@@ -574,6 +574,9 @@ class UsersController extends Controller {
     }
 
     public function getTableUsers() { //sort, order, page, limit,filter
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -616,7 +619,7 @@ class UsersController extends Controller {
                 $valueString = chop($valueString, " ||");
                 if ($valueString) {
                     $valueString = "(" . $valueString;
-                    $valueString .= ") AND";
+                    $valueString .= ") AND ";
                 }
                 $whereQuery .= $valueString;
             } else if ($key == 'u.status' && $value == 404) {
@@ -624,11 +627,11 @@ class UsersController extends Controller {
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
-                    $valueString = " DATE(u.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $valueString = " DATE(u.createdAt) BETWEEN '$value[0]' AND '$value[1]' ";
                     $whereQuery .= $valueString;
                 }
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
                 $whereQuery .= $valueString;
             }
         }
@@ -645,6 +648,8 @@ class UsersController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
         //return $res->success($selectQuery);
+
+//        $logger->log("Request Query For Users: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
