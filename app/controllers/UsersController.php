@@ -329,13 +329,13 @@ class UsersController extends Controller {
     }
 
     public function login() {//usename, password
-        $logPathLocation = $this->config->logPath->location.'info.log';
+        $logPathLocation = $this->config->logPath->location . 'info.log';
         $logger = new FileAdapter($logPathLocation);
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
-        $logger->log("Request Data: ". json_encode($json));
+        $logger->log("Request Data: " . json_encode($json));
         $username = $json->username;
         $password = $json->password;
         $token = $json->token;
@@ -509,9 +509,11 @@ class UsersController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
-        $roleID = $request->getQuery('roleID');
+        $roleID = $request->getQuery('roleID') ? $request->getQuery('roleID') : '';
+        $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
+        $status = $request->getQuery('status') ? $request->getQuery('status') : 0;
 
-        if (!$token || !$roleID) {
+        if (!$token) {
             return $res->dataError("Missing data ");
         }
 
@@ -521,7 +523,50 @@ class UsersController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $agentQuery = "SELECT u.userID, co.fullName from users u join contacts co on u.contactID=co.contactsID WHERE roleID=$roleID";
+        $agentQuery = "SELECT u.userID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
+
+        $whereArray = [
+            'u.roleID' => $roleID,
+            'u.status' => $status,
+            'filter' => $filter
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+            if ($key == 'filter') {
+                $searchColumns = ['co.workMobile', 'co.nationalIdNumber', 'co.fullName', 'co.location'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else {
+                if ($key == 'u.status' && $value == 404) {
+                    $valueString = "" . $key . "=0" . " AND ";
+                } else if ($key == 'date') {
+                    if ($value[0] && $value[1]) {
+                        $valueString = " DATE(u.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    }
+                } else {
+                    $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                }
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND");
+        }
+
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+        $agentQuery = $agentQuery . $whereQuery;
 
         $salesAgents = $this->rawSelect($agentQuery);
 
