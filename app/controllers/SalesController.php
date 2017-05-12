@@ -115,7 +115,7 @@ class SalesController extends Controller {
             $res->sendMessage($MSISDN, "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit);
             $dbTransaction->commit();
 
-            return $res->success("Sale successfully done ", $sale);
+            return $res->success("Sale saved successfully, await payment ", $sale);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('sale create error', $message);
