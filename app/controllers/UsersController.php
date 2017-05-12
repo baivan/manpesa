@@ -579,35 +579,71 @@ class UsersController extends Controller {
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $roleID = $request->getQuery('roleID');
+        $status = $request->getQuery('status');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
+        $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
+        $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
         $countQuery = "SELECT count(userID) as totalUsers ";
 
-        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,co.workMobile,co.location,r.roleID,r.roleName,u.createdAt  ";
+        $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,"
+                . "co.workMobile,co.location,r.roleID,r.roleName, u.agentNumber, u.createdAt  ";
 
         $baseQuery = " FROM users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
-        $condition = "";
 
-        if ($roleID && !$filter) {
-            $condition = " WHERE u.roleID=$roleID ";
-        } elseif ($roleID && $filter) {
-            $condition = " WHERE u.roleID=$roleID AND ";
-        } elseif (!$roleID && $filter) {
-            $condition = " WHERE ";
+        $whereArray = [
+            'u.status' => $status,
+            'filter' => $filter,
+            'u.roleID' => $roleID,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['co.fullName', 'co.workMobile', 'r.roleName', 'co.nationalIdNumber', 'co.location'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'u.status' && $value == 404) {
+                $valueString = "" . $key . "=0" . " AND ";
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(u.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $whereQuery .= $valueString;
+            }
         }
 
-        $countQuery = $countQuery . $baseQuery . $condition;
-        $selectQuery = $selectQuery . $baseQuery . $condition;
-
-        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit, $filter);
-
-        if ($queryBuilder) {
-            $selectQuery = $selectQuery . " " . $queryBuilder;
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND");
         }
+
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+
+        $countQuery = $countQuery . $baseQuery . $whereQuery;
+        $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
         //return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
@@ -620,8 +656,9 @@ class UsersController extends Controller {
         return $res->success("Users", $data);
     }
 
-    public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
-        $query = "";
+    public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
+
+        $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
@@ -630,20 +667,9 @@ class UsersController extends Controller {
             $limit = 10;
         }
 
-        $ofset = ($page - 1) * $limit;
-        if ($sort && $order && $filter) {
-            $query = "  co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
-        } elseif ($sort && $order && !$filter) {
-            $query = " ORDER by $sort $order LIMIT $ofset,$limit";
-        } elseif ($sort && $order && !$filter) {
-            $query = " ORDER by $sort $order  LIMIT $ofset,$limit";
-        } elseif (!$sort && !$order) {
-            $query = " LIMIT $ofset,$limit";
-        } elseif (!$sort && !$order && $filter) {
-            $query = "  co.fullName REGEXP '$filter' OR u.username REGEXP '$filter' OR co.nationalIdNumber REGEXP '$filter 'LIMIT $ofset,$limit";
-        }
-
-        return $query;
+        $ofset = (int) ($page - 1) * $limit;
+        $limitQuery = "LIMIT $ofset, $limit";
+        return "$sortClause $limitQuery";
     }
 
     public function changeUserStatus() {//{userID,status,token}
