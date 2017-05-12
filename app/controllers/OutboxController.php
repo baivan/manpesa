@@ -76,9 +76,8 @@ class OutboxController extends Controller {
     }
 
     public function getTableOutbox() { //sort, order, page, limit,filter
-        $logPathLocation = $this->config->logPath->location . 'error.log';
-        $logger = new FileAdapter($logPathLocation);
-
+//        $logPathLocation = $this->config->logPath->location . 'error.log';
+//        $logger = new FileAdapter($logPathLocation);
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -111,7 +110,7 @@ class OutboxController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.ticketTitle', 'cat.ticketCategoryName', 'c.fullName', 'c1.fullName', 'c2.fullName'];
+                $searchColumns = ['o.message', 'c.fullName', 'c.workMobile'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -123,24 +122,19 @@ class OutboxController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-////                $logger->log("Filter Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else if ($key == 'status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
-////                $logger->log("Status Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
                     $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
-////                $logger->log("Date Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else {
                 $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
                 $whereQuery .= $valueString;
-////                $logger->log("Rest Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             }
         }
-        $logger->log("Request Data Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
 
         if ($whereQuery) {
             $whereQuery = chop($whereQuery, " AND");
@@ -148,29 +142,15 @@ class OutboxController extends Controller {
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
-//        $condition = "";
-//
-//        if ($filter && $customerID) {
-//            $condition = " WHERE o.contactsID=$contactsID AND ";
-//        } elseif ($filter && !$customerID) {
-//            $condition = " WHERE  ";
-//        } elseif (!$filter && !$customerID) {
-//            $condition = "  ";
-//        }
-
-        $countQuery = $countQuery . $baseQuery.$whereQuery;
-        $selectQuery = $selectQuery . $baseQuery.$whereQuery;
+        $countQuery = $countQuery . $baseQuery . $whereQuery;
+        $selectQuery = $selectQuery . $baseQuery . $whereQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
-        //return $res->success($selectQuery);
-        
-        $logger->log("Outbox Request Query: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalOutBox"] = $count[0]['totalOutBox'];
         $data["Messages"] = $messages;
 
@@ -230,7 +210,7 @@ class OutboxController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = $sort? "ORDER BY $sort $order":'';
+        $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
@@ -241,7 +221,6 @@ class OutboxController extends Controller {
 
         $ofset = (int) ($page - 1) * $limit;
         $limitQuery = "LIMIT $ofset, $limit";
-
         return "$sortClause $limitQuery";
     }
 
