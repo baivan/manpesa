@@ -79,7 +79,7 @@ class SystemResponses extends Controller {
     }
 
     public function success($message, $data) {
-        $file = $this->config->senderIds->mediamax;
+        $file = 'test'; //$this->config->senderIds->mediamax;
 
 
         $response = new Response();
@@ -98,7 +98,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($success));
         $logger = new FileAdapter($this->getLogFile('success'));
         $logger->log($file . ' ty ' . $message . ' ' . json_encode($data));
-        $this->composePushLog("success  " . $message, $data);
+        //$this->composePushLog("success  " . $message, $data);
 
         return $response;
     }
@@ -226,6 +226,63 @@ class SystemResponses extends Controller {
         $logger->log($message . ' ' . json_encode($response));
 
         return $response;
+    }
+
+    public function sendEmail($ticket) {
+        $mail = new PHPMailer;
+        //Enable SMTP debugging. 
+//        $mail->SMTPDebug = 3;
+        //Set PHPMailer to use SMTP.
+        $mail->isSMTP();
+        //Set SMTP host name                          
+        $mail->Host = "smtp.gmail.com";
+
+        //Set this to true if SMTP host requires authentication to send email
+        $mail->SMTPAuth = true;
+
+        //Provide username and password     
+        $mail->Username = "stats@southwell.io";
+        $mail->Password = "MmeJK>99";
+
+        //If SMTP requires TLS encryption then set it
+        $mail->SMTPSecure = "tls";
+//Set TCP port to connect to 
+        $mail->Port = 587;
+
+        $mail->From = "tech@southwell.io";
+        $mail->FromName = "Envirofit Notifier";
+
+        $workEmail = $ticket['workEmail'];
+        $mail->addAddress($workEmail);
+        $mail->isHTML(true);
+
+        $mail->Subject = "Email Notification";
+        $mail->Body = "<div style='background-color:#EBEEEE;padding:10px;'>"
+                . "<h3>Ticket Assignment</h3>"
+                . "<h5>Dear <strong>" . $ticket['assigneeName'] . "</strong>,</h5>"
+                . "The following ticket has been assigned to you. Please ensure its been resolved."
+                . "<p>Ticket Name: <strong>" . $ticket['ticketTitle'] . "</strong></p>"
+                . "<p>Ticket Category: <strong>" . $ticket['ticketCategoryName'] . "</strong></p>"
+                . "<p>Ticket Priority: <strong>" . $ticket['priorityName'] . "</strong></p>"
+                . "<br/>"
+                . "<br/>"
+                . "Envirofit Customer Service Team"
+                . "<br/>"
+                . "Assigned by: " . $ticket['name']
+                . "</div>";
+
+        $message = '';
+
+        if (!$mail->send()) {
+            $message = 'Error while sending email';
+        } else {
+            $message = "email has been sent successfully";
+        }
+
+        $logger = new FileAdapter($this->getLogFile());
+        $logger->log($message);
+
+        //return $message;
     }
 
     private function sendAndroidPushNotification($data, $title, $body, $userID, $appName) {

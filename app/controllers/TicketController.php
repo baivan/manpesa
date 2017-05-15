@@ -72,9 +72,28 @@ class TicketController extends Controller {
                 //return $res->dataError('sale create failed',$errors);
                 $dbTransaction->rollback('ticket create failed' . json_encode($errors));
             }
-            $dbTransaction->commit();
 
-            return $res->success("ticket successfully created ", $ticket);
+            $ticketID = $ticket->ticketID;
+
+            $ticketData = $res->rawSelect("SELECT t.ticketTitle, t.ticketDescription, "
+                    . "cat.ticketCategoryName,pr.priorityName, c.fullName AS name, "
+                    . "c2.fullName AS assigneeName, c2.workMobile, c2.workEmail FROM ticket t LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c "
+                    . "ON u.contactID=c.contactsID LEFT JOIN customer cust ON t.customerID=cust.customerID "
+                    . "LEFT JOIN contacts c1 ON cust.contactsID=c1.contactsID LEFT JOIN users u1 "
+                    . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
+                    . "INNER JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
+                    . "INNER JOIN priority pr ON t.priorityID=pr.priorityID WHERE t.ticketID=$ticketID");
+
+            $dbTransaction->commit();
+            $assigneeName = $ticketData[0]['assigneeName'];
+            $name = $ticketData[0]['name'];
+
+            $assigneeMessage = "Dear $assigneeName, the ticket named $ticketTitle "
+                    . "has been assigned to you. Please ensure its resolve. Contact $name for more info";
+            $res->sendMessage($ticketData[0]['workMobile'], $assigneeMessage);
+            $res->sendEmail($ticketData[0]);
+
+            return $res->success("ticket successfully created ", $ticketData[0]);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Priority create error', $message);
@@ -473,6 +492,48 @@ class TicketController extends Controller {
         $tickets = $this->rawSelect($ticketQuery);
 
         return $res->success("ticket retrieved", $tickets);
+    }
+
+    public function email() {//productName,productImage,categoryID,productID,token
+//        $jwtManager = new JwtManager();
+//        $request = new Request();
+        $res = new SystemResponses();
+        $res->sendEmail();
+//        $json = $request->getJsonRawBody();
+//        $ticketID = isset($json->ticketID) ? $json->ticketID : '';
+//        $token = isset($json->token) ? $json->token : '';
+//        if (!$token || !$ticketID) {
+//            return $res->dataError("Missing data", []);
+//        }
+//
+//        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+//        if (!$tokenData) {
+//            return $res->dataError("Data compromised", []);
+//        }
+//
+//        $ticket = Ticket::findFirst(array("ticketID=:id: ",
+//                    'bind' => array("id" => $ticketID)));
+//        if (!$ticket) {
+//            return $res->dataError("Ticket not found", []);
+//        }
+//
+//        if ($ticketID) {
+//            $ticket->status = 1;
+//        }
+//
+//
+//
+//        if ($ticket->save() === false) {
+//            $errors = array();
+//            $messages = $ticket->getMessages();
+//            foreach ($messages as $message) {
+//                $e["message"] = $message->getMessage();
+//                $e["field"] = $message->getField();
+//                $errors[] = $e;
+//            }
+//            return $res->dataError('ticket close failed', $errors);
+//        }
+//        return $res->success("Ticket closed successfully", $ticket);
     }
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
