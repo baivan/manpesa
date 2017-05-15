@@ -186,6 +186,11 @@ class SalesController extends Controller {
 
     public function createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction, $homeMobile = null, $homeEmail = null, $workEmail = null, $passportNumber = 0, $locationID = 0) {
         $res = new SystemResponses();
+        $workMobile = $res->formatMobileNumber($workMobile);
+        if($homeMobile){
+            $homeMobile = $res->formatMobileNumber($homeMobile);
+        }
+        
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                     'bind' => array("w_mobile" => $workMobile)));
         if ($contact) {

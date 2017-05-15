@@ -146,7 +146,10 @@ class ContactsController extends Controller
         return $res->dataError("Missing data ");
       }
 
-      $workMobile = $res->formatMobileNumber($workMobile);
+     $workMobile = $res->formatMobileNumber($workMobile);
+        if($homeMobile){
+            $homeMobile = $res->formatMobileNumber($homeMobile);
+        }
 
        $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                 'bind'=>array("w_mobile"=>$workMobile)));
