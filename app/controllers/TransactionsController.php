@@ -72,13 +72,13 @@ class TransactionsController extends Controller {
             $sale = Sales::findFirst(array("salesID=:id: ",
                         'bind' => array("id" => $salesID)));
 
-            $saleQuery ="SELECT s.salesID FROM transaction t JOIN contacts c on t.salesID=c.nationalIdNumber or t.salesID=c.workMobile JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID where c.nationalIdNumber='%$salesID%' or c.workMobile='%$salesID%'";
-            if(!$sale){
+            $saleQuery = "SELECT s.salesID FROM transaction t JOIN contacts c on t.salesID=c.nationalIdNumber or t.salesID=c.workMobile JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID where c.nationalIdNumber='%$salesID%' or c.workMobile='%$salesID%'";
+            if (!$sale) {
                 $mappedSale = $this->rawSelect($saleQuery);
 
-               $salesID=$mappedSale[0]['salesID'];
+                $salesID = $mappedSale[0]['salesID'];
                 $sale = Sales::findFirst(array("salesID=:id: ",
-                        'bind' => array("id" => $salesID)));
+                            'bind' => array("id" => $salesID)));
             }
 
 
@@ -133,18 +133,18 @@ class TransactionsController extends Controller {
         $token = $json->token;
         //  $userID = $json->userID;
         $salesID = $json->salesID;
-        
 
-        $getAmountQuery="SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID ";
+
+        $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID ";
 
         $transaction = $this->rawSelect($getAmountQuery);
 
-        if($transaction[0]['amount'] <= 0){
+        if ($transaction[0]['amount'] <= 0) {
             $getAmountQuery = "SELECT SUM(t.depositAmount) amount, s.amount as saleAmount, st.salesTypeDeposit,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
         }
 
         $transaction = $this->rawSelect($getAmountQuery);
-        
+
 
         return $res->success("Sale paid", $transaction[0]);
     }
@@ -182,10 +182,13 @@ class TransactionsController extends Controller {
 
         $countQuery = "SELECT count(DISTINCT t.transactionID) as totalTransaction ";
 
-       /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
-       */
+        /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
+         */
 
-        $baseQuery = "FROM transaction t JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber JOIN customer cu ON co.contactsID=cu.contactsID  JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
+        $baseQuery = "FROM transaction t JOIN contacts co ON t.salesID=co.workMobile "
+                . "OR t.salesID=co.nationalIdNumber JOIN customer cu ON co.contactsID=cu.contactsID  "
+                . "JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp "
+                . "on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
 
         $whereArray = [
             'filter' => $filter,
@@ -199,7 +202,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.depositorName', 't.mobile', 'co.fullName', 't.referenceNumber', 'st.salesTypeName'];
+                $searchColumns = ['t.fullName', 't.mobile', 'co.fullName', 't.referenceNumber', 'st.salesTypeName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -211,7 +214,6 @@ class TransactionsController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-
             } else if ($key == 't.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
@@ -239,7 +241,7 @@ class TransactionsController extends Controller {
         $selectQuery .= $queryBuilder;
 
 
-       //  return $res->success($countQuery);
+        //  return $res->success($countQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
 
@@ -265,101 +267,100 @@ class TransactionsController extends Controller {
         return "$sortClause $limitQuery";
     }
 
-/*
+    /*
 
-//dummy transactions
-    public function dummyTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $transactionManager = new TransactionManager();
-        $dbTransaction = $transactionManager->get();
+      //dummy transactions
+      public function dummyTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
+      $jwtManager = new JwtManager();
+      $request = new Request();
+      $res = new SystemResponses();
+      $transactionManager = new TransactionManager();
+      $dbTransaction = $transactionManager->get();
 
-        $mobile = $request->getQuery("mobile");
-        $referenceNumber = $request->getQuery("referenceNumber");
-        $fullName = $request->getQuery("fullName");
-        $depositAmount = $request->getQuery("amount");
-        $salesID = $request->getQuery("account");
-        $token = $request->getQuery("token");
+      $mobile = $request->getQuery("mobile");
+      $referenceNumber = $request->getQuery("referenceNumber");
+      $fullName = $request->getQuery("fullName");
+      $depositAmount = $request->getQuery("amount");
+      $salesID = $request->getQuery("account");
+      $token = $request->getQuery("token");
 
-        if (!$token) {
-            return $res->dataError("Token missing ");
-        }
-        if (!$salesID) {
-            return $res->dataError("Account missing ");
-        }
+      if (!$token) {
+      return $res->dataError("Token missing ");
+      }
+      if (!$salesID) {
+      return $res->dataError("Account missing ");
+      }
 
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+      $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
+      if (!$tokenData) {
+      return $res->dataError("Data compromised");
+      }
 
-        try {
-            $transaction = new Transaction();
-            $transaction->mobile = $mobile;
-            $transaction->referenceNumber = $referenceNumber;
-            $transaction->fullName = $fullName;
-            $transaction->depositAmount = $depositAmount;
-            $nationalID->nationalID = 0;
-            $transaction->salesID = $salesID;
-            $transaction->createdAt = date("Y-m-d H:i:s");
+      try {
+      $transaction = new Transaction();
+      $transaction->mobile = $mobile;
+      $transaction->referenceNumber = $referenceNumber;
+      $transaction->fullName = $fullName;
+      $transaction->depositAmount = $depositAmount;
+      $nationalID->nationalID = 0;
+      $transaction->salesID = $salesID;
+      $transaction->createdAt = date("Y-m-d H:i:s");
 
-            if ($transaction->save() === false) {
-                $errors = array();
-                $messages = $transaction->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                //return $res->dataError('sale create failed',$errors);
-                $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-            }
-            $sale = Sales::findFirst(array("salesID=:id: ",
-                        'bind' => array("id" => $salesID)));
-
-
-
-            $sale->status = $this->salePaid;
-
-            if ($sale->save() === false) {
-                $errors = array();
-                $messages = $sale->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                //return $res->dataError('sale create failed',$errors);
-                $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-            }
-            $dbTransaction->commit();
+      if ($transaction->save() === false) {
+      $errors = array();
+      $messages = $transaction->getMessages();
+      foreach ($messages as $message) {
+      $e["message"] = $message->getMessage();
+      $e["field"] = $message->getField();
+      $errors[] = $e;
+      }
+      //return $res->dataError('sale create failed',$errors);
+      $dbTransaction->rollback('transaction create failed' . json_encode($errors));
+      }
+      $sale = Sales::findFirst(array("salesID=:id: ",
+      'bind' => array("id" => $salesID)));
 
 
 
-            $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
+      $sale->status = $this->salePaid;
+
+      if ($sale->save() === false) {
+      $errors = array();
+      $messages = $sale->getMessages();
+      foreach ($messages as $message) {
+      $e["message"] = $message->getMessage();
+      $e["field"] = $message->getField();
+      $errors[] = $e;
+      }
+      //return $res->dataError('sale create failed',$errors);
+      $dbTransaction->rollback('transaction create failed' . json_encode($errors));
+      }
+      $dbTransaction->commit();
 
 
 
-            $userID = $this->rawSelect($userQuery);
-            $pushNotificationData = array();
-            $pushNotificationData['nationalID'] = $nationalID;
-            $pushNotificationData['mobile'] = $mobile;
-            $pushNotificationData['amount'] = $amount;
-            $pushNotificationData['saleAmount'] = $sale->amount;
-            $pushNotificationData['fullName'] = $fullName;
+      $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
 
-            $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
-            $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
 
-            return $res->success("Transaction successfully done ", true);
-        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
-            $message = $e->getMessage();
-            return $res->dataError('Transaction create error', $message);
-        }
-    }
 
-    */
+      $userID = $this->rawSelect($userQuery);
+      $pushNotificationData = array();
+      $pushNotificationData['nationalID'] = $nationalID;
+      $pushNotificationData['mobile'] = $mobile;
+      $pushNotificationData['amount'] = $amount;
+      $pushNotificationData['saleAmount'] = $sale->amount;
+      $pushNotificationData['fullName'] = $fullName;
 
+      $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
+      $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
+
+      return $res->success("Transaction successfully done ", true);
+      } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+      $message = $e->getMessage();
+      return $res->dataError('Transaction create error', $message);
+      }
+      }
+
+     */
 }
