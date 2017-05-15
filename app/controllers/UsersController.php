@@ -331,6 +331,7 @@ class UsersController extends Controller {
     public function login() {//usename, password
         $logPathLocation = $this->config->logPath->location . 'info.log';
         $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -350,28 +351,33 @@ class UsersController extends Controller {
         }
 
         $username = $res->formatMobileNumber($username);
+
         $user = Users::findFirst(array("username=:username:",
                     'bind' => array("username" => $username)));
 
+//        $user = $this->rawSelect("SELECT u.userID, u.username, u.targetSale, "
+//                . "u.roleID, r.roleName, u.contactID, u.status FROM users u INNER JOIN role r ON "
+//                . "u.roleID=r.roleID WHERE u.username=$username");
+
+        //$logger->log("User Data: " . json_encode($user));
 
         if ($user) {
             if ($this->security->checkHash($password, $user->password)) {
                 $token = $jwtManager->issueToken($user);
-                $roleId = $user->roleID;
-                $contactsId = $user->contactID;
-
-                $r_query = "SELECT * FROM role WHERE roleId=$roleId";
+//                $roleId = $user->roleID;
+//                
+//                $contactsId = $user->contactID;
+//                $r_query = "SELECT * FROM role WHERE roleId=$roleId";
                 //  $c_query = "SELECT * FROM contacts WHERE contactsID=$contactsId ";
-
-                $_role = $this->rawSelect($r_query);
+//                $_role = $this->rawSelect($r_query);
                 //   $contact = $this->rawSelect($c_query);
                 $data = array();
 
-                $data = ["token" => $token,
+                $data = [
+                    "token" => $token,
                     "username" => $user->username,
                     "targetSale" => $user->targetSale,
-                    "role" => $_role['roleName'],
-                    "roleID" => $_role['roleID'],
+                    "role" => $user->roleID,
                     "userID" => $user->userID,
                     "contactID" => $user->contactID,
                     "status" => $user->status,
@@ -380,12 +386,12 @@ class UsersController extends Controller {
 
 
 
-                return $res->success("Login successful ", $data);
+                return $res->success("login successful ", $data);
             }
-            return $res->unProcessable("Password missmatch ", $json);
+            return $res->unProcessable("password missmatch ", $json);
         }
 
-        return $res->notFound("User doesn't exist ", $json);
+        return $res->notFound("user doesn't exist ", $json);
     }
 
     public function resetPassword() { //{username, token}
@@ -648,7 +654,6 @@ class UsersController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
         //return $res->success($selectQuery);
-
 //        $logger->log("Request Query For Users: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
