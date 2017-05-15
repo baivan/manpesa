@@ -68,6 +68,7 @@ class TransactionsController extends Controller {
                 //return $res->dataError('sale create failed',$errors);
                 $dbTransaction->rollback('transaction create failed' . json_encode($errors));
             }
+
             $sale = Sales::findFirst(array("salesID=:id: ",
                         'bind' => array("id" => $salesID)));
 
@@ -124,10 +125,25 @@ class TransactionsController extends Controller {
         //  $userID = $json->userID;
         $salesID = $json->salesID;
 
-        // $isPaid = $this->checkSalePaid($salesID);
 
-        $getAmountQuery = "SELECT SUM(t.depositAmount) amount, s.amount as saleAmount, st.salesTypeDeposit,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
+        // $isPaid = $this->checkSalePaid($salesID);
+        
+
+
+         //join sales s on cu.customerID=s.customerID 
+
+
+        
+
+        $getAmountQuery="SELECT t.transactionID, SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$saleID ";
         $transaction = $this->rawSelect($getAmountQuery);
+
+        if($transaction[0]['amount'] <= 0){
+            $getAmountQuery = "SELECT SUM(t.depositAmount) amount, s.amount as saleAmount, st.salesTypeDeposit,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
+        }
+
+        $transaction = $this->rawSelect($getAmountQuery);
+        
 
         return $res->success("Sale paid", $transaction[0]);
     }

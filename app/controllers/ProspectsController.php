@@ -78,11 +78,16 @@ class ProspectsController extends Controller {
             return $res->dataError("Missing data ");
         }
 
+        $workMobile = $res->formatMobileNumber($workMobile);
+        if($homeMobile){
+            $homeMobile = $res->formatMobileNumber($homeMobile);
+        }
 
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                     'bind' => array("w_mobile" => $workMobile)));
         if ($contact) {
-            $prospect = Prospects::findFirst(array("contactsID=:id: ",
+        
+        $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contact->contactsID)));
             if ($prospect) {
                 return $res->success("Prospect exists ", false);
