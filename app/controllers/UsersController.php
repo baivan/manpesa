@@ -358,7 +358,6 @@ class UsersController extends Controller {
 //        $user = $this->rawSelect("SELECT u.userID, u.username, u.targetSale, "
 //                . "u.roleID, r.roleName, u.contactID, u.status FROM users u INNER JOIN role r ON "
 //                . "u.roleID=r.roleID WHERE u.username=$username");
-
         //$logger->log("User Data: " . json_encode($user));
 
         if ($user) {
@@ -371,6 +370,10 @@ class UsersController extends Controller {
                 //  $c_query = "SELECT * FROM contacts WHERE contactsID=$contactsId ";
 //                $_role = $this->rawSelect($r_query);
                 //   $contact = $this->rawSelect($c_query);
+
+                $userData = $this->rawSelect("SELECT r.roleName, c.fullName FROM users u INNER JOIN role r ON "
+                        . "u.roleID=r.roleID INNER JOIN contacts c ON u.contactID=c.contactsID WHERE u.username=$username");
+
                 $data = array();
 
                 $data = [
@@ -378,6 +381,8 @@ class UsersController extends Controller {
                     "username" => $user->username,
                     "targetSale" => $user->targetSale,
                     "role" => $user->roleID,
+                    "roleName" => $userData[0]['roleName'],
+                    "fullName" => $userData[0]['fullName'],
                     "userID" => $user->userID,
                     "contactID" => $user->contactID,
                     "status" => $user->status,
