@@ -182,12 +182,15 @@ class TransactionsController extends Controller {
 
         $countQuery = "SELECT count(t.transactionID) as totalTransaction ";
 
-        $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
+       /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
+       */
+
+        $baseQuery = "FROM transaction t JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber JOIN customer cu ON co.contactsID=cu.contactsID  JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  group By transactionID ";
 
         $whereArray = [
             'filter' => $filter,
-            't.salesID' => $salesID,
-            't.customerID' => $customerID,
+            's.salesID' => $salesID,
+            'cu.customerID' => $customerID,
             'date' => [$startDate, $endDate]
         ];
 
@@ -196,7 +199,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName', 't.mobile', 'co.fullName', 't.referenceNumber', 'st.salesTypeName'];
+                $searchColumns = ['t.depositorName', 't.mobile', 'co.fullName', 't.referenceNumber', 'st.salesTypeName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -208,6 +211,7 @@ class TransactionsController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
+
             } else if ($key == 't.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
@@ -235,7 +239,7 @@ class TransactionsController extends Controller {
         $selectQuery .= $queryBuilder;
 
 
-        // return $res->success($selectQuery);
+         return $res->success($selectQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
 
@@ -260,6 +264,8 @@ class TransactionsController extends Controller {
 
         return "$sortClause $limitQuery";
     }
+
+/*
 
 //dummy transactions
     public function dummyTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
@@ -353,5 +359,7 @@ class TransactionsController extends Controller {
             return $res->dataError('Transaction create error', $message);
         }
     }
+
+    */
 
 }
