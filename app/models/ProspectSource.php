@@ -1,7 +1,6 @@
 <?php
 
-class Prospects extends \Phalcon\Mvc\Model
-{
+class ProspectSource extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -10,42 +9,21 @@ class Prospects extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $prospectsID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $status;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $userID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $contactsID;
-    
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
     public $sourceID;
-    
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=false)
+     */
+    public $sourceName;
+
     /**
      *
      * @var string
      * @Column(type="string", length=200, nullable=true)
      */
-    public $otherSource;
+    public $description;
 
     /**
      *
@@ -66,9 +44,8 @@ class Prospects extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
-        return 'prospects';
+    public function getSource() {
+        return 'prospect_source';
     }
 
     /**
@@ -77,8 +54,7 @@ class Prospects extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Prospects[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -88,8 +64,7 @@ class Prospects extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Prospects
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 

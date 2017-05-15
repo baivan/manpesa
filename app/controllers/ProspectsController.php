@@ -6,6 +6,7 @@ use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
+use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class ProspectsController extends Controller {
 
@@ -59,6 +60,9 @@ class ProspectsController extends Controller {
     }
 
     public function createContactProspect() {//{userID,workMobile,nationalIdNumber,fullName,location,token}
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -72,6 +76,8 @@ class ProspectsController extends Controller {
         $nationalIdNumber = $json->nationalIdNumber;
         $fullName = $json->fullName;
         $location = $json->location;
+        $sourceID = $json->sourceID ? (int) $json->sourceID : NULL;
+        $otherSource = $json->otherSource ? $json->otherSource : NULL;
         $token = $json->token;
 
         if (!$token || !$workMobile || !$fullName) {
@@ -79,15 +85,15 @@ class ProspectsController extends Controller {
         }
 
         $workMobile = $res->formatMobileNumber($workMobile);
-        if($homeMobile){
-            $homeMobile = $res->formatMobileNumber($homeMobile);
-        }
+//        if ($homeMobile) {
+//            $homeMobile = $res->formatMobileNumber($homeMobile);
+//        }
 
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                     'bind' => array("w_mobile" => $workMobile)));
         if ($contact) {
-        
-        $prospect = Prospects::findFirst(array("contactsID=:id: ",
+
+            $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contact->contactsID)));
             if ($prospect) {
                 return $res->success("Prospect exists ", false);
@@ -109,6 +115,7 @@ class ProspectsController extends Controller {
                 }
 
                 if ($contact->save() === false) {
+
                     $errors = array();
                     $messages = $contact->getMessages();
                     foreach ($messages as $message) {
@@ -118,10 +125,13 @@ class ProspectsController extends Controller {
                     }
                     $dbTransaction->rollback('contact create failed', json_encode($errors));
                 }
+
                 $prospect = new Prospects();
                 $prospect->status = 0;
                 $prospect->userID = $userID;
                 $prospect->contactsID = $contact->contactsID;
+                $prospect->sourceID = $sourceID;
+                $prospect->otherSource = $otherSource;
                 $prospect->createdAt = date("Y-m-d H:i:s");
                 if ($prospect->save() === false) {
                     $errors = array();
@@ -193,9 +203,11 @@ class ProspectsController extends Controller {
 
         $countQuery = "SELECT count(prospectsID) as totalProspects ";
 
-        $baseQuery = " FROM prospects  p join contacts co on p.contactsID=co.contactsID ";
+        $baseQuery = " FROM prospects  p join contacts co on p.contactsID=co.contactsID LEFT JOIN prospect_source ps "
+                . "ON p.sourceID=ps.sourceID ";
 
-        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location,p.createdAt  ";
+        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, p.sourceID, "
+                . "ps.sourceName, p.otherSource, p.createdAt  ";
 
         $whereArray = [
             'filter' => $filter,
@@ -253,6 +265,24 @@ class ProspectsController extends Controller {
         $data["prospects"] = $prospects;
 
         return $res->success("Prospects ", $data);
+    }
+
+    public function getSources() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+
+        if (!$token) {
+            return $res->dataError("Missing data ");
+        }
+
+        $prospectSourceQuery = "SELECT sourceID, sourceName FROM prospect_source ";
+
+        $prospectSources = $this->rawSelect($prospectSourceQuery);
+
+        return $res->getSalesSuccess($prospectSources);
+//        return $res->success("prospectSources ", $prospectSources);
     }
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {

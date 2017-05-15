@@ -80,6 +80,7 @@ $prospect_route->post('all', 'getAll');
 $prospect_route->get('all', 'getAll');
 $prospect_route->post('crm/all', 'getTableProspects');
 $prospect_route->get('crm/all', 'getTableProspects');
+$prospect_route->get('crm/source', 'getSources');
 
 
 $sale_route = new MicroCollection();
