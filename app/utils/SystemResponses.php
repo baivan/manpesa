@@ -257,7 +257,7 @@ class SystemResponses extends Controller {
             "recipient_to_cc" => ""
         );
 
-        $channelAPIURL = "api.southwell.io/mailer";
+        $channelAPIURL = "api.southwell.io/mailer/";
         $username = "faith.wanjiku@envirofit.org";
         $password = "envirofit1234";
 
