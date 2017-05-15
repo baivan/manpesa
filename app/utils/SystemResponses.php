@@ -228,7 +228,7 @@ class SystemResponses extends Controller {
         return $response;
     }
 
-    public function sendEmail($ticket) {
+    public function sendEmail1($ticket) {
 //        $postData = array(
 //            "sender" => "EnvirofitKE",
 //            "recipient" => $msisdn,
@@ -287,7 +287,7 @@ class SystemResponses extends Controller {
         return $response;
     }
 
-    public function sendEmail1($ticket) {
+    public function sendEmail($ticket) {
         $mail = new PHPMailer;
         //Enable SMTP debugging. 
 //        $mail->SMTPDebug = 3;
