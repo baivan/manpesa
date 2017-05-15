@@ -180,12 +180,12 @@ class TransactionsController extends Controller {
                 . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
                 . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
 
-        $countQuery = "SELECT count(t.transactionID) as totalTransaction ";
+        $countQuery = "SELECT count(DISTINCT t.transactionID) as totalTransaction ";
 
        /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
        */
 
-        $baseQuery = "FROM transaction t JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber JOIN customer cu ON co.contactsID=cu.contactsID  JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  group By transactionID ";
+        $baseQuery = "FROM transaction t JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber JOIN customer cu ON co.contactsID=cu.contactsID  JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
 
         $whereArray = [
             'filter' => $filter,
@@ -239,7 +239,7 @@ class TransactionsController extends Controller {
         $selectQuery .= $queryBuilder;
 
 
-        // return $res->success($selectQuery);
+       //  return $res->success($countQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
 
@@ -250,7 +250,7 @@ class TransactionsController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = "ORDER BY $sort $order";
+        $sortClause = "group By transactionID ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
