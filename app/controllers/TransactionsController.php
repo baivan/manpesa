@@ -185,10 +185,8 @@ class TransactionsController extends Controller {
         /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
          */
 
-        $baseQuery = "FROM transaction t JOIN contacts co ON t.salesID=co.workMobile "
-                . "OR t.salesID=co.nationalIdNumber JOIN customer cu ON co.contactsID=cu.contactsID  "
-                . "JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp "
-                . "on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
+        $baseQuery = "FROM transaction t LEFT JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber LEFT JOIN customer cu ON co.contactsID=cu.contactsID LEFT JOIN sales s ON cu.customerID=s.customerID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
+
 
         $whereArray = [
             'filter' => $filter,
