@@ -37,17 +37,21 @@ class ContactsController extends Controller
 	        return $res->dataError("search Data compromised");
 	      }
 
-        $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber, c.nationalIdNumber, p.prospectsID,cu.customerID from contacts c LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID ";
+        $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber, c.nationalIdNumber,c.location, p.prospectsID,cu.customerID from contacts c LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID ";
 
-        if($filter && $userID){
-        	$searchQuery=$searchQuery." WHERE (p.userID=$userID OR cu.userID=$userID) AND (c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter') ";
+      /*  if($filter && $userID){
+        	$searchQuery=$searchQuery." WHERE (p.userID=$userID OR cu.userID=$userID OR p.userID=0 OR cu.userID=0 ) AND (c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter') ";
         }
          elseif($filter && !$userID){
           $searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter'  ";
         }
          elseif(!$filter && $userID){
-          $searchQuery=$searchQuery." WHERE p.userID=$userID OR cu.userID=$userID ";
+          $searchQuery=$searchQuery." WHERE p.userID=$userID OR cu.userID=$userID OR p.userID=0 OR cu.userID=0 ";
+        }*/
+        if($filter){
+          $searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter'  ";
         }
+
 
         $contacts = $this->rawSelect($searchQuery);
 
