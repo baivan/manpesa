@@ -229,6 +229,65 @@ class SystemResponses extends Controller {
     }
 
     public function sendEmail($ticket) {
+//        $postData = array(
+//            "sender" => "EnvirofitKE",
+//            "recipient" => $msisdn,
+//            "message" => $message
+//        );
+
+        $emailMessage = "<div>"
+                . "<h5>Dear <strong>" . $ticket['assigneeName'] . "</strong>,</h5>"
+                . "The following ticket has been assigned to you. Please ensure its been resolved."
+                . "<p>Ticket Name: <strong>" . $ticket['ticketTitle'] . "</strong></p>"
+                . "<p>Ticket Category: <strong>" . $ticket['ticketCategoryName'] . "</strong></p>"
+                . "<p>Ticket Priority: <strong>" . $ticket['priorityName'] . "</strong></p>"
+                . "<br/>"
+                . "<br/>"
+                . "Envirofit Customer Service Team"
+                . "<br/>"
+                . "Assigned by: " . $ticket['name']
+                . "</div>";
+
+        $workEmail = $ticket['workEmail'];
+
+        $postData = array(
+            "emailMessage" => $emailMessage,
+            "emailSubject" => "Ticket Assignment Notification",
+            "recipient" => $workEmail,
+            "recipient_to_cc" => ""
+        );
+
+        $channelAPIURL = "api.southwell.io/mailer";
+        $username = "faith.wanjiku@envirofit.org";
+        $password = "envirofit1234";
+
+
+        $httpRequest = curl_init($channelAPIURL);
+        curl_setopt($httpRequest, CURLOPT_NOBODY, true);
+        curl_setopt($httpRequest, CURLOPT_POST, true);
+        curl_setopt($httpRequest, CURLOPT_POSTFIELDS, json_encode($postData));
+        curl_setopt($httpRequest, CURLOPT_TIMEOUT, 10);
+        curl_setopt($httpRequest, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($httpRequest, CURLOPT_HTTPHEADER, array('Content-Type: application/json',
+            'Content-Length: ' . strlen(json_encode($postData))));
+        $postresponse = curl_exec($httpRequest);
+        $httpStatusCode = curl_getinfo($httpRequest, CURLINFO_HTTP_CODE); //get status code
+        curl_close($httpRequest);
+
+
+
+        $response = array(
+            'httpStatus' => $httpStatusCode,
+            'response' => json_decode($postresponse)
+        );
+
+        $logger = new FileAdapter($this->getLogFile());
+        $logger->log($emailMessage . ' ' . json_encode($response));
+
+        return $response;
+    }
+
+    public function sendEmail1($ticket) {
         $mail = new PHPMailer;
         //Enable SMTP debugging. 
 //        $mail->SMTPDebug = 3;
