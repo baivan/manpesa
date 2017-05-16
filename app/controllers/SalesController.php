@@ -1000,8 +1000,8 @@ class SalesController extends Controller {
                  }
 
                 }
-            }
-          return $res->success("sale updated ", $sales);
+             return $res->success("sale updated ", $sales);
+         
             
             
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
