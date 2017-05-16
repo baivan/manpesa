@@ -44,12 +44,12 @@ class CallController extends Controller {
         $customerReached = $json->customerReached ? $json->customerReached : 0;
         $callTypeID = $json->callTypeID ? $json->callTypeID : '';
         $customerID = $json->customerID ? $json->customerID : '';
-        $ticketID = $json->ticketID ? $json->ticketID : '';
+        $ticketID = $json->ticketID ? $json->ticketID : NULL;
         $userID = $json->userID ? $json->userID : '';
         $userComment = $json->userComment ? $json->userComment : '';
 
 
-        if (!$token || !$callTypeID || !$userID || !$customerID || !$ticketID) {
+        if (!$token || !$callTypeID || !$userID || !$customerID) {
             return $res->dataError("Fields missing ", []);
         }
 
@@ -61,7 +61,7 @@ class CallController extends Controller {
         }
 
         try {
-            
+
             $logger->log("Request Data: " . json_encode($json));
             $call = new Call();
             $call->callTypeID = $callTypeID;
@@ -69,6 +69,7 @@ class CallController extends Controller {
             $call->status = $customerReached;
             $call->callback = $callback;
             $call->comment = $userComment;
+            $call->customerID = $customerID;
             $call->userID = $userID;
             $call->createdAt = date("Y-m-d H:i:s");
 
@@ -93,7 +94,7 @@ class CallController extends Controller {
                 }
 
                 if (!$promoterScore->saleAgentBehavior) {
-                     $logger->log("Rating data not exists: " . json_encode($promoterScore->saleAgentBehavior));
+                    $logger->log("Rating data not exists: " . json_encode($promoterScore->saleAgentBehavior));
                     if ($agentBehaviour) {
                         $logger->log("Rating data to be used: ");
                         $promoterScore->saleAgentBehavior = $agentBehaviour;
@@ -180,15 +181,15 @@ class CallController extends Controller {
 
         $countQuery = "SELECT count(callLogID) as totalCalls ";
 
-        $selectQuery = "SELECT log.callLogID,log.disposition,callType.callTypeName,"
-                . "log.customerID,c.workMobile,c.fullName,log.previousTool,log.promoterID, p.promoterName,"
+        $selectQuery = "SELECT log.callLogID,log.callTypeID,callType.callTypeName,"
+                . "log.customerID,c.workMobile,c.fullName, "
                 . "log.callback,log.comment,log.userID,c1.fullName AS user, log.status,log.createdAt,log.updatedAt ";
 
-        $baseQuery = "FROM call_log log INNER JOIN call_type callType ON log.disposition=callType.callTypeID "
+        $baseQuery = "FROM call_log log INNER JOIN call_type callType ON log.callTypeID=callType.callTypeID "
                 . "INNER JOIN customer cust ON log.customerID=cust.customerID "
                 . "INNER JOIN contacts c ON cust.contactsID=c.contactsID "
                 . "INNER JOIN users u ON log.userID=u.userID "
-                . "INNER JOIN contacts c1 ON u.contactID=c1.contactsID INNER JOIN promoter p ON log.promoterID=p.promoterID ";
+                . "INNER JOIN contacts c1 ON u.contactID=c1.contactsID ";
 
         $whereArray = [
             'filter' => $filter,
@@ -480,10 +481,7 @@ class CallController extends Controller {
         $token = $request->getQuery('token');
         $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
 
-        $promoterScoreQuery = "SELECT ps.promoterScoreID, ps.scoreCategoryID, "
-                . "sc.scoreCategoryName,sc.scoreCategoryDescription, sc.scoreTypeID, "
-                . "ps.scoreResponse,ps.extra, ps.customerID,ps.createdAt FROM promoter_score ps "
-                . "INNER JOIN promoter_score_category sc ON ps.scoreCategoryID=sc.scoreCategoryID";
+        $promoterScores = [];
 
         if (!$token) {
             return $res->dataError("Missing data ");
@@ -495,14 +493,15 @@ class CallController extends Controller {
         }
 
         if ($customerID) {
-            $promoterScoreQuery = "SELECT ps.promoterScoreID, ps.scoreCategoryID, "
-                    . "sc.scoreCategoryName,sc.scoreCategoryDescription, sc.scoreTypeID, "
-                    . "ps.scoreResponse,ps.extra, ps.customerID,ps.createdAt FROM promoter_score ps "
-                    . "INNER JOIN promoter_score_category sc ON ps.scoreCategoryID=sc.scoreCategoryID "
+            $promoterScoreQuery = "SELECT ps.saleAgentBehavior, ps.deliveryExperience, "
+                    . "ps.referralScheme, ps.recommendation, ps.overallExperience, ps.productExperience, "
+                    . "p.promoterName, ps.previousTool, ps.comment FROM promoter_score ps LEFT JOIN promoter p "
+                    . "ON ps.promoter=p.promoterID "
                     . "WHERE ps.customerID=$customerID";
+            $promoterScores = $this->rawSelect($promoterScoreQuery);
+        } else {
+            $promoterScores = [];
         }
-
-        $promoterScores = $this->rawSelect($promoterScoreQuery);
 
         return $res->getSalesSuccess($promoterScores);
     }

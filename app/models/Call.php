@@ -52,6 +52,13 @@ class Call extends \Phalcon\Mvc\Model {
      * @Column(type="integer", length=11, nullable=false)
      */
     public $userID;
+    
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $customerID;
 
     /**
      *
