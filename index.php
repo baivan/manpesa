@@ -96,6 +96,7 @@ $sale_route->get('crm/partners', 'getTablePartnerSales');
 $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
 $sale_route->get('statistic', 'saleSummary');
+$sale_route->get('crm/monitor', 'monitorSales');
 $sale_route->post('updateOldSales','updateOldSales');
 
 $category_route = new MicroCollection();

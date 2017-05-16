@@ -934,6 +934,8 @@ class SalesController extends Controller {
         $closedSales = $this->rawSelect("SELECT COUNT(s.salesID) AS closed FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID "
                 . "INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f ON pp.frequencyID=f.frequencyID WHERE s.status=1");
 
+        $delinquencyTiers = $this->rawSelect("SELECT tierName, tierCount FROM delinquency_tier ORDER BY tierName ASC");
+
         $salesData = array();
         $salesData['totalSales'] = $totalSales[0]['totalSales'];
         $salesData['withoutPayment'] = $salesWithoutPaymentPlan[0]['withoutPayment'];
@@ -941,26 +943,148 @@ class SalesController extends Controller {
         $salesData['paygo'] = $paygoSales[0]['paygoTotal'];
         $salesData['installment'] = $installmentSales[0]['installmentTotal'];
         $salesData['closed'] = $closedSales[0]['closed'];
+        $salesData['delinquency'] = $delinquencyTiers;
 
         return $res->success("sale stats", $salesData);
     }
 
+    public function monitorSales() {
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
 
-    public function updateOldSales(){
-             $jwtManager = new JwtManager();
-            $request = new Request();
-            $res = new SystemResponses();
-            $json = $request->getJsonRawBody();
-            $transactionManager = new TransactionManager();
-            $dbTransaction = $transactionManager->get();
-            /*$query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;"*/
-            try {
-                 $salesQuery = "select * from sales where createdAt='0000-00-00 00:00:00' and customerID > 0 ";
-                 $sales = $this->rawSelect($salesQuery);
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $limit = 5;
+        $batchSize = 1;
+
+        $openSales = Sales::find([
+                    "status = :status:",
+                    "bind" => [
+                        "status" => 0
+                    ]
+        ]);
+
+        $openSaleCount = count($openSales);
+
+        if ($openSaleCount <= $limit) {
+            $batchSize = 1;
+        } else {
+            $batchSize = (int) ($openSaleCount / $limit) + 1;
+        }
+
+        $tiers = DelinquencyTier::find();
+        foreach ($tiers as $tier) {
+            $tier->tierCount = 0;
+            $tier->save();
+        }
+
+        for ($count = 0; $count < $batchSize; $count++) {
+            $page = $count + 1;
+
+            $offset = (int) ($page - 1) * $limit;
+
+            $sales = $res->rawSelect("SELECT s.salesID,s.paymentPlanID,pp.paymentPlanDeposit,
+                pp.salesTypeID,st.salesTypeName,pp.frequencyID,f.frequencyName,f.numberOfDays,s.amount, s.createdAt  
+                FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID 
+                INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f 
+                ON pp.frequencyID=f.frequencyID WHERE s.status=0 LIMIT $offset,$limit");
+
+            foreach ($sales as $sale) {
+                $elapse = date_diff(new DateTime(), new DateTime($sale['createdAt']), TRUE);
+                $numDays = (int) $elapse->days;
+                $customerTier = 0;
+
+                if ($numDays == 3) {
+                    //Welcome Call Ticket and update tier count
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 0)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                } else if ($numDays > 3 && $numDays <= 5) {
+                    $customerTier = 1;
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 1)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                    //UPDATE delinquency_tier SET tierCount=tierCount+2 WHERE tierName=6
+                    //First Delinquent Tier: generate ticket and update tierCount
+                } else if ($numDays > 5 && $numDays <= 10) {
+                    $customerTier = 2;
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 2)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                    //Second Delinquent Tier: generate ticket and update tierCount
+                } else if ($numDays > 10 && $numDays <= 20) {
+                    $customerTier = 3;
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 3)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                    //Third Delinquent Tier: generate ticket and update tierCount
+                } else if ($numDays > 20 && $numDays <= 40) {
+                    $customerTier = 4;
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 4)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                    //Fourth Delinquent Tier: generate ticket and update tierCount
+                } else if ($numDays > 40 && $numDays <= 45) {
+                    $customerTier = 5;
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 5)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                    //Fifth Delinquent Tier: generate ticket and update tierCount
+                } else if ($numDays > 45 && $numDays <= 89) {
+                    $customerTier = 6;
+                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+                                'bind' => array("tierName" => 6)));
+                    if ($tier) {
+                        $tier->tierCount = $tier->tierCount + 1;
+                        $tier->save();
+                    }
+                    //Sixth Delinquent Tier: generate ticket and update tierCount
+                } else if ($numDays == 90) {
+                    $customerTier = 7;
+                    //Default Customer
+                }
+
+                $logger->log("Days Since Commencement " . $numDays . " Customer Tier: " . $customerTier);
+            }
+        }
+
+        return $res->success("response", $batchSize);
+    }
+
+    public function updateOldSales() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+        /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;" */
+        try {
+            $salesQuery = "select * from sales where createdAt='0000-00-00 00:00:00' and customerID > 0 ";
+            $sales = $this->rawSelect($salesQuery);
 
 
             foreach ($sales as $sale) {
-                $contactsID= $sale["customerID"];
+                $contactsID = $sale["customerID"];
                 $saleID = $sale["salesID"];
                 $contactsQuery = "select * from contacts where contactsID=$contactsID";
                 $contacts = $this->rawSelect($contactsQuery);
@@ -972,52 +1096,41 @@ class SalesController extends Controller {
                     $paidAmount = 0;
 
                     foreach ($transactions as $transaction) {
+
                         $paidAmount = $paidAmount+$transaction['depositAmount'];
                         return $res->success("sale updated ", $transaction['depositAmount']); 
-
 
                     }
 
 
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
-                            'bind' => array("id" => $saleID)));
+                                'bind' => array("id" => $saleID)));
 
 
 
-                    if($paidAmount > 2000){
+                    if ($paidAmount > 2000) {
                         $sale_object->status = 1;
-                    }
-                        
-                    else{
+                    } else {
                         $sale_object->status = 3;
                     }
 
                     if ($sale_object->save() === false) {
-                            $errors = array();
-                            $messages = $sale_object->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
-                            }
-                            $dbTransaction->rollback("sale create failed ". json_encode($errors));
-
+                        $errors = array();
+                        $messages = $sale_object->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
                         }
-                    
-                     
-                 }
-
+                        $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                    }
                 }
-             return $res->success("sale updated ", $sales);
-         
-            
-            
+            }
+            return $res->success("sale updated ", $sales);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('sale update error', $message);
         }
-
-       
     }
 
 }
