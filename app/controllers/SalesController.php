@@ -967,7 +967,7 @@ class SalesController extends Controller {
                 foreach ($contacts as $contact) {
                     $workMobile = $contact["workMobile"];
                     $idNumber = $contact["nationalIdNumber"];
-                    $transactionQuery = "select * from transaction where salesID=$workMobile OR salesID=$idNumber";
+                    $transactionQuery = "select * from transaction where salesID='$workMobile' OR salesID='$idNumber' ";
                     $transactions = $this->rawSelect($transactionQuery);
                     $paidAmount = 0;
 
@@ -976,7 +976,7 @@ class SalesController extends Controller {
 
                     }
 
-                    
+
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
                             'bind' => array("id" => $saleID)));
 
