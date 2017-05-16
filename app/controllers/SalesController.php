@@ -1133,9 +1133,10 @@ class SalesController extends Controller {
                    
 
                 }
-                 $dbTransaction->commit();
+
                 // return $res->success("sale updated ", $sale_object);
             }
+            $dbTransaction->commit();
             return $res->success("sale updated ", $sales);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
