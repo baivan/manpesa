@@ -1098,6 +1098,8 @@ class SalesController extends Controller {
                     foreach ($transactions as $transaction) {
                         $amount = $transaction['depositAmount'];
                         $paidAmount = $paidAmount+ $amount;
+
+
                     }
 
 
@@ -1105,12 +1107,13 @@ class SalesController extends Controller {
                                 'bind' => array("id" => $saleID)));
 
 
-
                     if ($paidAmount > 2000) {
                         $sale_object->status = 1;
                     } else {
                         $sale_object->status = 3;
                     }
+
+                    return $res->success("sale updated ", $sale_object);
 
                     if ($sale_object->save() === false) {
                         $errors = array();
