@@ -1109,11 +1109,13 @@ class SalesController extends Controller {
 
                     if ($paidAmount > 2000) {
                         $sale_object->status = 1;
-                    } else {
+                    } elseif ($paidAmount ==0) {
+                       $sale_object->status = -1;
+                    } else{
                         $sale_object->status = 3;
                     }
 
-                    return $res->success("sale updated ", $sale_object);
+                    
 
                     if ($sale_object->save() === false) {
                         $errors = array();
@@ -1125,7 +1127,9 @@ class SalesController extends Controller {
                         }
                         $dbTransaction->rollback("sale create failed " . json_encode($errors));
                     }
+
                 }
+                // return $res->success("sale updated ", $sale_object);
             }
             return $res->success("sale updated ", $sales);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
