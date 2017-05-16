@@ -970,9 +970,14 @@ class SalesController extends Controller {
                     $transactionQuery = "select * from transaction where salesID=$workMobile OR salesID=$idNumber";
                     $transactions = $this->rawSelect($contactsQuery);
                     $paidAmount = 0;
+
                     foreach ($transactions as $transaction) {
                         $paidAmount = $paidAmount+$transaction['depositAmount'];
+
                     }
+
+                    return $res->success("sale updated ", $transactions);
+                    
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
                             'bind' => array("id" => $saleID)));
 
@@ -992,7 +997,7 @@ class SalesController extends Controller {
                                 $e["field"] = $message->getField();
                                 $errors[] = $e;
                             }
-                            $dbTransaction->rollback("sale create failed ".json_encode($sale)."\n".json_encode($sale_object)."\n " . json_encode($errors));
+                            $dbTransaction->rollback("sale create failed ". json_encode($errors));
 
                         }
                     
