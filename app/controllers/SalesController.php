@@ -992,9 +992,11 @@ class SalesController extends Controller {
                                 $e["field"] = $message->getField();
                                 $errors[] = $e;
                             }
+                            $dbTransaction->rollback("sale create failed ".json_encode($sale)."\n".json_encode($sale_object)."\n " . json_encode($errors));
+
                         }
                     
-                      $dbTransaction->rollback("sale create failed ".json_encode($sale)."\n".json_encode($sale_object)."\n " . json_encode($errors));
+                     
                  }
 
                 }
