@@ -1070,4 +1070,65 @@ class SalesController extends Controller {
         return $res->success("response", $batchSize);
     }
 
+    public function updateOldSales() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+        /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;" */
+        try {
+            $salesQuery = "select * from sales where createdAt='0000-00-00 00:00:00' and customerID > 0 ";
+            $sales = $this->rawSelect($salesQuery);
+
+
+            foreach ($sales as $sale) {
+                $contactsID = $sale["customerID"];
+                $saleID = $sale["salesID"];
+                $contactsQuery = "select * from contacts where contactsID=$contactsID";
+                $contacts = $this->rawSelect($contactsQuery);
+                foreach ($contacts as $contact) {
+                    $workMobile = $contact["workMobile"];
+                    $idNumber = $contact["nationalIdNumber"];
+                    $transactionQuery = "select * from transaction where salesID='$workMobile' OR salesID='$idNumber' ";
+                    $transactions = $this->rawSelect($transactionQuery);
+                    $paidAmount = 0;
+
+                    foreach ($transactions as $transaction) {
+                        $paidAmount = $paidAmount + $transaction['depositAmount'];
+                        return $res->success("sale updated ", number_format($transaction['depositAmount']));
+                    }
+
+
+                    $sale_object = Sales::findFirst(array("salesID=:id: ",
+                                'bind' => array("id" => $saleID)));
+
+
+
+                    if ($paidAmount > 2000) {
+                        $sale_object->status = 1;
+                    } else {
+                        $sale_object->status = 3;
+                    }
+
+                    if ($sale_object->save() === false) {
+                        $errors = array();
+                        $messages = $sale_object->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                    }
+                }
+            }
+            return $res->success("sale updated ", $sales);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('sale update error', $message);
+        }
+    }
+
 }
