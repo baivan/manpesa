@@ -605,7 +605,7 @@ class SalesController extends Controller {
                 . "INNER JOIN contacts c ON u.contactID=c.contactsID INNER JOIN customer cust "
                 . "ON s.customerID=cust.customerID INNER JOIN contacts c1 ON cust.contactsID=c1.contactsID "
                 . "INNER JOIN product p ON s.productID=p.productID INNER JOIN product_sale_type_price AS psp "
-                . "ON (pp.salesTypeID=psp.salesTypeID AND s.productID=psp.productID) WHERE s.status=1 ";
+                . "ON (pp.salesTypeID=psp.salesTypeID AND s.productID=psp.productID) WHERE s.status>=1 ";
 
         $selectQuery = "SELECT s.salesID, s.paymentPlanID, pp.paymentPlanDeposit, "
                 . "pp.salesTypeID, st.salesTypeName, psp.price,pp.frequencyID,"
@@ -932,7 +932,7 @@ class SalesController extends Controller {
             ON pp.frequencyID=f.frequencyID WHERE pp.salesTypeID=3");
 
         $closedSales = $this->rawSelect("SELECT COUNT(s.salesID) AS closed FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID "
-                . "INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f ON pp.frequencyID=f.frequencyID WHERE s.status=1");
+                . "INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f ON pp.frequencyID=f.frequencyID WHERE s.status>=1");
 
         $delinquencyTiers = $this->rawSelect("SELECT tierName, tierCount FROM delinquency_tier ORDER BY tierName ASC");
 
@@ -988,7 +988,7 @@ class SalesController extends Controller {
                 pp.salesTypeID,st.salesTypeName,pp.frequencyID,f.frequencyName,f.numberOfDays,s.amount, s.createdAt  
                 FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID 
                 INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f 
-                ON pp.frequencyID=f.frequencyID WHERE s.status=0 LIMIT $offset,$limit");
+                ON pp.frequencyID=f.frequencyID WHERE s.status<=0 LIMIT $offset,$limit");
 
             foreach ($sales as $sale) {
                 $elapse = date_diff(new DateTime(), new DateTime($sale['createdAt']), TRUE);
