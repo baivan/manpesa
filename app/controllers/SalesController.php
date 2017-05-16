@@ -1129,6 +1129,7 @@ class SalesController extends Controller {
                         }
                         $dbTransaction->rollback("sale create failed " . json_encode($errors));
                     }
+                    $dbTransaction->commit();
 
                 }
                 // return $res->success("sale updated ", $sale_object);
