@@ -973,6 +973,7 @@ class SalesController extends Controller {
 
                     foreach ($transactions as $transaction) {
                         $paidAmount = $paidAmount+$transaction['depositAmount'];
+                        return $res->success("sale updated ", $transaction['depositAmount']); 
 
                     }
 
@@ -980,7 +981,7 @@ class SalesController extends Controller {
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
                             'bind' => array("id" => $saleID)));
 
-                    return $res->success("sale updated ", $paidAmount); 
+
 
                     if($paidAmount > 2000){
                         $sale_object->status = 1;
