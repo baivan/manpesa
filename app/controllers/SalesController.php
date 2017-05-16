@@ -855,14 +855,14 @@ class SalesController extends Controller {
             $date = date("Y-m-d");
         }
 
-        $totalSalesQuery = "SELECT sum(t.depositAmount) as totalSales FROM transaction t ";
-        $todaysSalesQuery = "SELECT sum(t.depositAmount) as todaysSale FROM transaction t where date(t.createdAt)='$date'";
+        $totalSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalSales FROM transaction t ";
+        $todaysSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as todaysSale FROM transaction t where date(t.createdAt)='$date'";
 
-        $totalSaleType = "SELECT st.salesTypeID,st.salesTypeName,sum(t.depositAmount) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID group by st.salesTypeID";
-        $todaysSaleType = "SELECT st.salesTypeID,st.salesTypeName,sum(t.depositAmount) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID  where date(t.createdAt)='$date' group by st.salesTypeID ";
+        $totalSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID group by st.salesTypeID";
+        $todaysSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID  where date(t.createdAt)='$date' group by st.salesTypeID ";
 
-        $totalProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,sum(t.depositAmount) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID group by p.productID ";
-        $todaysProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,sum(t.depositAmount) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID where date(t.createdAt)='$date' group by p.productID ";
+        $totalProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,SUM(replace(t.depositAmount,',','')) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID group by p.productID ";
+        $todaysProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,SUM(replace(t.depositAmount,',','')) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID where date(t.createdAt)='$date' group by p.productID ";
 
         $ticketsQuery = "SELECT * from ticket ";
 
@@ -967,13 +967,13 @@ class SalesController extends Controller {
                 foreach ($contacts as $contact) {
                     $workMobile = $contact["workMobile"];
                     $idNumber = $contact["nationalIdNumber"];
-                    $transactionQuery = "select * from transaction where salesID='$workMobile' OR salesID='$idNumber' ";
+                    $transactionQuery = "select replace(depositAmount,',','') as depositAmount from transaction where salesID='$workMobile' OR salesID='$idNumber' ";
                     $transactions = $this->rawSelect($transactionQuery);
                     $paidAmount = 0;
 
                     foreach ($transactions as $transaction) {
                         $paidAmount = $paidAmount+$transaction['depositAmount'];
-                        return $res->success("sale updated ", number_format($transaction['depositAmount'])); 
+                        return $res->success("sale updated ", $transaction['depositAmount']); 
 
 
                     }
