@@ -1096,9 +1096,8 @@ class SalesController extends Controller {
                     $paidAmount = 0;
 
                     foreach ($transactions as $transaction) {
-
-                        $paidAmount = $paidAmount+$transaction['depositAmount'];
-                        
+                        $amount = $transaction['depositAmount'];
+                        $paidAmount = $paidAmount+ $amount;
                     }
 
 
