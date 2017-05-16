@@ -1098,6 +1098,7 @@ class SalesController extends Controller {
                     foreach ($transactions as $transaction) {
                         $amount = $transaction['depositAmount'];
                         $paidAmount = $paidAmount+ $amount;
+                        return $res->success("sale updated ".$amount, $sale_object);
 
 
                     }
