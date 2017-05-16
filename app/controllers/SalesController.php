@@ -1109,10 +1109,13 @@ class SalesController extends Controller {
 
                     if ($paidAmount > 2000) {
                         $sale_object->status = 1;
+                        return $res->success("sale updated ", $sale_object);
                     } elseif ($paidAmount ==0) {
                        $sale_object->status = -1;
+                       return $res->success("sale updated ", $sale_object);
                     } else{
                         $sale_object->status = 3;
+                        return $res->success("sale updated ", $sale_object);
                     }
 
                     
