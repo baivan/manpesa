@@ -95,6 +95,7 @@ $sale_route->get('crm/all', 'getTableSales');
 $sale_route->get('crm/partners', 'getTablePartnerSales');
 $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
+$sale_route->get('statistic', 'saleSummary');
 
 $category_route = new MicroCollection();
 $category_route->setPrefix('/category/');
@@ -240,6 +241,7 @@ $ticket_route->get('all', 'getAll');
 $ticket_route->post('close', 'close');
 $ticket_route->post('assign', 'assign');
 $ticket_route->get('crm/updates', 'tableTicketUpdates');
+$ticket_route->get('crm/email', 'email');
 
 
 $app->mount($user_route);

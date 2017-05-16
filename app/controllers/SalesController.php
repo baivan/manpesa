@@ -187,10 +187,10 @@ class SalesController extends Controller {
     public function createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction, $homeMobile = null, $homeEmail = null, $workEmail = null, $passportNumber = 0, $locationID = 0) {
         $res = new SystemResponses();
         $workMobile = $res->formatMobileNumber($workMobile);
-        if($homeMobile){
+        if ($homeMobile) {
             $homeMobile = $res->formatMobileNumber($homeMobile);
         }
-        
+
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                     'bind' => array("w_mobile" => $workMobile)));
         if ($contact) {
@@ -759,7 +759,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['psi.serialNumber','psi.salesPartner', 'c.fullName', 'c.workMobile','p.productName'];
+                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -896,6 +896,53 @@ class SalesController extends Controller {
         $selectQuery = "select * from transaction t where salesID=$salesID";
         $transactions = $this->rawSelect($selectQuery);
         return $transactions;
+    }
+
+    public function saleSummary() {
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+//        $transactionManager = new TransactionManager();
+//        $dbTransaction = $transactionManager->get();
+        $token = $request->getQuery('token');
+
+        if (!$token) {
+            return $res->dataError("Token missing " . json_encode($json));
+        }
+
+        $totalSales = $this->rawSelect("SELECT COUNT(salesID) AS totalSales FROM sales");
+        $salesWithoutPaymentPlan = $this->rawSelect("SELECT COUNT(salesID) AS withoutPayment FROM sales WHERE paymentPlanID=0");
+        $cashSales = $this->rawSelect("SELECT COUNT(s.salesID) AS cashTotal FROM sales s 
+            INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID 
+            INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f 
+            ON pp.frequencyID=f.frequencyID WHERE pp.salesTypeID=1");
+
+        $paygoSales = $this->rawSelect("SELECT COUNT(s.salesID) AS paygoTotal FROM sales s 
+            INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID 
+            INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f 
+            ON pp.frequencyID=f.frequencyID WHERE pp.salesTypeID=2");
+
+        $installmentSales = $this->rawSelect("SELECT COUNT(s.salesID) AS installmentTotal FROM sales s 
+            INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID 
+            INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f 
+            ON pp.frequencyID=f.frequencyID WHERE pp.salesTypeID=3");
+
+        $closedSales = $this->rawSelect("SELECT COUNT(s.salesID) AS closed FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID "
+                . "INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f ON pp.frequencyID=f.frequencyID WHERE s.status=1");
+
+        $salesData = array();
+        $salesData['totalSales'] = $totalSales[0]['totalSales'];
+        $salesData['withoutPayment'] = $salesWithoutPaymentPlan[0]['withoutPayment'];
+        $salesData['cash'] = $cashSales[0]['cashTotal'];
+        $salesData['paygo'] = $paygoSales[0]['paygoTotal'];
+        $salesData['installment'] = $installmentSales[0]['installmentTotal'];
+        $salesData['closed'] = $closedSales[0]['closed'];
+
+        return $res->success("sale stats", $salesData);
     }
 
 }
