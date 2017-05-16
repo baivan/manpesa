@@ -955,7 +955,7 @@ class SalesController extends Controller {
             $dbTransaction = $transactionManager->get();
             /*$query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;"*/
             try {
-                 $salesQuery = "select * from sales where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 ";
+                 $salesQuery = "select * from sales where createdAt='0000-00-00 00:00:00' and customerID > 0 ";
                  $sales = $this->rawSelect($salesQuery);
 
 
