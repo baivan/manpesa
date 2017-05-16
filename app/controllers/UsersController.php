@@ -534,7 +534,7 @@ class UsersController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $agentQuery = "SELECT u.userID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
+        $agentQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
 
         $whereArray = [
             'u.roleID' => $roleID,
