@@ -979,6 +979,7 @@ class SalesController extends Controller {
                     if($paidAmount > 2000){
                         
                         $sale->status = 1;
+                    }
                         
                     else{
                         $sale->status = 3;
