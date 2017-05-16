@@ -994,7 +994,7 @@ class SalesController extends Controller {
                             }
                         }
                     
-                      $dbTransaction->rollback("sale create failed $sale_object $sale" . json_encode($errors));
+                      $dbTransaction->rollback("sale create failed ".json_encode($sale)."\n".json_encode($sale_object)."\n " . json_encode($errors));
                  }
 
                 }
