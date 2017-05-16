@@ -1078,7 +1078,7 @@ class SalesController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
         /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;" */
-        
+        try {
             $salesQuery = "select * from sales where createdAt='0000-00-00 00:00:00' and customerID > 0 ";
             $sales = $this->rawSelect($salesQuery);
 
@@ -1098,7 +1098,7 @@ class SalesController extends Controller {
                     foreach ($transactions as $transaction) {
                         $amount = $transaction['depositAmount'];
                         $paidAmount = $paidAmount+ $amount;
-                        //return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
+                       // return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
 
                     }
 
@@ -1127,16 +1127,19 @@ class SalesController extends Controller {
                             $e["field"] = $message->getField();
                             $errors[] = $e;
                         }
-                         $res->dataError("sale create failed " . json_encode($errors));
+                        $dbTransaction->rollback("sale create failed " . json_encode($errors));
                     }
 
-                    
+                    $dbTransaction->commit();
 
                 }
-                
+                // return $res->success("sale updated ", $sale_object);
             }
-             return $res->success("sale updated ", $sale_object);
-           
+            return $res->success("sale updated ", $sales);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('sale update error', $message);
+        }
     }
 
 }
