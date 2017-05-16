@@ -576,7 +576,7 @@ class UsersController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "WHERE u.roleID=8 || $whereQuery " : "";
+        $whereQuery = $whereQuery ? "WHERE u.roleID=2 || $whereQuery " : "";
         $agentQuery = $agentQuery . $whereQuery;
 
         $salesAgents = $this->rawSelect($agentQuery);
