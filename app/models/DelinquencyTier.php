@@ -1,6 +1,6 @@
 <?php
 
-class Call extends \Phalcon\Mvc\Model {
+class DelinquencyTier extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -9,56 +9,28 @@ class Call extends \Phalcon\Mvc\Model {
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $callLogID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $callTypeID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $ticketID;
+    public $tierID;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=3, nullable=false)
+     * @Column(type="string", length=150, nullable=false)
      */
-    public $status;
+    public $tierName;
 
     /**
      *
-     * @var integer
-     * @Column(type="string", length=11, nullable=true)
-     */
-    public $callback;
-
-    /**
-     *
-     * @var integer
+     * @var string
      * @Column(type="string", length=500, nullable=true)
      */
-    public $comment;
+    public $tierDescription;
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @var string
+     * @Column(type="string", length=500, nullable=true)
      */
-    public $userID;
-    
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $customerID;
+    public $tierCount;
 
     /**
      *
@@ -80,7 +52,7 @@ class Call extends \Phalcon\Mvc\Model {
      * @return string
      */
     public function getSource() {
-        return 'call_log';
+        return 'delinquency_tier';
     }
 
     /**
