@@ -1129,11 +1129,13 @@ class SalesController extends Controller {
                         }
                         $dbTransaction->rollback("sale create failed " . json_encode($errors));
                     }
-                    $dbTransaction->commit();
+
+                    
 
                 }
                 // return $res->success("sale updated ", $sale_object);
             }
+            $dbTransaction->commit();
             return $res->success("sale updated ", $sales);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
