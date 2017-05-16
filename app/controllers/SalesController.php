@@ -973,22 +973,20 @@ class SalesController extends Controller {
                     foreach ($transactions as $transaction) {
                         $paidAmount = $paidAmount+$transaction['depositAmount'];
                     }
-                    $sale = Sales::findFirst(array("salesID=:id: ",
+                    $sale_object = Sales::findFirst(array("salesID=:id: ",
                             'bind' => array("id" => $saleID)));
 
                     if($paidAmount > 2000){
-                        
-                        $sale->status = 1;
+                        $sale_object->status = 1;
                     }
                         
                     else{
-                        $sale->status = 3;
-
+                        $sale_object->status = 3;
                     }
 
-                    if ($sale->save() === false) {
+                    if ($sale_object->save() === false) {
                             $errors = array();
-                            $messages = $sale->getMessages();
+                            $messages = $sale_object->getMessages();
                             foreach ($messages as $message) {
                                 $e["message"] = $message->getMessage();
                                 $e["field"] = $message->getField();
@@ -996,7 +994,7 @@ class SalesController extends Controller {
                             }
                         }
                     
-                      $dbTransaction->rollback('sale create failed' . json_encode($errors));
+                      $dbTransaction->rollback("sale create failed $sale_object $sale" . json_encode($errors));
                  }
 
                 }
