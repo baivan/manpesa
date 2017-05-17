@@ -18,7 +18,7 @@ class CallController extends Controller {
         return $success;
     }
 
-    public function create() { //{message,contactsID,userID,status}
+    public function create() { //{comment,contactsID, recipient,userID,status, callTypeID, callback}
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -28,28 +28,28 @@ class CallController extends Controller {
         $json = $request->getJsonRawBody();
         $token = isset($json->token) ? $json->token : '';
 
-        $promoterID = $json->promoterID ? $json->promoterID : '';
+        //Mandatory
+        $status = $json->status ? $json->status : 0;
+        $callTypeID = isset($json->callTypeID) ? $json->callTypeID : '';
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
+        $recipient = isset($json->recipient) ? $json->recipient : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $comment = isset($json->comment) ? $json->comment : NULL;
+        $callback = !empty(trim($json->callback)) ? $json->callback : NULL;
+
         $previousTool = $json->previousTool ? $json->previousTool : NULL;
-        $callback = $json->callback ? $json->callback : NULL;
-        $customerComment = $json->customerComment ? $json->customerComment : '';
+        $promoterID = $json->promoterID ? $json->promoterID : NULL;
+        $customerComment = $json->customerComment ? $json->customerComment : NULL;
 
-        $productExperience = $json->productExperience ? $json->productExperience : '';
-        $recommendation = $json->recommendation ? (int) $json->recommendation : '';
+        $productExperience = $json->productExperience ? $json->productExperience : NULL;
+        $recommendation = $json->recommendation ? (int) $json->recommendation : NULL;
         $referralScheme = $json->referralScheme ? (int) $json->referralScheme : 0;
-        $agentBehaviour = $json->agentBehaviour ? (int) $json->agentBehaviour : '';
-        $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : '';
-        $deliveryReason = $json->deliveryReason ? $json->deliveryReason : '';
-        $overalExperience = $json->overalExperience ? (int) $json->overalExperience : '';
+        $agentBehaviour = $json->agentBehaviour ? (int) $json->agentBehaviour : NULL;
+        $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : NULL;
+        $deliveryReason = $json->deliveryReason ? $json->deliveryReason : NULL;
+        $overalExperience = $json->overalExperience ? (int) $json->overalExperience : NULL;
 
-        $customerReached = $json->customerReached ? $json->customerReached : 0;
-        $callTypeID = $json->callTypeID ? $json->callTypeID : '';
-        $customerID = $json->customerID ? $json->customerID : '';
-        $ticketID = $json->ticketID ? $json->ticketID : NULL;
-        $userID = $json->userID ? $json->userID : '';
-        $userComment = $json->userComment ? $json->userComment : '';
-
-
-        if (!$token || !$callTypeID || !$userID || !$customerID) {
+        if (!$token || !$callTypeID || !$userID || (!$contactsID && !$recipient)) {
             return $res->dataError("Fields missing ", []);
         }
 
@@ -65,39 +65,45 @@ class CallController extends Controller {
             $logger->log("Request Data: " . json_encode($json));
             $call = new Call();
             $call->callTypeID = $callTypeID;
-            $call->ticketID = $ticketID;
-            $call->status = $customerReached;
+            $call->contactsID = $contactsID;
+            $call->recipient = $recipient;
             $call->callback = $callback;
-            $call->comment = $userComment;
-            $call->customerID = $customerID;
+            $call->status = $status;
             $call->userID = $userID;
+            $call->comment = $comment;
             $call->createdAt = date("Y-m-d H:i:s");
 
-            $promoterScore = PromoterScore::findFirst(array("customerID=:customerID:",
-                        'bind' => array("customerID" => $customerID)));
-            if ($promoterScore) {
-                $logger->log("Promoter score exists: " . json_encode($promoterScore));
-
-//                $scorePromoter = PromoterScore::findFirst(array("customerID=:customerID: AND promoter=:promoterID:",
-//                            'bind' => array("customerID" => $customerID, "promoterID" => $promoterID)));
-//
-//                $scoreAgent = PromoterScore::findFirst(array("customerID=:customerID: AND saleAgentBehavior=:saleAgentBehavior:",
-//                            'bind' => array("customerID" => $customerID, "saleAgentBehavior" => $agentBehaviour)));
-
-                if (!$promoterScore->promoter) {
-                    $logger->log("Promoter score promoter field does not have data: " . json_encode($promoterScore->promoter));
+            if ($contactsID) {
+                $promoterScore = PromoterScore::findFirst(array("contactsID=:contactsID:",
+                            'bind' => array("contactsID" => $contactsID)));
+                if ($promoterScore) {
+                    if (!$promoterScore->promoterID) {
+                        if ($promoterID) {
+                            $promoterScore->previousTool = $previousTool;
+                            $promoterScore->promoterID = $promoterID;
+                            $promoterScore->comment = $customerComment;
+                        }
+                    }
+                    if (!$promoterScore->saleAgentBehavior) {
+                        if ($agentBehaviour) {
+                            $promoterScore->saleAgentBehavior = $agentBehaviour;
+                            $promoterScore->deliveryExperience = $deliveryRating;
+                            $promoterScore->comment = $deliveryReason;
+                            $promoterScore->overallExperience = $overalExperience;
+                            $promoterScore->productExperience = $productExperience;
+                            $promoterScore->recommendation = $recommendation;
+                            $promoterScore->referralScheme = $referralScheme;
+                        }
+                    }
+                } else {
+                    $promoterScore = new PromoterScore();
                     if ($promoterID) {
                         $promoterScore->previousTool = $previousTool;
-                        $promoterScore->promoter = $promoterID;
+                        $promoterScore->promoterID = $promoterID;
                         $promoterScore->comment = $customerComment;
                     }
-                }
 
-                if (!$promoterScore->saleAgentBehavior) {
-                    $logger->log("Rating data not exists: " . json_encode($promoterScore->saleAgentBehavior));
                     if ($agentBehaviour) {
-                        $logger->log("Rating data to be used: ");
-                        $promoterScore->saleAgentBehavior = $agentBehaviour;
                         $promoterScore->deliveryExperience = $deliveryRating;
                         $promoterScore->comment = $deliveryReason;
                         $promoterScore->overallExperience = $overalExperience;
@@ -105,29 +111,11 @@ class CallController extends Controller {
                         $promoterScore->recommendation = $recommendation;
                         $promoterScore->referralScheme = $referralScheme;
                     }
-                }
-            } else {
-                $logger->log("Promoter score does not exist: " . json_encode($promoterScore));
-                $promoterScore = new PromoterScore();
 
-                if ($promoterID) {
-                    $promoterScore->previousTool = $previousTool;
-                    $promoterScore->promoter = $promoterID;
-                    $promoterScore->comment = $customerComment;
+                    $promoterScore->userID = $userID;
+                    $promoterScore->contactsID = $contactsID;
+                    $promoterScore->createdAt = date("Y-m-d H:i:s");
                 }
-
-                if ($agentBehaviour) {
-                    $promoterScore->deliveryExperience = $deliveryRating;
-                    $promoterScore->comment = $deliveryReason;
-                    $promoterScore->overallExperience = $overalExperience;
-                    $promoterScore->productExperience = $productExperience;
-                    $promoterScore->recommendation = $recommendation;
-                    $promoterScore->referralScheme = $referralScheme;
-                }
-
-                $promoterScore->userID = $userID;
-                $promoterScore->customerID = $customerID;
-                $promoterScore->createdAt = date("Y-m-d H:i:s");
             }
 
             if ($call->save() === false) {
@@ -142,7 +130,7 @@ class CallController extends Controller {
             } else {
                 if ($promoterScore->save() === false) {
                     $errors = array();
-                    $messages = $promoterScore->getMessages();
+                    $messages = $call->getMessages();
                     foreach ($messages as $message) {
                         $e["message"] = $message->getMessage();
                         $e["field"] = $message->getField();

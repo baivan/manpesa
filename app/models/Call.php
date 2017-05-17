@@ -23,25 +23,25 @@ class Call extends \Phalcon\Mvc\Model {
      * @var integer
      * @Column(type="integer", length=11, nullable=true)
      */
-    public $ticketID;
+    public $contactsID;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=3, nullable=false)
+     * @Column(type="string", length=500, nullable=true)
      */
-    public $status;
+    public $recipient;
 
     /**
      *
-     * @var integer
-     * @Column(type="string", length=11, nullable=true)
+     * @var string
+     * @Column(type="string", nullable=true)
      */
     public $callback;
 
     /**
      *
-     * @var integer
+     * @var string
      * @Column(type="string", length=500, nullable=true)
      */
     public $comment;
@@ -49,16 +49,16 @@ class Call extends \Phalcon\Mvc\Model {
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="string", length=3, nullable=false)
      */
-    public $userID;
-    
+    public $status;
+
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $customerID;
+    public $userID;
 
     /**
      *
