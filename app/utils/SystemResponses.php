@@ -184,7 +184,7 @@ class SystemResponses extends Controller {
 
         $logger = new FileAdapter($this->getLogFile('error'));
         $logger->log($message . ' ' . json_encode($data));
-        $this->composePushLog("error", "DATA ERROR " . $message, " " . $data);
+        //$this->composePushLog("error", "DATA ERROR " . $message, " " . $data);
 
         return $response;
     }
@@ -327,7 +327,7 @@ class SystemResponses extends Controller {
                 . "<br/>"
                 . "Envirofit Customer Service Team"
                 . "<br/>"
-                . "Assigned by: " . $ticket['name']
+                . "Assigned by: " . $ticket['triggerName']
                 . "</div>";
 
         $message = '';

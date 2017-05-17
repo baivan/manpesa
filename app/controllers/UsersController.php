@@ -576,7 +576,7 @@ class UsersController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "WHERE u.roleID=2 || $whereQuery " : "";
+        $whereQuery = $whereQuery ? "WHERE u.roleID=2 || u.roleID=8 || $whereQuery " : "";
         $agentQuery = $agentQuery . $whereQuery;
 
         $salesAgents = $this->rawSelect($agentQuery);
@@ -603,7 +603,7 @@ class UsersController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $agentQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
+        $usersQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
 
         $whereArray = [
             'u.roleID' => $roleID,
@@ -646,11 +646,11 @@ class UsersController extends Controller {
         }
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
-        $agentQuery = $agentQuery . $whereQuery;
+        $usersQuery = $usersQuery . $whereQuery;
 
-        $salesAgents = $this->rawSelect($agentQuery);
+        $users = $this->rawSelect($usersQuery);
 
-        return $res->getSalesSuccess($salesAgents);
+        return $res->success("users", $users);
     }
 
     public function getTableUsers() { //sort, order, page, limit,filter

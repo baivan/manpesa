@@ -52,6 +52,7 @@ $user_route->post('summary', 'userSummary');
 $user_route->get('summary', 'userSummary');
 $user_route->get('agent', 'getAgents');
 $user_route->post('agent', 'getAgents');
+$user_route->get('all', 'getUsers');
 $user_route->get('crm/all', 'getTableUsers');
 $user_route->post('crm/all', 'getTableUsers');
 $user_route->post('update/status', 'changeUserStatus');
@@ -97,7 +98,7 @@ $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
 $sale_route->get('statistic', 'saleSummary');
 $sale_route->get('crm/monitor', 'monitorSales');
-$sale_route->post('updateOldSales','updateOldSales');
+$sale_route->post('updateOldSales', 'updateOldSales');
 
 $category_route = new MicroCollection();
 $category_route->setPrefix('/category/');
@@ -182,6 +183,7 @@ $contacts_route->setPrefix('/contact/');
 $contacts_route->setHandler(new ContactsController());
 $contacts_route->post('search', 'searchContacts');
 $contacts_route->get('search', 'searchContacts');
+$contacts_route->get('crm/search', 'searchCrmContacts');
 $contacts_route->post('create', 'createContact'); //workMobile,nationalIdNumber,fullName,location
 
 $transaction_route = new MicroCollection();

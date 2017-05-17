@@ -18,7 +18,11 @@ class TicketController extends Controller {
         return $success;
     }
 
-    public function create() { //{ticketTitle,ticketDescription,customerID,assigneeID,ticketCategoryID,priorityID,status}
+    public function create() { //{ticketTitle,ticketDescription,contactsID, otherOwner,assigneeID,
+        //ticketCategoryID,otherTicketCategory,priorityID,status}
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -29,16 +33,18 @@ class TicketController extends Controller {
         $token = $json->token;
         $ticketTitle = $json->ticketTitle;
         $ticketDescription = $json->ticketDescription;
-        $customerID = $json->customerID;
-        $assigneeID = $json->assigneeID;
+        $contactsID = $json->contactsID ? $json->contactsID : NULL;
+        $otherOwner = $json->otherOwner ? $json->otherOwner : NULL;
+        $assigneeID = $json->assigneeID ? $json->assigneeID : NULL;
         $userID = $json->userID ? $json->userID : NULL;
-        $ticketCategoryID = $json->ticketCategoryID;
+        $ticketCategoryID = $json->ticketCategoryID ? $json->ticketCategoryID : NULL;
+        $otherTicketCategory = $json->otherTicketCategory ? $json->otherTicketCategory : NULL;
         $priorityID = $json->priorityID;
         $status = $json->status;
 
 
 
-        if (!$token || !$ticketTitle || !$ticketDescription || !$customerID || !$assigneeID || !$ticketCategoryID || !$priorityID) {
+        if (!$token || !$ticketTitle || !$ticketDescription || !$priorityID) {
             return $res->dataError("Fields missing ");
         }
 
@@ -53,9 +59,11 @@ class TicketController extends Controller {
             $ticket = new Ticket();
             $ticket->ticketTitle = $ticketTitle;
             $ticket->ticketDescription = $ticketDescription;
-            $ticket->customerID = $customerID;
+            $ticket->contactsID = $contactsID;
+            $ticket->otherOwner = $otherOwner;
             $ticket->assigneeID = $assigneeID;
             $ticket->ticketCategoryID = $ticketCategoryID;
+            $ticket->otherCategory = $otherTicketCategory;
             $ticket->priorityID = $priorityID;
             $ticket->userID = $userID;
             $ticket->status = $status;
@@ -76,20 +84,25 @@ class TicketController extends Controller {
             $ticketID = $ticket->ticketID;
 
             $ticketData = $res->rawSelect("SELECT t.ticketTitle, t.ticketDescription, "
-                    . "cat.ticketCategoryName,pr.priorityName, c.fullName AS name, "
-                    . "c2.fullName AS assigneeName, c2.workMobile, c2.workEmail FROM ticket t LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c "
-                    . "ON u.contactID=c.contactsID LEFT JOIN customer cust ON t.customerID=cust.customerID "
-                    . "LEFT JOIN contacts c1 ON cust.contactsID=c1.contactsID LEFT JOIN users u1 "
+                    . "t.userID,c.fullName AS triggerName,t.contactsID, c1.fullName AS owner, "
+                    . "t.otherOwner,t.assigneeID, c2.fullName AS assigneeName, c2.workMobile, c2.workEmail, t.ticketCategoryID,"
+                    . "cat.ticketCategoryName, t.otherCategory, t.priorityID,p.priorityName FROM ticket t "
+                    . "LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c ON u.contactID=c.contactsID "
+                    . "LEFT JOIN contacts c1 ON t.contactsID=c1.contactsID LEFT JOIN users u1 "
                     . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
-                    . "INNER JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
-                    . "INNER JOIN priority pr ON t.priorityID=pr.priorityID WHERE t.ticketID=$ticketID");
+                    . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
+                    . "INNER JOIN priority p ON t.priorityID=p.priorityID WHERE t.ticketID=$ticketID");
 
             $dbTransaction->commit();
+
+//            $logger->log("Ticket Data: " . json_encode($ticketData));
+            $ticketData[0]['ticketCategoryName'] = $ticketData[0]['ticketCategoryName'] ? $ticketData[0]['ticketCategoryName'] : $ticketData[0]['otherCategory'];
+
             $assigneeName = $ticketData[0]['assigneeName'];
-            $name = $ticketData[0]['name'];
+            $triggerName = $ticketData[0]['triggerName'];
 
             $assigneeMessage = "Dear $assigneeName, the ticket named $ticketTitle "
-                    . "has been assigned to you. Please ensure its resolve. Contact $name for more info";
+                    . "has been assigned to you. Please ensure its resolve. Contact $triggerName for more info";
             $res->sendMessage($ticketData[0]['workMobile'], $assigneeMessage);
             $res->sendEmail($ticketData[0]);
 
@@ -263,7 +276,7 @@ class TicketController extends Controller {
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
         $ticketID = $request->getQuery('ticketID');
-        $customerID = $request->getQuery('customerID');
+        $contactID = $request->getQuery('contactID');
         $status = $request->getQuery('status');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
@@ -281,16 +294,14 @@ class TicketController extends Controller {
 //                . "LEFT JOIN priority p on t.priorityID=p.priorityID LEFT JOIN contacts co "
 //                . "on cu.contactsID=co.contactsID  ";
 
-        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.ticketCategoryID, "
-                . "cat.ticketCategoryName,t.priorityID,pr.priorityName, t.userID, "
-                . "c.fullName AS name, t.customerID, c1.fullName AS customerName, c1.workMobile, "
-                . "t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
+        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID, c.fullName AS owner,t.otherOwner, "
+                . "c.workMobile, t.ticketCategoryID, cat.ticketCategoryName, t.otherCategory,t.priorityID,pr.priorityName, t.userID, "
+                . "c1.fullName AS triggerName, t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
 
-        $baseQuery = "FROM ticket t LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c "
-                . "ON u.contactID=c.contactsID LEFT JOIN customer cust ON t.customerID=cust.customerID "
-                . "LEFT JOIN contacts c1 ON cust.contactsID=c1.contactsID LEFT JOIN users u1 "
+        $baseQuery = "FROM ticket t LEFT JOIN contacts c ON t.contactsID=c.contactsID LEFT JOIN users u "
+                . "ON t.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN users u1 "
                 . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
-                . "INNER JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
+                . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
                 . "INNER JOIN priority pr ON t.priorityID=pr.priorityID ";
 
 //        $condition = "";
@@ -298,7 +309,7 @@ class TicketController extends Controller {
             't.status' => $status,
             'filter' => $filter,
             't.ticketID' => $ticketID,
-            't.customerID' => $customerID,
+            't.contactsID' => $contactID,
             'date' => [$startDate, $endDate]
         ];
 

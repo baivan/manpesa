@@ -1,7 +1,6 @@
 <?php
 
-class Ticket extends \Phalcon\Mvc\Model
-{
+class Ticket extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -10,7 +9,7 @@ class Ticket extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $ticetID;
+    public $ticketID;
 
     /**
      *
@@ -25,7 +24,7 @@ class Ticket extends \Phalcon\Mvc\Model
      * @Column(type="string", length=500, nullable=false)
      */
     public $ticketDescription;
-    
+
     /**
      *
      * @var integer
@@ -36,9 +35,16 @@ class Ticket extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
-    public $customerID;
+    public $contactsID;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $otherOwner;
 
     /**
      *
@@ -50,9 +56,16 @@ class Ticket extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
     public $ticketCategoryID;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $otherCategory;
 
     /**
      *
@@ -87,8 +100,7 @@ class Ticket extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
+    public function getSource() {
         return 'ticket';
     }
 
@@ -98,8 +110,7 @@ class Ticket extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Ticket[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -109,8 +120,7 @@ class Ticket extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Ticket
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 
