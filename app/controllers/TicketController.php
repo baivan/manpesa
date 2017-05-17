@@ -485,17 +485,17 @@ class TicketController extends Controller {
             return $res->dataError("Missing data ", []);
         }
 
-        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.ticketCategoryID, "
-                . "cat.ticketCategoryName,t.priorityID,pr.priorityName, t.userID, "
-                . "c.fullName AS name, t.customerID, c1.fullName AS customerName, c1.workMobile, "
-                . "t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
+        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, "
+                . "t.userID,c.fullName AS triggerName,t.contactsID, c1.fullName AS owner, "
+                . "t.otherOwner,t.assigneeID, c2.fullName AS assigneeName, c2.workMobile, c2.workEmail, t.ticketCategoryID,"
+                . "cat.ticketCategoryName, t.otherCategory, t.priorityID,p.priorityName, t.status, t.createdAt, t.updatedAt ";
 
-        $baseQuery = "FROM ticket t LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c "
-                . "ON u.contactID=c.contactsID LEFT JOIN customer cust ON t.customerID=cust.customerID "
-                . "LEFT JOIN contacts c1 ON cust.contactsID=c1.contactsID LEFT JOIN users u1 "
+        $baseQuery = "FROM ticket t "
+                . "LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c ON u.contactID=c.contactsID "
+                . "LEFT JOIN contacts c1 ON t.contactsID=c1.contactsID LEFT JOIN users u1 "
                 . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
-                . "INNER JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
-                . "INNER JOIN priority pr ON t.priorityID=pr.priorityID ";
+                . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
+                . "INNER JOIN priority p ON t.priorityID=p.priorityID ";
 
         $whereQuery = $ticketID ? "WHERE ticketID=$ticketID" : "";
         $ticketQuery = "$selectQuery $baseQuery $whereQuery";
