@@ -165,24 +165,36 @@ class CallController extends Controller {
         $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
         $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
+        $status = $request->getQuery('status');
+        $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
+        $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+
+        if ($customerID) {
+            $customer = Customer::findFirst(array("customerID=:customerID:",
+                        'bind' => array("customerID" => $customerID)));
+            if ($customer) {
+                $contactsID = $customer->contactsID;
+            }
+        }
 
 
         $countQuery = "SELECT count(callLogID) as totalCalls ";
 
-        $selectQuery = "SELECT log.callLogID,log.callTypeID,callType.callTypeName,"
-                . "log.customerID,c.workMobile,c.fullName, "
-                . "log.callback,log.comment,log.userID,c1.fullName AS user, log.status,log.createdAt,log.updatedAt ";
+        $selectQuery = "SELECT log.callLogID,log.callTypeID, log.contactsID, "
+                . "c.fullName, c.workMobile, c.workEmail, ct.callTypeName, "
+                . "log.recipient, log.callback, log.comment, log.status, log.userID, "
+                . "c1.fullName AS callerName, log.createdAt ";
 
-        $baseQuery = "FROM call_log log INNER JOIN call_type callType ON log.callTypeID=callType.callTypeID "
-                . "INNER JOIN customer cust ON log.customerID=cust.customerID "
-                . "INNER JOIN contacts c ON cust.contactsID=c.contactsID "
-                . "INNER JOIN users u ON log.userID=u.userID "
-                . "INNER JOIN contacts c1 ON u.contactID=c1.contactsID ";
+        $baseQuery = "FROM call_log log INNER JOIN call_type ct ON log.callTypeID=ct.callTypeID "
+                . "LEFT JOIN contacts c ON log.contactsID=c.contactsID LEFT JOIN users u "
+                . "ON log.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID ";
 
         $whereArray = [
             'filter' => $filter,
             'log.userID' => $userID,
-            'log.customerID' => $customerID
+            'log.contactsID' => $contactsID,
+            'log.status' => $status,
+            'date' => [$startDate, $endDate]
         ];
 
         $whereQuery = "";
@@ -190,7 +202,8 @@ class CallController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.ticketTitle', 'cat.ticketCategoryName', 'c.fullName', 'c1.fullName', 'c2.fullName'];
+                $searchColumns = ['ct.callTypeName', 'c.workMobile', 'c.fullName',
+                    'c.workEmail', 'log.recipient', 'log.comment'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -202,21 +215,17 @@ class CallController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-////                $logger->log("Filter Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
-            } else if ($key == 'status' && $value == 404) {
+            } else if ($key == 'log.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
-////                $logger->log("Status Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
-                    $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $valueString = " DATE(log.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
-////                $logger->log("Date Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else {
                 $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
                 $whereQuery .= $valueString;
-////                $logger->log("Rest Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             }
         }
         $logger->log("Request Data Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
@@ -227,29 +236,17 @@ class CallController extends Controller {
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
-//        $condition = "";
-//
-//        if ($filter && $customerID) {
-//            $condition = " WHERE o.contactsID=$contactsID AND ";
-//        } elseif ($filter && !$customerID) {
-//            $condition = " WHERE  ";
-//        } elseif (!$filter && !$customerID) {
-//            $condition = "  ";
-//        }
-
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
-        //return $res->success($selectQuery);
 
         $logger->log("Calls Request Query: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalCalls"] = $count[0]['totalCalls'];
         $data["calls"] = $messages;
 
