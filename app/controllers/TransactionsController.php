@@ -340,7 +340,7 @@ class TransactionsController extends Controller {
             for ($count = 0; $count < $batchSize; $count++) {
                 
                 $page = $count + 1;
-                $logger->log("Batch Number: " . $page);
+//                $logger->log("Batch Number: " . $page);
 
                 $offset = (int) ($page - 1) * $limit;
 
@@ -437,7 +437,7 @@ class TransactionsController extends Controller {
                         }
 
                         if ($customer) {
-                            $logger->log("Saving valid transaction: " . json_encode($transaction));
+//                            $logger->log("Saving valid transaction: " . json_encode($transaction));
 
                             if ($customerTransaction->save() === false) {
                                 $errors = array();
@@ -456,7 +456,7 @@ class TransactionsController extends Controller {
                                         'bind' => array("id" => $transactionID)));
 
                             if (!$unknownPayment) {
-                                $logger->log("Saving unknown payment: " . json_encode($transaction));
+//                                $logger->log("Saving unknown payment: " . json_encode($transaction));
 
                                 $unknown = new TransactionUnknown();
                                 $unknown->transactionID = $transactionID;
@@ -474,11 +474,11 @@ class TransactionsController extends Controller {
                                     $res->dataError('customer transaction create failed', $messages);
                                 }
                             } else {
-                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
+//                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
                             }
                         }
                     }else{
-                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
+//                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
                     }
                 }
             }
