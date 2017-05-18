@@ -18,7 +18,7 @@ class CallController extends Controller {
         return $success;
     }
 
-    public function create() { //{message,contactsID,userID,status}
+    public function create() { //{comment,contactsID, recipient,userID,status, callTypeID, callback}
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -28,28 +28,28 @@ class CallController extends Controller {
         $json = $request->getJsonRawBody();
         $token = isset($json->token) ? $json->token : '';
 
-        $promoterID = $json->promoterID ? $json->promoterID : '';
+        //Mandatory
+        $status = $json->status ? $json->status : 0;
+        $callTypeID = isset($json->callTypeID) ? $json->callTypeID : '';
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
+        $recipient = isset($json->recipient) ? $json->recipient : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $comment = isset($json->comment) ? $json->comment : NULL;
+        $callback = !empty(trim($json->callback)) ? $json->callback : NULL;
+
         $previousTool = $json->previousTool ? $json->previousTool : NULL;
-        $callback = $json->callback ? $json->callback : NULL;
-        $customerComment = $json->customerComment ? $json->customerComment : '';
+        $promoterID = $json->promoterID ? $json->promoterID : NULL;
+        $customerComment = $json->customerComment ? $json->customerComment : NULL;
 
-        $productExperience = $json->productExperience ? $json->productExperience : '';
-        $recommendation = $json->recommendation ? (int) $json->recommendation : '';
+        $productExperience = $json->productExperience ? $json->productExperience : NULL;
+        $recommendation = $json->recommendation ? (int) $json->recommendation : NULL;
         $referralScheme = $json->referralScheme ? (int) $json->referralScheme : 0;
-        $agentBehaviour = $json->agentBehaviour ? (int) $json->agentBehaviour : '';
-        $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : '';
-        $deliveryReason = $json->deliveryReason ? $json->deliveryReason : '';
-        $overalExperience = $json->overalExperience ? (int) $json->overalExperience : '';
+        $agentBehaviour = $json->agentBehaviour ? (int) $json->agentBehaviour : NULL;
+        $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : NULL;
+        $deliveryReason = $json->deliveryReason ? $json->deliveryReason : NULL;
+        $overalExperience = $json->overalExperience ? (int) $json->overalExperience : NULL;
 
-        $customerReached = $json->customerReached ? $json->customerReached : 0;
-        $callTypeID = $json->callTypeID ? $json->callTypeID : '';
-        $customerID = $json->customerID ? $json->customerID : '';
-        $ticketID = $json->ticketID ? $json->ticketID : NULL;
-        $userID = $json->userID ? $json->userID : '';
-        $userComment = $json->userComment ? $json->userComment : '';
-
-
-        if (!$token || !$callTypeID || !$userID || !$customerID) {
+        if (!$token || !$callTypeID || !$userID || (!$contactsID && !$recipient)) {
             return $res->dataError("Fields missing ", []);
         }
 
@@ -65,39 +65,45 @@ class CallController extends Controller {
             $logger->log("Request Data: " . json_encode($json));
             $call = new Call();
             $call->callTypeID = $callTypeID;
-            $call->ticketID = $ticketID;
-            $call->status = $customerReached;
+            $call->contactsID = $contactsID;
+            $call->recipient = $recipient;
             $call->callback = $callback;
-            $call->comment = $userComment;
-            $call->customerID = $customerID;
+            $call->status = $status;
             $call->userID = $userID;
+            $call->comment = $comment;
             $call->createdAt = date("Y-m-d H:i:s");
 
-            $promoterScore = PromoterScore::findFirst(array("customerID=:customerID:",
-                        'bind' => array("customerID" => $customerID)));
-            if ($promoterScore) {
-                $logger->log("Promoter score exists: " . json_encode($promoterScore));
-
-//                $scorePromoter = PromoterScore::findFirst(array("customerID=:customerID: AND promoter=:promoterID:",
-//                            'bind' => array("customerID" => $customerID, "promoterID" => $promoterID)));
-//
-//                $scoreAgent = PromoterScore::findFirst(array("customerID=:customerID: AND saleAgentBehavior=:saleAgentBehavior:",
-//                            'bind' => array("customerID" => $customerID, "saleAgentBehavior" => $agentBehaviour)));
-
-                if (!$promoterScore->promoter) {
-                    $logger->log("Promoter score promoter field does not have data: " . json_encode($promoterScore->promoter));
+            if ($contactsID) {
+                $promoterScore = PromoterScore::findFirst(array("contactsID=:contactsID:",
+                            'bind' => array("contactsID" => $contactsID)));
+                if ($promoterScore) {
+                    if (!$promoterScore->promoterID) {
+                        if ($promoterID) {
+                            $promoterScore->previousTool = $previousTool;
+                            $promoterScore->promoterID = $promoterID;
+                            $promoterScore->comment = $customerComment;
+                        }
+                    }
+                    if (!$promoterScore->saleAgentBehavior) {
+                        if ($agentBehaviour) {
+                            $promoterScore->saleAgentBehavior = $agentBehaviour;
+                            $promoterScore->deliveryExperience = $deliveryRating;
+                            $promoterScore->comment = $deliveryReason;
+                            $promoterScore->overallExperience = $overalExperience;
+                            $promoterScore->productExperience = $productExperience;
+                            $promoterScore->recommendation = $recommendation;
+                            $promoterScore->referralScheme = $referralScheme;
+                        }
+                    }
+                } else {
+                    $promoterScore = new PromoterScore();
                     if ($promoterID) {
                         $promoterScore->previousTool = $previousTool;
-                        $promoterScore->promoter = $promoterID;
+                        $promoterScore->promoterID = $promoterID;
                         $promoterScore->comment = $customerComment;
                     }
-                }
 
-                if (!$promoterScore->saleAgentBehavior) {
-                    $logger->log("Rating data not exists: " . json_encode($promoterScore->saleAgentBehavior));
                     if ($agentBehaviour) {
-                        $logger->log("Rating data to be used: ");
-                        $promoterScore->saleAgentBehavior = $agentBehaviour;
                         $promoterScore->deliveryExperience = $deliveryRating;
                         $promoterScore->comment = $deliveryReason;
                         $promoterScore->overallExperience = $overalExperience;
@@ -105,29 +111,11 @@ class CallController extends Controller {
                         $promoterScore->recommendation = $recommendation;
                         $promoterScore->referralScheme = $referralScheme;
                     }
-                }
-            } else {
-                $logger->log("Promoter score does not exist: " . json_encode($promoterScore));
-                $promoterScore = new PromoterScore();
 
-                if ($promoterID) {
-                    $promoterScore->previousTool = $previousTool;
-                    $promoterScore->promoter = $promoterID;
-                    $promoterScore->comment = $customerComment;
+                    $promoterScore->userID = $userID;
+                    $promoterScore->contactsID = $contactsID;
+                    $promoterScore->createdAt = date("Y-m-d H:i:s");
                 }
-
-                if ($agentBehaviour) {
-                    $promoterScore->deliveryExperience = $deliveryRating;
-                    $promoterScore->comment = $deliveryReason;
-                    $promoterScore->overallExperience = $overalExperience;
-                    $promoterScore->productExperience = $productExperience;
-                    $promoterScore->recommendation = $recommendation;
-                    $promoterScore->referralScheme = $referralScheme;
-                }
-
-                $promoterScore->userID = $userID;
-                $promoterScore->customerID = $customerID;
-                $promoterScore->createdAt = date("Y-m-d H:i:s");
             }
 
             if ($call->save() === false) {
@@ -142,7 +130,7 @@ class CallController extends Controller {
             } else {
                 if ($promoterScore->save() === false) {
                     $errors = array();
-                    $messages = $promoterScore->getMessages();
+                    $messages = $call->getMessages();
                     foreach ($messages as $message) {
                         $e["message"] = $message->getMessage();
                         $e["field"] = $message->getField();
@@ -177,24 +165,36 @@ class CallController extends Controller {
         $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
         $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
+        $status = $request->getQuery('status');
+        $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
+        $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+
+        if ($customerID) {
+            $customer = Customer::findFirst(array("customerID=:customerID:",
+                        'bind' => array("customerID" => $customerID)));
+            if ($customer) {
+                $contactsID = $customer->contactsID;
+            }
+        }
 
 
         $countQuery = "SELECT count(callLogID) as totalCalls ";
 
-        $selectQuery = "SELECT log.callLogID,log.callTypeID,callType.callTypeName,"
-                . "log.customerID,c.workMobile,c.fullName, "
-                . "log.callback,log.comment,log.userID,c1.fullName AS user, log.status,log.createdAt,log.updatedAt ";
+        $selectQuery = "SELECT log.callLogID,log.callTypeID, log.contactsID, "
+                . "c.fullName, c.workMobile, c.workEmail, ct.callTypeName, "
+                . "log.recipient, log.callback, log.comment, log.status, log.userID, "
+                . "c1.fullName AS callerName, log.createdAt ";
 
-        $baseQuery = "FROM call_log log INNER JOIN call_type callType ON log.callTypeID=callType.callTypeID "
-                . "INNER JOIN customer cust ON log.customerID=cust.customerID "
-                . "INNER JOIN contacts c ON cust.contactsID=c.contactsID "
-                . "INNER JOIN users u ON log.userID=u.userID "
-                . "INNER JOIN contacts c1 ON u.contactID=c1.contactsID ";
+        $baseQuery = "FROM call_log log INNER JOIN call_type ct ON log.callTypeID=ct.callTypeID "
+                . "LEFT JOIN contacts c ON log.contactsID=c.contactsID LEFT JOIN users u "
+                . "ON log.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID ";
 
         $whereArray = [
             'filter' => $filter,
             'log.userID' => $userID,
-            'log.customerID' => $customerID
+            'log.contactsID' => $contactsID,
+            'log.status' => $status,
+            'date' => [$startDate, $endDate]
         ];
 
         $whereQuery = "";
@@ -202,7 +202,8 @@ class CallController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.ticketTitle', 'cat.ticketCategoryName', 'c.fullName', 'c1.fullName', 'c2.fullName'];
+                $searchColumns = ['ct.callTypeName', 'c.workMobile', 'c.fullName',
+                    'c.workEmail', 'log.recipient', 'log.comment'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -214,21 +215,17 @@ class CallController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-////                $logger->log("Filter Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
-            } else if ($key == 'status' && $value == 404) {
+            } else if ($key == 'log.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
-////                $logger->log("Status Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
-                    $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $valueString = " DATE(log.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
-////                $logger->log("Date Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             } else {
                 $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
                 $whereQuery .= $valueString;
-////                $logger->log("Rest Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
             }
         }
         $logger->log("Request Data Item: Key:" . $key . " Value: " . Json_encode($whereQuery));
@@ -239,29 +236,17 @@ class CallController extends Controller {
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
-//        $condition = "";
-//
-//        if ($filter && $customerID) {
-//            $condition = " WHERE o.contactsID=$contactsID AND ";
-//        } elseif ($filter && !$customerID) {
-//            $condition = " WHERE  ";
-//        } elseif (!$filter && !$customerID) {
-//            $condition = "  ";
-//        }
-
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
-        //return $res->success($selectQuery);
 
         $logger->log("Calls Request Query: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalCalls"] = $count[0]['totalCalls'];
         $data["calls"] = $messages;
 
