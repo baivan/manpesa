@@ -894,7 +894,7 @@ class SalesController extends Controller {
     }
 
     public function getSalesTransactions($nationalIdNumber,$w_mobile) {
-        $selectQuery = "select * from transaction t where t.salesID='$nationalIdNumber' or t.salesID='$w_mobile' ";
+        $selectQuery = "select * from transaction t where t.salesID>0 and (t.salesID='$nationalIdNumber' or t.salesID='$w_mobile') ";
         $transactions = $this->rawSelect($selectQuery);
         return $transactions;
     }
