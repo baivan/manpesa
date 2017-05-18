@@ -595,17 +595,18 @@ class SalesController extends Controller {
         $startDate = $request->getQuery('start');
         $endDate = $request->getQuery('end');
 
-        $countQuery = "SELECT count(s.salesID) as totalSales ";
+        $countQuery = "SELECT count(DISTINCT s.salesID) as totalSales ";
 
 //        $defaultQuery = " FROM sales s join customer c on s.customerID=c.customerID JOIN contacts co on c.contactsID=co.contactsID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID JOIN users u on s.userID=u.userID where s.status=1 ";
 //        $selectQuery = "SELECT s.salesID,s.userID as agentID,u.agentNumber,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit ";
-        $defaultQuery = "FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID "
+       /* $defaultQuery = "FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID "
                 . "INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID INNER JOIN frequency f "
                 . "ON pp.frequencyID=f.frequencyID INNER JOIN users u ON s.userID=u.userID "
                 . "INNER JOIN contacts c ON u.contactID=c.contactsID INNER JOIN customer cust "
                 . "ON s.customerID=cust.customerID INNER JOIN contacts c1 ON cust.contactsID=c1.contactsID "
                 . "INNER JOIN product p ON s.productID=p.productID INNER JOIN product_sale_type_price AS psp "
-                . "ON (pp.salesTypeID=psp.salesTypeID AND s.productID=psp.productID) WHERE s.status>=1 ";
+                . "ON s.productID=psp.productID WHERE s.status>=1 ";*/
+                $defaultQuery = "from sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f on pp.frequencyID=f.frequencyID LEFT JOIN product_sale_type_price psp on s.productID=psp.productID left JOIN product p on s.productID=p.productID  LEFT JOIN users u on s.userID=u.userID LEFT join contacts c on u.contactID=c.contactsID left JOIN customer cu on s.customerID=cu.customerID left JOIN contacts c1 on cu.contactsID=c1.contactsID WHERE s.status > 0; ";
 
         $selectQuery = "SELECT s.salesID, s.paymentPlanID, pp.paymentPlanDeposit, "
                 . "pp.salesTypeID, st.salesTypeName, psp.price,pp.frequencyID,"
@@ -811,7 +812,7 @@ class SalesController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = "ORDER BY $sort $order";
+        $sortClause = "group by salesID ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
