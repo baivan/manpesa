@@ -75,7 +75,7 @@ $prospect_route = new MicroCollection();
 $prospect_route->setPrefix('/prospect/');
 $prospect_route->setHandler(new ProspectsController());
 $prospect_route->post('create', 'createContactProspect'); //{userID,workMobile,nationalIdNumber,fullName,location,token}
-//$prospect_route ->post('update','update');
+$prospect_route ->post('update','update');
 $prospect_route->post('contact/add', 'createProspect'); //maps existing contact to prospect
 $prospect_route->post('all', 'getAll');
 $prospect_route->get('all', 'getAll');

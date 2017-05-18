@@ -59,6 +59,71 @@ class ProspectsController extends Controller {
         }
     }
 
+    public function update() { //{token, userID, fullName, workMobile, nationalIdNumber,location}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $token = $json->token;
+        $contactsID = $json->contactsID;
+        $userID = $json->userID;
+        $fullName = $json->fullName;
+        $workMobile = $json->workMobile;
+        $workEmail = $json->workEmail;
+        $nationalIdNumber = $json->nationalIdNumber;
+        $location = $json->location;
+
+        if (!$token || !$contactsID || !$userID || !$fullName || !$workMobile || !$nationalIdNumber || !$location) {
+            return $res->dataError("Missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        $contact = Contacts::findFirst(array("contactsID=:id: ",
+                    'bind' => array("id" => $contactsID)));
+        if (!$contact) {
+            return $res->dataError("contact doesn't exist");
+        }
+
+        if ($fullName) {
+            $contact->fullName = $fullName;
+        }
+
+        if ($nationalIdNumber) {
+            $contact->nationalIdNumber = $nationalIdNumber;
+        }
+
+        if ($workMobile) {
+            $contact->workMobile = $workMobile;
+        }
+
+        if ($workEmail) {
+            $contact->workEmail = $workEmail;
+        }
+
+        if ($location) {
+            $contact->location = $location;
+        }
+
+
+        if ($contact->save() === false) {
+            $errors = array();
+            $messages = $contact->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('contact edit failed', $errors);
+        }
+
+
+        return $res->success('contact edited successfully', $contact);
+    }
+
     public function createContactProspect() {//{userID,workMobile,nationalIdNumber,fullName,location,token}
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
@@ -168,14 +233,19 @@ class ProspectsController extends Controller {
             return $res->dataError("Missing data ");
         }
 
-        $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID ";
+        $prospectQuery = "SELECT p.prospectsID, p.status, p.contactsID,c.workMobile, "
+                . "c.fullName,c.nationalIdNumber, c.workEmail,c.location, p.sourceID, ps.sourceName,"
+                . "p.otherSource FROM prospects p INNER JOIN contacts c ON p.contactsID=c.contactsID "
+                . "LEFT JOIN prospect_source ps ON p.sourceID=ps.sourceID ";
+
+//        $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID ";
 
         if ($userID && !$prospectID) {
-            $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID AND p.userID=$userID";
+            $prospectQuery = $prospectQuery . " WHERE p.userID=$userID";
         } elseif (!$userID && $prospectID) {
-            $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID where p.prospectID=$prospectID";
+            $prospectQuery .= " WHERE prospectsID=$prospectID";
         } elseif ($userID && $prospectID) {
-            $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID where p.userID=$userID AND p.prospectID=$prospectID";
+            $prospectQuery = $prospectQuery . " WHERE p.userID=$userID AND p.prospectsID=$prospectID";
         }
 
 
@@ -206,7 +276,7 @@ class ProspectsController extends Controller {
         $baseQuery = " FROM prospects  p join contacts co on p.contactsID=co.contactsID LEFT JOIN prospect_source ps "
                 . "ON p.sourceID=ps.sourceID ";
 
-        $selectQuery = "SELECT p.prospectsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, p.sourceID, "
+        $selectQuery = "SELECT p.prospectsID, p.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, p.sourceID, "
                 . "ps.sourceName, p.otherSource, p.createdAt  ";
 
         $whereArray = [
