@@ -708,7 +708,7 @@ class SalesController extends Controller {
         $displaySales = array();
         foreach ($sales as $sale) {
             $items = $this->getSaleItems($sale['salesID']);
-            $transactions = $this->getSalesTransactions($sale['salesID']);
+            $transactions = $this->getSalesTransactions($sale['nationalIdNumber'],$sale['customerNumber']);
             $sale['items'] = $items;
             $sale['transactions'] = $transactions; //return $res->success("salesID",$items);
             array_push($displaySales, $sale);
@@ -893,8 +893,8 @@ class SalesController extends Controller {
         return $items;
     }
 
-    public function getSalesTransactions($w_mobile=0,$nationalIdNumber) {
-        $selectQuery = "select * from transaction t where t.salesID=$nationalIdNumber or t.salesID=$w_mobile ";
+    public function getSalesTransactions($nationalIdNumber,$w_mobile) {
+        $selectQuery = "select * from transaction t where t.salesID='$nationalIdNumber' or t.salesID='$w_mobile' ";
         $transactions = $this->rawSelect($selectQuery);
         return $transactions;
     }
