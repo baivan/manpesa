@@ -338,7 +338,7 @@ class TransactionsController extends Controller {
             }
 
             for ($count = 0; $count < $batchSize; $count++) {
-                
+
                 $page = $count + 1;
 //                $logger->log("Batch Number: " . $page);
 
@@ -477,7 +477,7 @@ class TransactionsController extends Controller {
 //                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
                             }
                         }
-                    }else{
+                    } else {
 //                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
                     }
                 }
@@ -544,26 +544,33 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-        $selectQuery = "SELECT t.fullName as depositorName,t.referenceNumber,t.depositAmount, t.mobile, "
-                . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
-                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
+//        $selectQuery = "SELECT t.fullName as depositorName,t.referenceNumber,t.depositAmount, t.mobile, "
+//                . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
+//                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.customerID,"
+                . "ct.salesID,  t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
+                . "t.mobile, t.depositAmount, c.fullName AS customerName, t.createdAt ";
 
-        $countQuery = "SELECT count(DISTINCT t.transactionID) as totalTransaction ";
+        $countQuery = "SELECT count(DISTINCT ct.customerTransactionID) as totalTransaction ";
 
         /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
          */
 
-        $baseQuery = "FROM transaction t LEFT JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber "
-                . "LEFT JOIN customer cu ON co.contactsID=cu.contactsID "
-                . "LEFT JOIN sales s ON cu.customerID=s.customerID "
-                . "LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
-                . "LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
+//        $baseQuery = "FROM transaction t LEFT JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber "
+//                . "LEFT JOIN customer cu ON co.contactsID=cu.contactsID "
+//                . "LEFT JOIN sales s ON cu.customerID=s.customerID "
+//                . "LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
+//                . "LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
+
+        $baseQuery = "FROM customer_transaction ct INNER JOIN transaction t "
+                . "ON ct.transactionID=t.transactionID INNER JOIN contacts c "
+                . "ON ct.contactsID=c.contactsID  ";
 
 
         $whereArray = [
             'filter' => $filter,
-            's.salesID' => $salesID,
-            'cu.customerID' => $customerID,
+            'ct.salesID' => $salesID,
+            'ct.customerID' => $customerID,
             'date' => [$startDate, $endDate]
         ];
 
@@ -572,7 +579,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName', 't.mobile', 'co.fullName', 't.referenceNumber', 'st.salesTypeName'];
+                $searchColumns = ['t.fullName', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
