@@ -266,7 +266,8 @@ class TransactionsController extends Controller {
                         $errors[] = $e;
                     }
                     $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                    return $res->dataError('customer transaction create failed', $messages);
+                    $res->dataError('customer transaction create failed', $messages);
+                    return $res->success("Payment received", TRUE);
                 }
 
                 $userID = $customerSale->userID;
@@ -280,11 +281,13 @@ class TransactionsController extends Controller {
 
                 $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
 
-                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
+                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $amount . " has been received");
             } else {
                 $unknown = new TransactionUnknown();
                 $unknown->transactionID = $transactionID;
                 $unknown->createdAt = date("Y-m-d H:i:s");
+
+                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $amount . " has been received");
 
                 if ($unknown->save() === false) {
                     $errors = array();
@@ -295,44 +298,11 @@ class TransactionsController extends Controller {
                         $errors[] = $e;
                     }
                     $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                    return $res->dataError('customer transaction create failed', $messages);
+                    $res->dataError('customer transaction create failed', $messages);
+                    return $res->success("Payment received", TRUE);
                 }
             }
 
-//            $sale = Sales::findFirst(array("salesID=:id: ",
-//                        'bind' => array("id" => $salesID)));
-            //$saleQuery = "SELECT s.salesID FROM transaction t JOIN contacts c on 
-            //t.salesID=c.nationalIdNumber or t.salesID=c.workMobile JOIN customer 
-            //cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID 
-            //where c.nationalIdNumber='%$salesID%' or c.workMobile='%$salesID%'";
-//            if (!$sale) {
-//                $mappedSale = $this->rawSelect($saleQuery);
-//
-//                $salesID = $mappedSale[0]['salesID'];
-//                $sale = Sales::findFirst(array("salesID=:id: ",
-//                            'bind' => array("id" => $salesID)));
-//            }
-//            if ($sale) {
-//                $sale->status = $this->salePaid;
-//                if ($sale->save() === false) {
-//                    $errors = array();
-//                    $messages = $sale->getMessages();
-//                    foreach ($messages as $message) {
-//                        $e["message"] = $message->getMessage();
-//                        $e["field"] = $message->getField();
-//                        $errors[] = $e;
-//                    }
-//                    //return $res->dataError('sale create failed',$errors);
-//                    $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-//                }
-//
-//                $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
-//
-//
-//
-//                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
-//            }
-            //$res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
             $dbTransaction->commit();
 
             return $res->success("Transaction successfully done ", true);
