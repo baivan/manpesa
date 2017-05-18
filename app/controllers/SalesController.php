@@ -893,8 +893,8 @@ class SalesController extends Controller {
         return $items;
     }
 
-    public function getSalesTransactions($salesID) {
-        $selectQuery = "select * from transaction t where salesID=$salesID";
+    public function getSalesTransactions($w_mobile=0,$nationalIdNumber) {
+        $selectQuery = "select * from transaction t where t.salesID=$nationalIdNumber or t.salesID=$w_mobile ";
         $transactions = $this->rawSelect($selectQuery);
         return $transactions;
     }
