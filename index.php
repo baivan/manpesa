@@ -193,7 +193,9 @@ $transaction_route->post('create', 'create'); //workMobile,nationalIdNumber,full
 $transaction_route->post('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->post('checkpayment', 'checkPayment');
+//$transaction_route->post('dummy/create', 'createTransaction'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'dummyTransaction');
+$transaction_route->get('reconcile', 'reconcile');
 
 $inbox_route = new MicroCollection();
 $inbox_route->setPrefix('/inbox/');
