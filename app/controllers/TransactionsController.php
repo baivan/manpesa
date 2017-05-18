@@ -20,7 +20,7 @@ class TransactionsController extends Controller {
         return $success;
     }
 
-    public function create() { //{mobile,account,referenceNumber,amount,fullName,token}
+    public function createTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -124,7 +124,7 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function createTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
+    public function create() { //{mobile,account,referenceNumber,amount,fullName,token}
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
 
