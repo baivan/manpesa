@@ -192,6 +192,7 @@ $transaction_route->setHandler(new TransactionsController());
 $transaction_route->post('create', 'create'); //workMobile,nationalIdNumber,fullName,location
 $transaction_route->post('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/all', 'getTableTransactions');
+$transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
 //$transaction_route->post('dummy/create', 'createTransaction'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'dummyTransaction');

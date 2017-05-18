@@ -579,7 +579,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber'];
+                $searchColumns = ['t.fullName', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -625,6 +625,85 @@ class TransactionsController extends Controller {
         $data["totalTransaction"] = $count[0]['totalTransaction'];
         $data["transactions"] = $items;
         return $res->success("Transactions get successfully ", $data);
+    }
+
+    public function getTableUnknownPayments() { //sort, order, page, limit,filter
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $sort = $request->getQuery('sort');
+        $order = $request->getQuery('order');
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+        $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
+        $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+
+        $selectQuery = "SELECT tu.unknownTransactionID AS transactionID, t.referenceNumber, "
+                . "t.nationalID, t.fullName AS depositorName, t.mobile, t.depositAmount, t.createdAt ";
+
+        $countQuery = "SELECT count(DISTINCT tu.unknownTransactionID) as totalTransaction ";
+
+        $baseQuery = "FROM transaction_unknown tu INNER JOIN transaction t ON tu.transactionID=t.transactionID  ";
+
+
+        $whereArray = [
+            'filter' => $filter,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['t.fullName', 't.mobile', 't.referenceNumber', 't.nationalID'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 't.status' && $value == 404) {
+                $valueString = "" . $key . "=0" . " AND ";
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND");
+        }
+
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+
+        $countQuery = $countQuery . $baseQuery . $whereQuery;
+        $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+
+        //  return $res->success($countQuery);
+        $count = $this->rawSelect($countQuery);
+        $items = $this->rawSelect($selectQuery);
+
+        $data["totalTransaction"] = $count[0]['totalTransaction'];
+        $data["transactions"] = $items;
+        return $res->success("Unknown payments get successfully ", $data);
     }
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
