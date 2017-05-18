@@ -484,7 +484,7 @@ class TransactionsController extends Controller {
             }
 
             $dbTransaction->commit();
-            return $res->success("Transaction successfully done ", true);
+            return $res->success("Transaction successfully RECONCILED ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
