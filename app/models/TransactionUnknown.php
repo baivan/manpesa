@@ -18,6 +18,13 @@ class TransactionUnknown extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $transactionID;
+    
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=3, nullable=false)
+     */
+    public $status;
 
     /**
      *

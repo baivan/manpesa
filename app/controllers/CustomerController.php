@@ -223,6 +223,72 @@ class CustomerController extends Controller {
         }
     }
 
+    public function getAll() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token') ? $request->getQuery('token') : '';
+        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
+        $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
+        $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
+
+        if (!$token) {
+            return $res->dataError("Missing data ", []);
+        }
+
+        $customerQuery = "SELECT cu.customerID, cu.userID, cu.contactsID, c.workMobile, c.workEmail, "
+                . "c.nationalIdNumber, c.fullName, c.location, cu.createdAt "
+                . "FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID ";
+
+        $whereArray = [
+            'cu.customerID' => $customerID,
+            'cu.userID' => $userID,
+            'filter' => $filter
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+            if ($key == 'filter') {
+                $searchColumns = ['c.workMobile', 'c.nationalIdNumber', 'c.fullName', 'c.location'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else {
+                if ($key == 'status' && $value == 404) {
+                    $valueString = "" . $key . "=0" . " AND ";
+                } else if ($key == 'date') {
+                    if ($value[0] && $value[1]) {
+                        $valueString = " DATE(cu.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    }
+                } else {
+                    $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                }
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND");
+        }
+
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "WHERE cu.customerID IS NULL ";
+
+        $customerQuery = $customerQuery . $whereQuery;
+
+        $customers = $this->rawSelect($customerQuery);
+
+        return $res->success("customers", $customers);
+    }
+
     public function getTableCustomers() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -316,81 +382,6 @@ class CustomerController extends Controller {
         $limitQuery = "LIMIT $ofset, $limit";
 
         return "$sortClause $limitQuery";
-    }
-
-    public function getAll() {
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $token = $request->getQuery('token') ? $request->getQuery('token') : '';
-        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
-        $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
-        $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
-
-        if (!$token) {
-            return $res->dataError("Missing data ", []);
-        }
-
-        $customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID ";
-
-        $whereArray = [
-            'customerID' => $customerID,
-            'userID' => $userID,
-            'filter' => $filter
-        ];
-
-        $whereQuery = "";
-
-        foreach ($whereArray as $key => $value) {
-            if ($key == 'filter') {
-                $searchColumns = ['c.workMobile', 'c.nationalIdNumber', 'c.fullName', 'c.location'];
-
-                $valueString = "";
-                foreach ($searchColumns as $searchColumn) {
-                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
-                }
-                $valueString = chop($valueString, " ||");
-                if ($valueString) {
-                    $valueString = "(" . $valueString;
-                    $valueString .= ") AND";
-                }
-                $whereQuery .= $valueString;
-            } else {
-                if ($key == 'status' && $value == 404) {
-                    $valueString = "" . $key . "=0" . " AND ";
-                } else if ($key == 'date') {
-                    if ($value[0] && $value[1]) {
-                        $valueString = " DATE(cu.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
-                    }
-                } else {
-                    $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
-                }
-                $whereQuery .= $valueString;
-            }
-        }
-
-        if ($whereQuery) {
-            $whereQuery = chop($whereQuery, " AND");
-        }
-
-        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
-
-        $customerQuery = $customerQuery . $whereQuery;
-
-
-//        if ($userID && !$customerID) {
-//            $customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID";
-//        } elseif ($customerID && !$userID) {
-//            $customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID where  cu.customerID=$customerID";
-//        } elseif ($userID && $customerID) {
-//            $customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID AND cu.userID=$userID where cu.userID=$userID AND cu.customerID=$customerID";
-//        } else {
-//            $customerQuery = "SELECT * FROM customer cu JOIN contacts c on cu.contactsID=c.contactsID ";
-//        }
-
-        $customers = $this->rawSelect($customerQuery);
-
-        return $res->success("customers", $customers);
     }
 
 }

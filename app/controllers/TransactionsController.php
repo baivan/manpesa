@@ -312,7 +312,101 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function reconcile() { //{mobile,account,referenceNumber,amount,fullName,token}
+    public function reconcile() { //{contactsID,serialNumber,transactionID,userID,token}
+        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
+        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
+        $transactionID = isset($json->transactionID) ? $json->transactionID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
+
+        if (!$token || !$contactsID || !$transactionID || !$userID) {
+            return $res->dataError("Fields missing ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        try {
+
+            $customerTransaction = new CustomerTransaction();
+
+            $customer = Customer::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+
+            if (!$customer) {
+                $dbTransaction->rollback('customer transaction create failed');
+                return $res->dataError('customer transaction create failed', []);
+            }
+
+            $unknown = TransactionUnknown::findFirst(array("unknownTransactionID=:id: ",
+                        'bind' => array("id" => $transactionID)));
+
+            if (!$unknown) {
+                $dbTransaction->rollback('customer transaction create failed');
+                return $res->dataError('customer transaction create failed', []);
+            }
+
+            $salesID = NULL;
+            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
+                        'bind' => array("id" => $customer->customerID, "status" => 0)));
+            if ($customerSale) {
+                $salesID = $customerSale->salesID;
+            }
+
+            $customerTransaction->transactionID = $unknown->transactionID;
+            $customerTransaction->contactsID = $contactsID;
+            $customerTransaction->customerID = $customer->customerID;
+            $customerTransaction->salesID = $salesID;
+            $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
+            if ($customerTransaction->save() === false) {
+                $errors = array();
+                $messages = $customerTransaction->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                return $res->dataError('customer transaction create failed', $messages);
+            }
+
+            $unknown->status = 1;
+
+            if ($unknown->save() === false) {
+                $errors = array();
+                $messages = $unknown->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                return $res->dataError('customer transaction create failed', $messages);
+            }
+
+            $dbTransaction->commit();
+
+            return $res->success("transaction successfully reconciled ", true);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('transaction reconciliation error', $message);
+        }
+    }
+
+    public function reconcilePayment() { //{mobile,account,referenceNumber,amount,fullName,token}
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -628,6 +722,9 @@ class TransactionsController extends Controller {
     }
 
     public function getTableUnknownPayments() { //sort, order, page, limit,filter
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -650,6 +747,7 @@ class TransactionsController extends Controller {
 
         $whereArray = [
             'filter' => $filter,
+            'tu.status' => 404,
             'date' => [$startDate, $endDate]
         ];
 
@@ -670,7 +768,7 @@ class TransactionsController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-            } else if ($key == 't.status' && $value == 404) {
+            } else if ($key == 'tu.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
@@ -696,7 +794,7 @@ class TransactionsController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
 
-
+        $logger->log("TableUnknown Query: " . $selectQuery);
         //  return $res->success($countQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
