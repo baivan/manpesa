@@ -313,7 +313,7 @@ class TransactionsController extends Controller {
     }
 
     public function reconcile() { //{mobile,account,referenceNumber,amount,fullName,token}
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
         $jwtManager = new JwtManager();
@@ -325,87 +325,76 @@ class TransactionsController extends Controller {
 
         try {
 
-            $transactions = Transaction::find();
-            $transactionCount = $transactions->count();
+            $limit = 50;
+            $batchSize = 1;
 
-            foreach ($transactions as $transaction) {
-                $accounNumber = $transaction->salesID;
-                $mobile = $transaction->mobile;
+            $transactionsData = Transaction::find();
+            $transactionCount = $transactionsData->count();
+
+            if ($transactionCount <= $limit) {
+                $batchSize = 1;
+            } else {
+                $batchSize = (int) ($transactionCount / $limit) + 1;
+            }
+
+            for ($count = 0; $count < $batchSize; $count++) {
                 
-                $customerTransaction = CustomerTransaction::findFirst(array("transactionID=:id: ",
-                            'bind' => array("id" => $transaction->transactionID)));
+                $page = $count + 1;
+                $logger->log("Batch Number: " . $page);
 
-                if (!$customerTransaction) {
-                    
-                    $logger->log("Processing transaction: " . json_encode($transaction));
-                    
-                    $transactionID = $transaction->transactionID;
-                    $customerTransaction = new CustomerTransaction();
-                    $customer = NULL;
-                    $customerSale = NULL;
+                $offset = (int) ($page - 1) * $limit;
 
-                    $customerMapping = Customer::findFirst(array("customerID=:id: ",
-                                'bind' => array("id" => $accounNumber)));
+                $transactions = $this->rawSelect("SELECT * FROM transaction LIMIT $offset,$limit");
 
-                    if ($customerMapping) {
-                        $logger->log("Customer Mapping: ".json_encode($customerMapping));
-                        
-                        $customer = $customerMapping;
-                        $salesID = NULL;
-                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
-                        if ($customerSale) {
-                            $salesID = $customerSale->salesID;
-                        }
+                foreach ($transactions as $transaction) {
+                    $accounNumber = $transaction['salesID'];
+                    $mobile = $transaction['mobile'];
+                    $transactionID = $transaction['transactionID'];
 
-                        $customerTransaction->transactionID = $transactionID;
-                        $customerTransaction->contactsID = $customerMapping->contactsID;
-                        $customerTransaction->customerID = $customerMapping->customerID;
-                        $customerTransaction->salesID = $salesID;
-                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                    } else {
-                        $saleMapping = Sales::findFirst(array("salesID=:id: ",
+                    $customerTransaction = CustomerTransaction::findFirst(array("transactionID=:id: ",
+                                'bind' => array("id" => $transactionID)));
+
+                    if (!$customerTransaction) {
+
+                        $customerTransaction = new CustomerTransaction();
+                        $customer = NULL;
+                        $customerSale = NULL;
+
+                        $customerMapping = Customer::findFirst(array("customerID=:id: ",
                                     'bind' => array("id" => $accounNumber)));
-                        if ($saleMapping) {
-                            $logger->log("Sale Mapping: ".json_encode($saleMapping));
-                            $customer = Customer::findFirst(array("customerID=:id: ",
-                                        'bind' => array("id" => $saleMapping->customerID)));
 
-                            if ($customer) {
-                                $salesID = NULL;
-                                $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                            'bind' => array("id" => $customer->customerID, "status" => 0)));
-                                if ($customerSale) {
-                                    $salesID = $customerSale->salesID;
-                                }
+                        if ($customerMapping) {
+//                        $logger->log("Customer Mapping: " . json_encode($customerMapping));
 
-                                $customerTransaction->transactionID = $transactionID;
-                                $customerTransaction->contactsID = $customer->contactsID;
-                                $customerTransaction->customerID = $customer->customerID;
-                                $customerTransaction->salesID = $salesID;
-                                $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                            } else {
-                                
+                            $customer = $customerMapping;
+                            $salesID = NULL;
+                            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
+                                        'bind' => array("id" => $customer->customerID, "status" => 0)));
+                            if ($customerSale) {
+                                $salesID = $customerSale->salesID;
                             }
-                        } else {
-                            $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
-                                    . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
-                                    . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
-                                    . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
-                                    . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
-                                    . "fullName='$mobile'");
 
-                            if ($contactMapping) {
-                                $logger->log("Contact Mapping: ".json_encode($contactMapping));
-                                $customer = Customer::findFirst(array("contactsID=:id: ",
-                                            'bind' => array("id" => $contactMapping[0]['contactsID'])));
+                            $customerTransaction->transactionID = $transactionID;
+                            $customerTransaction->contactsID = $customerMapping->contactsID;
+                            $customerTransaction->customerID = $customerMapping->customerID;
+                            $customerTransaction->salesID = $salesID;
+                            $customerTransaction->createdAt = date("Y-m-d H:i:s");
+                        } else {
+                            $saleMapping = Sales::findFirst(array("salesID=:id: ",
+                                        'bind' => array("id" => $accounNumber)));
+                            if ($saleMapping) {
+//                            $logger->log("Sale Mapping: " . json_encode($saleMapping));
+                                $customer = Customer::findFirst(array("customerID=:id: ",
+                                            'bind' => array("id" => $saleMapping->customerID)));
+
                                 if ($customer) {
+                                    $salesID = NULL;
                                     $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
                                                 'bind' => array("id" => $customer->customerID, "status" => 0)));
-                                    $salesID = NULL;
                                     if ($customerSale) {
                                         $salesID = $customerSale->salesID;
                                     }
+
                                     $customerTransaction->transactionID = $transactionID;
                                     $customerTransaction->contactsID = $customer->contactsID;
                                     $customerTransaction->customerID = $customer->customerID;
@@ -415,46 +404,87 @@ class TransactionsController extends Controller {
                                     
                                 }
                             } else {
-                                
-                            }
-                        }
-                    }
+                                $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
+                                        . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
+                                        . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
+                                        . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
+                                        . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
+                                        . "fullName='$mobile'");
 
-                    if ($customer) {
-                        if ($customerTransaction->save() === false) {
-                            $errors = array();
-                            $messages = $customerTransaction->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
+                                if ($contactMapping) {
+//                                $logger->log("Contact Mapping: " . json_encode($contactMapping));
+                                    $customer = Customer::findFirst(array("contactsID=:id: ",
+                                                'bind' => array("id" => $contactMapping[0]['contactsID'])));
+                                    if ($customer) {
+                                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
+                                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
+                                        $salesID = NULL;
+                                        if ($customerSale) {
+                                            $salesID = $customerSale->salesID;
+                                        }
+                                        $customerTransaction->transactionID = $transactionID;
+                                        $customerTransaction->contactsID = $customer->contactsID;
+                                        $customerTransaction->customerID = $customer->customerID;
+                                        $customerTransaction->salesID = $salesID;
+                                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
+                                    } else {
+                                        
+                                    }
+                                } else {
+                                    
+                                }
                             }
-                            $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                            $res->dataError('customer transaction create failed', $messages);
                         }
-                    } else {
-                        $unknown = new TransactionUnknown();
-                        $unknown->transactionID = $transactionID;
-                        $unknown->createdAt = date("Y-m-d H:i:s");
 
-                        if ($unknown->save() === false) {
-                            $errors = array();
-                            $messages = $unknown->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
+                        if ($customer) {
+                            $logger->log("Saving valid transaction: " . json_encode($transaction));
+
+                            if ($customerTransaction->save() === false) {
+                                $errors = array();
+                                $messages = $customerTransaction->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                                $res->dataError('customer transaction create failed', $messages);
                             }
-                            $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                            $res->dataError('customer transaction create failed', $messages);
+                        } else {
+
+                            $unknownPayment = TransactionUnknown::findFirst(array("transactionID=:id: ",
+                                        'bind' => array("id" => $transactionID)));
+
+                            if (!$unknownPayment) {
+                                $logger->log("Saving unknown payment: " . json_encode($transaction));
+
+                                $unknown = new TransactionUnknown();
+                                $unknown->transactionID = $transactionID;
+                                $unknown->createdAt = date("Y-m-d H:i:s");
+
+                                if ($unknown->save() === false) {
+                                    $errors = array();
+                                    $messages = $unknown->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                                    $res->dataError('customer transaction create failed', $messages);
+                                }
+                            } else {
+                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
+                            }
                         }
+                    }else{
+                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
                     }
                 }
             }
-            
+
             $dbTransaction->commit();
             return $res->success("Transaction successfully done ", true);
-            
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
