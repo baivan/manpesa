@@ -436,87 +436,25 @@ class TransactionsController extends Controller {
                     if (!$customerTransaction) {
 
                         $customerTransaction = new CustomerTransaction();
-                        $customer = NULL;
-                        $customerSale = NULL;
+                        $contact = NULL;
 
-                        $customerMapping = Customer::findFirst(array("customerID=:id: ",
-                                    'bind' => array("id" => $accounNumber)));
+                        $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
+                                . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
+                                . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
+                                . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
+                                . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
+                                . "fullName='$mobile'");
 
-                        if ($customerMapping) {
-//                        $logger->log("Customer Mapping: " . json_encode($customerMapping));
-
-                            $customer = $customerMapping;
-                            $salesID = NULL;
-                            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                        'bind' => array("id" => $customer->customerID, "status" => 0)));
-                            if ($customerSale) {
-                                $salesID = $customerSale->salesID;
-                            }
-
+                        if ($contactMapping) {
+                            $contact = $contactMapping;
+                            $contactsID = $contactMapping[0]['contactsID'];
                             $customerTransaction->transactionID = $transactionID;
-                            $customerTransaction->contactsID = $customerMapping->contactsID;
-                            $customerTransaction->customerID = $customerMapping->customerID;
-                            $customerTransaction->salesID = $salesID;
+                            $customerTransaction->contactsID = $contactsID;
                             $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                        } else {
-                            $saleMapping = Sales::findFirst(array("salesID=:id: ",
-                                        'bind' => array("id" => $accounNumber)));
-                            if ($saleMapping) {
-//                            $logger->log("Sale Mapping: " . json_encode($saleMapping));
-                                $customer = Customer::findFirst(array("customerID=:id: ",
-                                            'bind' => array("id" => $saleMapping->customerID)));
-
-                                if ($customer) {
-                                    $salesID = NULL;
-                                    $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                                'bind' => array("id" => $customer->customerID, "status" => 0)));
-                                    if ($customerSale) {
-                                        $salesID = $customerSale->salesID;
-                                    }
-
-                                    $customerTransaction->transactionID = $transactionID;
-                                    $customerTransaction->contactsID = $customer->contactsID;
-                                    $customerTransaction->customerID = $customer->customerID;
-                                    $customerTransaction->salesID = $salesID;
-                                    $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                                } else {
-                                    
-                                }
-                            } else {
-                                $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
-                                        . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
-                                        . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
-                                        . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
-                                        . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
-                                        . "fullName='$mobile'");
-
-                                if ($contactMapping) {
-//                                $logger->log("Contact Mapping: " . json_encode($contactMapping));
-                                    $customer = Customer::findFirst(array("contactsID=:id: ",
-                                                'bind' => array("id" => $contactMapping[0]['contactsID'])));
-                                    if ($customer) {
-                                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
-                                        $salesID = NULL;
-                                        if ($customerSale) {
-                                            $salesID = $customerSale->salesID;
-                                        }
-                                        $customerTransaction->transactionID = $transactionID;
-                                        $customerTransaction->contactsID = $customer->contactsID;
-                                        $customerTransaction->customerID = $customer->customerID;
-                                        $customerTransaction->salesID = $salesID;
-                                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                                    } else {
-                                        
-                                    }
-                                } else {
-                                    
-                                }
-                            }
                         }
 
-                        if ($customer) {
-//                            $logger->log("Saving valid transaction: " . json_encode($transaction));
+                        if ($contact) {
+                            $logger->log("Saving valid transaction: " . json_encode($transaction));
 
                             if ($customerTransaction->save() === false) {
                                 $errors = array();
@@ -535,7 +473,7 @@ class TransactionsController extends Controller {
                                         'bind' => array("id" => $transactionID)));
 
                             if (!$unknownPayment) {
-//                                $logger->log("Saving unknown payment: " . json_encode($transaction));
+                                $logger->log("Saving unknown payment: " . json_encode($transaction));
 
                                 $unknown = new TransactionUnknown();
                                 $unknown->transactionID = $transactionID;
@@ -553,11 +491,11 @@ class TransactionsController extends Controller {
                                     $res->dataError('customer transaction create failed', $messages);
                                 }
                             } else {
-//                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
+                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
                             }
                         }
                     } else {
-//                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
+                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
                     }
                 }
             }
