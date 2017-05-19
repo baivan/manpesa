@@ -579,44 +579,47 @@ class SalesController extends Controller {
     }
 
     public function getTableSales() { //sort, order, page, limit,filter,userID
-//        $logPathLocation = $this->config->logPath->location . 'error.log';
-//        $logger = new FileAdapter($logPathLocation);
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $userID = $request->getQuery('userID');
-        $sort = $request->getQuery('sort');
-        $order = $request->getQuery('order');
+        $sort = $request->getQuery('sort')?$request->getQuery('sort'):'s.salesID';
+        $order = $request->getQuery('order')?$request->getQuery('order'):'ASC';
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
+        $salesID = $request->getQuery('salesID');
         $customerID = $request->getQuery('customerID');
         $startDate = $request->getQuery('start');
         $endDate = $request->getQuery('end');
 
         $countQuery = "SELECT count(DISTINCT s.salesID) as totalSales ";
+//        $defaultQuery = "from sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f on pp.frequencyID=f.frequencyID LEFT JOIN product_sale_type_price psp on s.productID=psp.productID left JOIN product p on s.productID=p.productID  LEFT JOIN users u on s.userID=u.userID LEFT join contacts c on u.contactID=c.contactsID left JOIN customer cu on s.customerID=cu.customerID left JOIN contacts c1 on cu.contactsID=c1.contactsID WHERE s.status > 0; ";
+//        $selectQuery = "SELECT s.salesID, s.paymentPlanID, pp.paymentPlanDeposit, "
+//                . "pp.salesTypeID, st.salesTypeName, psp.price,pp.frequencyID,"
+//                . "f.numberOfDays, f.frequencyName, s.userID,c.fullName AS agentName,"
+//                . "c.workMobile AS agentNumber,s.customerID, c1.fullName AS customerName, "
+//                . "c1.workMobile AS customerNumber, c1.nationalIdNumber, s.productID, p.productName, s.createdAt ";
 
-//        $defaultQuery = " FROM sales s join customer c on s.customerID=c.customerID JOIN contacts co on c.contactsID=co.contactsID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID JOIN users u on s.userID=u.userID where s.status=1 ";
-//        $selectQuery = "SELECT s.salesID,s.userID as agentID,u.agentNumber,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,pp.paymentPlanDeposit ";
-       /* $defaultQuery = "FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID "
-                . "INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID INNER JOIN frequency f "
-                . "ON pp.frequencyID=f.frequencyID INNER JOIN users u ON s.userID=u.userID "
-                . "INNER JOIN contacts c ON u.contactID=c.contactsID INNER JOIN customer cust "
-                . "ON s.customerID=cust.customerID INNER JOIN contacts c1 ON cust.contactsID=c1.contactsID "
-                . "INNER JOIN product p ON s.productID=p.productID INNER JOIN product_sale_type_price AS psp "
-                . "ON s.productID=psp.productID WHERE s.status>=1 ";*/
-                $defaultQuery = "from sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f on pp.frequencyID=f.frequencyID LEFT JOIN product_sale_type_price psp on s.productID=psp.productID left JOIN product p on s.productID=p.productID  LEFT JOIN users u on s.userID=u.userID LEFT join contacts c on u.contactID=c.contactsID left JOIN customer cu on s.customerID=cu.customerID left JOIN contacts c1 on cu.contactsID=c1.contactsID WHERE s.status > 0; ";
+        $selectQuery = "SELECT s.salesID, s.paymentPlanID,pp.paymentPlanDeposit AS planDepositAmount,"
+                . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
+                . "f.frequencyName,s.customerID,c.fullName AS customerName, "
+                . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
+                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.createdAt ";
 
-        $selectQuery = "SELECT s.salesID, s.paymentPlanID, pp.paymentPlanDeposit, "
-                . "pp.salesTypeID, st.salesTypeName, psp.price,pp.frequencyID,"
-                . "f.numberOfDays, f.frequencyName, s.userID,c.fullName AS agentName,"
-                . "c.workMobile AS agentNumber,s.customerID, c1.fullName AS customerName, "
-                . "c1.workMobile AS customerNumber, c1.nationalIdNumber, s.productID, p.productName, s.createdAt ";
-//        $condition = " AND ";
+        $defaultQuery = "FROM sales s INNER JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
+                . "INNER JOIN sales_type st on pp.salesTypeID=st.salesTypeID INNER JOIN frequency f "
+                . "ON pp.frequencyID=f.frequencyID INNER JOIN customer cu on s.customerID=cu.customerID "
+                . "INNER JOIN contacts c on cu.contactsID=c.contactsID INNER JOIN product p "
+                . "ON s.productID=p.productID INNER JOIN users u ON s.userID=u.userID "
+                . "INNER JOIN contacts c1 ON u.contactID=c1.contactsID ";
 
         $whereArray = [
             'filter' => $filter,
+            's.salesID' => $salesID,
             's.customerID' => $customerID,
             's.userID' => $userID,
             'date' => [$startDate, $endDate]
@@ -641,7 +644,7 @@ class SalesController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-            } else if ($key == 't.status' && $value == 404) {
+            } else if ($key == 's.status' && $value == 404) {
                 $valueString = "" . $key . "=0" . " AND ";
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
@@ -661,61 +664,28 @@ class SalesController extends Controller {
 
         $whereQuery = $whereQuery ? "AND $whereQuery " : "";
 
-//        if ($userID && $filter && $customerID) {
-//            $condition = "  AND s.userID=$userID AND s.customerID=$customerID AND ";
-//        } elseif ($userID && $filter && !$customerID) {
-//            $condition = "  AND s.userID=$userID AND ";
-//        } elseif ($userID && !$filter && $customerID) {
-//            $condition = " AND s.userID=$userID AND s.customerID=$customerID ";
-//        } elseif ($userID && !$filter && !$customerID) {
-//            $condition = " AND s.userID=$userID ";
-//        } elseif (!$userID && !$filter && $customerID) {
-//
-//            $condition = " AND s.customerID=$customerID ";
-//        } elseif (!$userID && $filter && !$customerID) {
-//
-//            $condition = " AND ";
-//        } elseif (!$userID && !$filter && !$customerID) {
-//            $condition = "  ";
-//        }
-
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
 
-//        $logger->log("Sales Request Query: " . $selectQuery);
-//        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit, $filter);
-//        if ($queryBuilder) {
-//            $selectQuery = $selectQuery . $defaultQuery . $condition . " " . $queryBuilder;
-//            //$countQuery = $countQuery.$defaultQuery.$condition." ".$queryBuilder;
-//            if ($filter) {
-//                $countQuery = $countQuery . $defaultQuery . $condition . " " . $queryBuilder;
-//            } else {
-//                $countQuery = $countQuery . $defaultQuery . $condition;
-//            }
-//        } else {
-//            $selectQuery = $selectQuery . $defaultQuery . $condition;
-//            $countQuery = $countQuery . $defaultQuery . $condition;
-//        }
-        //return $res->success($countQuery ."    ".$selectQuery);
+        $logger->log("Sales Request Query: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
 
-
-        $displaySales = array();
-        foreach ($sales as $sale) {
-            $items = $this->getSaleItems($sale['salesID']);
-            $transactions = $this->getSalesTransactions($sale['nationalIdNumber'],$sale['customerNumber']);
-            $sale['items'] = $items;
-            $sale['transactions'] = $transactions; //return $res->success("salesID",$items);
-            array_push($displaySales, $sale);
-        }
-
+//        $displaySales = array();
+//        foreach ($sales as $sale) {
+//            $items = $this->getSaleItems($sale['salesID']);
+//            $transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
+//            $sale['items'] = $items;
+//            $sale['transactions'] = $transactions; //return $res->success("salesID",$items);
+//            array_push($displaySales, $sale);
+//        }
+//
         $data["totalSales"] = $count[0]['totalSales'];
-        $data["sales"] = $displaySales;
+        $data["sales"] = $sales;
 
 
         return $res->success("Sales ", $data);
@@ -812,7 +782,7 @@ class SalesController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = "group by salesID ORDER BY $sort $order";
+        $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
@@ -823,18 +793,6 @@ class SalesController extends Controller {
 
         $ofset = (int) ($page - 1) * $limit;
         $limitQuery = "LIMIT $ofset, $limit";
-
-//        if ($sort && $order && $filter) {
-//            $query = "  co.fullName REGEXP '$filter' OR t.ticketTitle REGEXP '$filter' OR tc.ticketCategoryName REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
-//        } elseif ($sort && $order && !$filter) {
-//            $query = " ORDER by $sort $order LIMIT $ofset,$limit";
-//        } elseif ($sort && $order && !$filter) {
-//            $query = " ORDER by $sort $order  LIMIT $ofset,$limit";
-//        } elseif (!$sort && !$order) {
-//            $query = " LIMIT $ofset,$limit";
-//        } elseif (!$sort && !$order && $filter) {
-//            $query = "  co.fullName REGEXP '$filter' OR t.ticketTitle REGEXP '$filter' OR tc.ticketCategoryName REGEXP '$filter' LIMIT $ofset,$limit";
-//        }
 
         return "$sortClause $limitQuery";
     }
@@ -893,7 +851,7 @@ class SalesController extends Controller {
         return $items;
     }
 
-    public function getSalesTransactions($nationalIdNumber,$w_mobile) {
+    public function getSalesTransactions($nationalIdNumber, $w_mobile) {
         $selectQuery = "select * from transaction t where t.salesID>0 and (t.salesID='$nationalIdNumber' or t.salesID='$w_mobile') ";
         $transactions = $this->rawSelect($selectQuery);
         return $transactions;
@@ -1098,9 +1056,8 @@ class SalesController extends Controller {
 
                     foreach ($transactions as $transaction) {
                         $amount = $transaction['depositAmount'];
-                        $paidAmount = $paidAmount+ $amount;
-                       // return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
-
+                        $paidAmount = $paidAmount + $amount;
+                        // return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
                     }
 
 
@@ -1110,16 +1067,16 @@ class SalesController extends Controller {
 
                     if ($paidAmount > 2000) {
                         $sale_object->status = 1;
-                       // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    } elseif ($paidAmount ==0) {
-                       $sale_object->status = -1;
-                      // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    } else{
+                        // return $res->success("sale updated ".$paidAmount, $sale_object);
+                    } elseif ($paidAmount == 0) {
+                        $sale_object->status = -1;
+                        // return $res->success("sale updated ".$paidAmount, $sale_object);
+                    } else {
                         $sale_object->status = 3;
-                       // return $res->success("sale updated ".$paidAmount, $sale_object);
+                        // return $res->success("sale updated ".$paidAmount, $sale_object);
                     }
 
-                    
+
                     if ($sale_object->save() === false) {
                         $errors = array();
                         $messages = $sale_object->getMessages();
@@ -1130,9 +1087,6 @@ class SalesController extends Controller {
                         }
                         $dbTransaction->rollback("sale create failed " . json_encode($errors));
                     }
-
-                   
-
                 }
 
                 // return $res->success("sale updated ", $sale_object);
