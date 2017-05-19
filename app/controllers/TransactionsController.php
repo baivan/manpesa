@@ -765,7 +765,7 @@ class TransactionsController extends Controller {
                 $valueString = chop($valueString, " ||");
                 if ($valueString) {
                     $valueString = "(" . $valueString;
-                    $valueString .= ") AND";
+                    $valueString .= ") AND ";
                 }
                 $whereQuery .= $valueString;
             } else if ($key == 'tu.status' && $value == 404) {
@@ -777,13 +777,13 @@ class TransactionsController extends Controller {
                     $whereQuery .= $valueString;
                 }
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
                 $whereQuery .= $valueString;
             }
         }
 
         if ($whereQuery) {
-            $whereQuery = chop($whereQuery, " AND");
+            $whereQuery = chop($whereQuery, " AND ");
         }
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
