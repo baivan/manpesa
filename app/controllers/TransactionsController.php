@@ -626,9 +626,9 @@ class TransactionsController extends Controller {
 //        $selectQuery = "SELECT t.fullName as depositorName,t.referenceNumber,t.depositAmount, t.mobile, "
 //                . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
 //                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
-        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.customerID,"
-                . "ct.salesID,  t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
-                . "t.mobile, t.depositAmount, c.fullName AS customerName, t.createdAt ";
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, "
+                . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
+                . "t.mobile, t.depositAmount, c.fullName, t.createdAt ";
 
         $countQuery = "SELECT count(DISTINCT ct.customerTransactionID) as totalTransaction ";
 
@@ -649,7 +649,6 @@ class TransactionsController extends Controller {
         $whereArray = [
             'filter' => $filter,
             'ct.salesID' => $salesID,
-            'ct.customerID' => $customerID,
             'date' => [$startDate, $endDate]
         ];
 
