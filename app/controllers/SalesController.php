@@ -608,7 +608,7 @@ class SalesController extends Controller {
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
                 . "f.frequencyName,s.customerID,c.fullName AS customerName, "
                 . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
-                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.createdAt ";
+                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.status, s.createdAt ";
 
         $defaultQuery = "FROM sales s INNER JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
                 . "INNER JOIN sales_type st on pp.salesTypeID=st.salesTypeID INNER JOIN frequency f "
