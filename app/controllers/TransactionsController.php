@@ -174,89 +174,87 @@ class TransactionsController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                //return $res->dataError('sale create failed',$errors);
+                $res->dataError('sale create failed', $errors);
                 $dbTransaction->rollback('transaction create failed' . json_encode($errors));
+                return $res->success("Payment received", TRUE);
             }
 
             $transactionID = $transaction->transactionID;
+
             $customerTransaction = new CustomerTransaction();
-            $customer = NULL;
-            $customerSale = NULL;
+            $contact = NULL;
 
-            $customerMapping = Customer::findFirst(array("customerID=:id: ",
-                        'bind' => array("id" => $accounNumber)));
+//            $customerMapping = Customer::findFirst(array("customerID=:id: ",
+//                        'bind' => array("id" => $accounNumber)));
+//
+//            if ($customerMapping) {
+//                $customer = $customerMapping;
+//                $salesID = NULL;
+//                $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
+//                            'bind' => array("id" => $customer->customerID, "status" => 0)));
+//                if ($customerSale) {
+//                    $salesID = $customerSale->salesID;
+//                }
+//
+//                $customerTransaction->transactionID = $transactionID;
+//                $customerTransaction->contactsID = $customerMapping->contactsID;
+//                $customerTransaction->customerID = $customerMapping->customerID;
+//                $customerTransaction->salesID = $salesID;
+//                $customerTransaction->createdAt = date("Y-m-d H:i:s");
+//            } else {
+//            $saleMapping = Sales::findFirst(array("salesID=:id: ",
+//                            'bind' => array("id" => $accounNumber)));
+//                if ($saleMapping) {
+//                    $customer = Customer::findFirst(array("customerID=:id: ",
+//                                'bind' => array("id" => $saleMapping->customerID)));
+//
+//                    if ($customer) {
+//                        $salesID = NULL;
+//                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
+//                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
+//                        if ($customerSale) {
+//                            $salesID = $customerSale->salesID;
+//                        }
+//
+//                        $customerTransaction->transactionID = $transactionID;
+//                        $customerTransaction->contactsID = $customer->contactsID;
+//                        $customerTransaction->customerID = $customer->customerID;
+//                        $customerTransaction->salesID = $salesID;
+//                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
+//                    } else {
+//                        
+//                    }
+//                } else {
+//                            $userID = $customerSale->userID;
+//
+//                $pushNotificationData = array();
+//                $pushNotificationData['nationalID'] = $nationalID;
+//                $pushNotificationData['mobile'] = $mobile;
+//                $pushNotificationData['amount'] = $depositAmount;
+//                $pushNotificationData['saleAmount'] = $customerSale->amount;
+//                $pushNotificationData['fullName'] = $fullName;
+//
+//                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
 
-            if ($customerMapping) {
-                $customer = $customerMapping;
-                $salesID = NULL;
-                $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                            'bind' => array("id" => $customer->customerID, "status" => 0)));
-                if ($customerSale) {
-                    $salesID = $customerSale->salesID;
-                }
 
+            $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
+                    . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
+                    . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
+                    . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
+                    . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
+                    . "fullName='$mobile'");
+
+            if ($contactMapping) {
+                $contact = $contactMapping;
+                $contactsID = $contactMapping[0]['contactsID'];
                 $customerTransaction->transactionID = $transactionID;
-                $customerTransaction->contactsID = $customerMapping->contactsID;
-                $customerTransaction->customerID = $customerMapping->customerID;
-                $customerTransaction->salesID = $salesID;
+                $customerTransaction->contactsID = $contactsID;
                 $customerTransaction->createdAt = date("Y-m-d H:i:s");
-            } else {
-                $saleMapping = Sales::findFirst(array("salesID=:id: ",
-                            'bind' => array("id" => $accounNumber)));
-                if ($saleMapping) {
-                    $customer = Customer::findFirst(array("customerID=:id: ",
-                                'bind' => array("id" => $saleMapping->customerID)));
-
-                    if ($customer) {
-                        $salesID = NULL;
-                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
-                        if ($customerSale) {
-                            $salesID = $customerSale->salesID;
-                        }
-
-                        $customerTransaction->transactionID = $transactionID;
-                        $customerTransaction->contactsID = $customer->contactsID;
-                        $customerTransaction->customerID = $customer->customerID;
-                        $customerTransaction->salesID = $salesID;
-                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                    } else {
-                        
-                    }
-                } else {
-                    $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
-                            . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
-                            . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
-                            . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
-                            . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
-                            . "fullName='$mobile'");
-//                    $logger->log("Mapping Response: ".json_encode($contactMapping));
-
-                    if ($contactMapping) {
-                        $customer = Customer::findFirst(array("contactsID=:id: ",
-                                    'bind' => array("id" => $contactMapping[0]['contactsID'])));
-                        if ($customer) {
-                            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                                        'bind' => array("id" => $customer->customerID, "status" => 0)));
-                            $salesID = NULL;
-                            if ($customerSale) {
-                                $salesID = $customerSale->salesID;
-                            }
-                            $customerTransaction->transactionID = $transactionID;
-                            $customerTransaction->contactsID = $customer->contactsID;
-                            $customerTransaction->customerID = $customer->customerID;
-                            $customerTransaction->salesID = $salesID;
-                            $customerTransaction->createdAt = date("Y-m-d H:i:s");
-                        } else {
-                            
-                        }
-                    } else {
-                        
-                    }
-                }
             }
 
-            if ($customer) {
+            if ($contact) {
+                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
+
                 if ($customerTransaction->save() === false) {
                     $errors = array();
                     $messages = $customerTransaction->getMessages();
@@ -269,25 +267,12 @@ class TransactionsController extends Controller {
                     $res->dataError('customer transaction create failed', $messages);
                     return $res->success("Payment received", TRUE);
                 }
-
-                $userID = $customerSale->userID;
-
-                $pushNotificationData = array();
-                $pushNotificationData['nationalID'] = $nationalID;
-                $pushNotificationData['mobile'] = $mobile;
-                $pushNotificationData['amount'] = $depositAmount;
-                $pushNotificationData['saleAmount'] = $customerSale->amount;
-                $pushNotificationData['fullName'] = $fullName;
-
-                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
-
-                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $amount . " has been received");
             } else {
                 $unknown = new TransactionUnknown();
                 $unknown->transactionID = $transactionID;
                 $unknown->createdAt = date("Y-m-d H:i:s");
 
-                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $amount . " has been received");
+                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
 
                 if ($unknown->save() === false) {
                     $errors = array();
@@ -305,7 +290,7 @@ class TransactionsController extends Controller {
 
             $dbTransaction->commit();
 
-            return $res->success("Transaction successfully done ", true);
+            return $res->success("payment received ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
