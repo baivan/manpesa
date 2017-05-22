@@ -327,13 +327,13 @@ class TransactionsController extends Controller {
 
             $customerTransaction = new CustomerTransaction();
 
-            $customer = Customer::findFirst(array("contactsID=:id: ",
-                        'bind' => array("id" => $contactsID)));
-
-            if (!$customer) {
-                $dbTransaction->rollback('customer transaction create failed');
-                return $res->dataError('customer transaction create failed', []);
-            }
+//            $customer = Customer::findFirst(array("contactsID=:id: ",
+//                        'bind' => array("id" => $contactsID)));
+//
+//            if (!$customer) {
+//                $dbTransaction->rollback('customer transaction create failed');
+//                return $res->dataError('customer transaction create failed', []);
+//            }
 
             $unknown = TransactionUnknown::findFirst(array("unknownTransactionID=:id: ",
                         'bind' => array("id" => $transactionID)));
@@ -343,17 +343,16 @@ class TransactionsController extends Controller {
                 return $res->dataError('customer transaction create failed', []);
             }
 
-            $salesID = NULL;
-            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-                        'bind' => array("id" => $customer->customerID, "status" => 0)));
-            if ($customerSale) {
-                $salesID = $customerSale->salesID;
-            }
+//            $salesID = NULL;
+//            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
+//                        'bind' => array("id" => $customer->customerID, "status" => 0)));
+//            if ($customerSale) {
+//                $salesID = $customerSale->salesID;
+//            }
 
             $customerTransaction->transactionID = $unknown->transactionID;
             $customerTransaction->contactsID = $contactsID;
-            $customerTransaction->customerID = $customer->customerID;
-            $customerTransaction->salesID = $salesID;
+            $customerTransaction->customerID = NULL;
             $customerTransaction->createdAt = date("Y-m-d H:i:s");
 
             if ($customerTransaction->save() === false) {
