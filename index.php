@@ -91,6 +91,7 @@ $sale_route->setHandler(new SalesController());
 $sale_route->post('create', 'create');
 $sale_route->post('all', 'getSales');
 $sale_route->get('all', 'getSales');
+$sale_route->get('crm/items', 'getCRMSaleItems');
 $sale_route->post('crm/all', 'getTableSales');
 $sale_route->get('crm/all', 'getTableSales');
 $sale_route->get('crm/partners', 'getTablePartnerSales');

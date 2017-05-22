@@ -30,41 +30,41 @@ class SalesController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
 
-        $paymentPlanDeposit = $json->paymentPlanDeposit;
-        $salesTypeID = $json->salesTypeID;
-        $frequencyID = $json->frequencyID;
-        $contactsID = $json->contactsID;
-        $userID = $json->userID;
-        $amount = $json->amount;
-        $productID = $json->productID;
+        $paymentPlanDeposit = isset($json->paymentPlanDeposit) ? $json->paymentPlanDeposit : 0;
+        $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : 0;
+        $frequencyID = isset($json->frequencyID) ? $json->frequencyID : 0;
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $amount = isset($json->amount) ? $json->amount : 0;
+        $productID = isset($json->productID) ? $json->productID : NULL;
 
-        $location = $json->location;
-        $workMobile = $json->workMobile;
-        $fullName = $json->fullName;
-        $nationalIdNumber = $json->nationalIdNumber;
+        $location = isset($json->location) ? $json->location : NULL;
+        $workMobile = isset($json->workMobile) ? $json->workMobile : NULL;
+        $fullName = isset($json->fullName) ? $json->fullName : NULL;
+        $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
 
         $token = $json->token;
 
 
 
         if (!$token) {
-            return $res->dataError("Token missing er" . json_encode($json));
+            return $res->dataError("Token missing er" . json_encode($json), []);
         }
         if (!$salesTypeID) {
-            return $res->dataError("salesTypeID missing ");
+            return $res->dataError("salesTypeID missing ", []);
         }
         if (!$userID) {
-            return $res->dataError("userID missing ");
+            return $res->dataError("userID missing ", []);
         }
         if (!$amount) {
-            return $res->dataError("amount missing ");
+            return $res->dataError("amount missing ", []);
         }
         if (!$frequencyID) {
             //return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
         }
         if (!$productID) {
-            return $res->dataError("product missing ");
+            return $res->dataError("product missing ", []);
         }
 
 
@@ -78,11 +78,13 @@ class SalesController extends Controller {
 
 
         try {
+
             if (!$contactsID) {
                 if ($workMobile && $fullName && $location && $nationalIdNumber) { //createContact 
                     $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction);
                 }
             }
+
             $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction);
             $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
@@ -586,8 +588,8 @@ class SalesController extends Controller {
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $userID = $request->getQuery('userID');
-        $sort = $request->getQuery('sort')?$request->getQuery('sort'):'s.salesID';
-        $order = $request->getQuery('order')?$request->getQuery('order'):'ASC';
+        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 's.salesID';
+        $order = $request->getQuery('order') ? $request->getQuery('order') : 'ASC';
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
@@ -843,6 +845,39 @@ class SalesController extends Controller {
         $summaryData['tickets'] = $tickets;
 
         return $res->success("Summary data ", $summaryData);
+    }
+
+    public function getCRMSaleItems() {//{salesID,token}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $salesID = $request->getQuery('salesID');
+
+        $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
+                . "from sales_item si join item i on si.itemID=i.itemID join product p on i.productID=p.productID "
+                . "join category c on p.categoryID=c.categoryID";
+
+
+        if (!$token) {
+            return $res->dataError("Missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+
+        if ($salesID) {
+            $selectQuery = $selectQuery . " WHERE si.saleID = $salesID";
+        }
+
+        $saleItems = $this->rawSelect($selectQuery);
+
+
+        return $res->success("saleItems",$saleItems);
     }
 
     public function getSaleItems($salesID) {
