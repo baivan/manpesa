@@ -277,10 +277,17 @@ class TicketController extends Controller {
         $filter = $request->getQuery('filter');
         $ticketID = $request->getQuery('ticketID');
         $contactID = $request->getQuery('contactID');
+        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : 0;
         $status = $request->getQuery('status');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
+        $customer = Customer::findFirst(array("customerID=:id: ",
+                    'bind' => array("id" => $customerID)));
+
+        if ($customer) {
+            $contactID = $customer->contactsID;
+        }
 
         $countQuery = "SELECT count(ticketID) as totalTickets ";
 
