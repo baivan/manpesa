@@ -6,6 +6,7 @@ use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
+use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class ItemsController extends Controller {
 
@@ -245,6 +246,9 @@ class ItemsController extends Controller {
     }
 
     public function getTableItems() { //sort, order, page, limit,filter
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+        
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -276,7 +280,7 @@ class ItemsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['i.serialNumber'];
+                $searchColumns = ['i.serialNumber','co.fullName','co.workMobile'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -285,7 +289,7 @@ class ItemsController extends Controller {
                 $valueString = chop($valueString, " ||");
                 if ($valueString) {
                     $valueString = "(" . $valueString;
-                    $valueString .= ") AND";
+                    $valueString .= ") AND ";
                 }
                 $whereQuery .= $valueString;
             } else if ($key == 't.status' && $value == 404) {
@@ -297,13 +301,13 @@ class ItemsController extends Controller {
                     $whereQuery .= $valueString;
                 }
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
                 $whereQuery .= $valueString;
             }
         }
 
         if ($whereQuery) {
-            $whereQuery = chop($whereQuery, " AND");
+            $whereQuery = chop($whereQuery, " AND ");
         }
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
@@ -313,6 +317,8 @@ class ItemsController extends Controller {
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
+        
+        $logger->log("TableProductItems Query: " . $selectQuery);
 
 //        if ($productID && $filter) {
 //            //$selectQuery = $selectQuery." WHERE i.productID=$productID ";
