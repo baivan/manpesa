@@ -611,11 +611,11 @@ class SalesController extends Controller {
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.status, s.createdAt ";
 
         $defaultQuery = "FROM sales s INNER JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
-                . "INNER JOIN sales_type st on pp.salesTypeID=st.salesTypeID INNER JOIN frequency f "
-                . "ON pp.frequencyID=f.frequencyID INNER JOIN customer cu on s.customerID=cu.customerID "
-                . "INNER JOIN contacts c on cu.contactsID=c.contactsID INNER JOIN product p "
-                . "ON s.productID=p.productID INNER JOIN users u ON s.userID=u.userID "
-                . "INNER JOIN contacts c1 ON u.contactID=c1.contactsID ";
+                . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
+                . "ON pp.frequencyID=f.frequencyID LEFT JOIN customer cu on s.customerID=cu.customerID "
+                . "LEFT JOIN contacts c on cu.contactsID=c.contactsID LEFT JOIN product p "
+                . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
+                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID ";
 
         $whereArray = [
             'filter' => $filter,
