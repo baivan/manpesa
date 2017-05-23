@@ -877,7 +877,7 @@ class SalesController extends Controller {
         $saleItems = $this->rawSelect($selectQuery);
 
 
-        return $res->success("saleItems",$saleItems);
+        return $res->success("saleItems", $saleItems);
     }
 
     public function getSaleItems($salesID) {
@@ -943,125 +943,194 @@ class SalesController extends Controller {
     }
 
     public function monitorSales() {
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logPathLocation = $this->config->logPath->location . 'apicalls_log.log';
         $logger = new FileAdapter($logPathLocation);
 
         $request = new Request();
         $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
+        $callbackLimit = 50;
+        $callbackBatchSize = 1;
+
         $limit = 5;
         $batchSize = 1;
 
-        $openSales = Sales::find([
-                    "status = :status:",
-                    "bind" => [
-                        "status" => 0
-                    ]
-        ]);
+//        $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
+//                . "log.contactsID, c.fullName, log.recipient, log.comment, "
+//                . "log.userID FROM call_log log INNER JOIN call_type ct "
+//                . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
+//                . "WHERE date(callback)=curdate()");
+        
+        $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
+                . "log.contactsID, c.fullName, log.recipient, log.comment, "
+                . "log.userID FROM call_log log INNER JOIN call_type ct "
+                . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
+                . "WHERE date(callback)<=curdate() AND date(callback)>'00-00-00'");
 
-        $openSaleCount = count($openSales);
+        foreach ($activeCallbacks as $activeCallback) {
 
-        if ($openSaleCount <= $limit) {
-            $batchSize = 1;
-        } else {
-            $batchSize = (int) ($openSaleCount / $limit) + 1;
-        }
+            $ticket = new Ticket();
+            $ticket->ticketTitle = "Callback on ".$activeCallback['callTypeName'];
+            $ticket->ticketDescription = $activeCallback['comment'] ? $activeCallback['comment'] : 'A contact callback ticket';
+            $ticket->contactsID = $activeCallback['contactsID'];
+            $ticket->otherOwner = $activeCallback['recipient'];
+            $ticket->assigneeID = $activeCallback['userID'];
+            $ticket->ticketCategoryID = 2;
+            $ticket->otherCategory = NULL;
+            $ticket->priorityID = 2;
+            $ticket->userID = NULL;
+            $ticket->status = 0;
+            $ticket->createdAt = date("Y-m-d H:i:s");
 
-        $tiers = DelinquencyTier::find();
-        foreach ($tiers as $tier) {
-            $tier->tierCount = 0;
-            $tier->save();
-        }
-
-        for ($count = 0; $count < $batchSize; $count++) {
-            $page = $count + 1;
-
-            $offset = (int) ($page - 1) * $limit;
-
-            $sales = $res->rawSelect("SELECT s.salesID,s.paymentPlanID,pp.paymentPlanDeposit,
-                pp.salesTypeID,st.salesTypeName,pp.frequencyID,f.frequencyName,f.numberOfDays,s.amount, s.createdAt  
-                FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID 
-                INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f 
-                ON pp.frequencyID=f.frequencyID WHERE s.status<=0 LIMIT $offset,$limit");
-
-            foreach ($sales as $sale) {
-                $elapse = date_diff(new DateTime(), new DateTime($sale['createdAt']), TRUE);
-                $numDays = (int) $elapse->days;
-                $customerTier = 0;
-
-                if ($numDays == 3) {
-                    //Welcome Call Ticket and update tier count
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 0)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                } else if ($numDays > 3 && $numDays <= 5) {
-                    $customerTier = 1;
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 1)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                    //UPDATE delinquency_tier SET tierCount=tierCount+2 WHERE tierName=6
-                    //First Delinquent Tier: generate ticket and update tierCount
-                } else if ($numDays > 5 && $numDays <= 10) {
-                    $customerTier = 2;
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 2)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                    //Second Delinquent Tier: generate ticket and update tierCount
-                } else if ($numDays > 10 && $numDays <= 20) {
-                    $customerTier = 3;
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 3)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                    //Third Delinquent Tier: generate ticket and update tierCount
-                } else if ($numDays > 20 && $numDays <= 40) {
-                    $customerTier = 4;
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 4)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                    //Fourth Delinquent Tier: generate ticket and update tierCount
-                } else if ($numDays > 40 && $numDays <= 45) {
-                    $customerTier = 5;
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 5)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                    //Fifth Delinquent Tier: generate ticket and update tierCount
-                } else if ($numDays > 45 && $numDays <= 89) {
-                    $customerTier = 6;
-                    $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-                                'bind' => array("tierName" => 6)));
-                    if ($tier) {
-                        $tier->tierCount = $tier->tierCount + 1;
-                        $tier->save();
-                    }
-                    //Sixth Delinquent Tier: generate ticket and update tierCount
-                } else if ($numDays == 90) {
-                    $customerTier = 7;
-                    //Default Customer
+            if ($ticket->save() === false) {
+                $errors = array();
+                $messages = $ticket->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
                 }
-
-                $logger->log("Days Since Commencement " . $numDays . " Customer Tier: " . $customerTier);
+                $logger->log("Ticket save failed for callback" . json_encode($activeCallback));
+                //return $res->dataError('sale create failed',$errors);
+                //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
             }
+
+            $ticketID = $ticket->ticketID;
+            $ticketTitle = $activeCallback['callTypeName'];
+
+            $ticketData = $res->rawSelect("SELECT t.ticketTitle, t.ticketDescription, "
+                    . "t.userID,c.fullName AS triggerName,t.contactsID, c1.fullName AS owner, "
+                    . "t.otherOwner,t.assigneeID, c2.fullName AS assigneeName, c2.workMobile, c2.workEmail, t.ticketCategoryID,"
+                    . "cat.ticketCategoryName, t.otherCategory, t.priorityID,p.priorityName FROM ticket t "
+                    . "LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c ON u.contactID=c.contactsID "
+                    . "LEFT JOIN contacts c1 ON t.contactsID=c1.contactsID LEFT JOIN users u1 "
+                    . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
+                    . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
+                    . "INNER JOIN priority p ON t.priorityID=p.priorityID WHERE t.ticketID=$ticketID");
+
+            $ticketData[0]['ticketCategoryName'] = $ticketData[0]['ticketCategoryName'] ? $ticketData[0]['ticketCategoryName'] : $ticketData[0]['otherCategory'];
+
+            $assigneeName = $ticketData[0]['assigneeName'];
+            $triggerName = $ticketData[0]['triggerName'];
+
+            $assigneeMessage = "Dear $assigneeName, the ticket named $ticketTitle "
+                    . "has been assigned to you. Please ensure its resolve.";
+            $res->sendMessage($ticketData[0]['workMobile'], $assigneeMessage);
+            $res->sendEmail($ticketData[0]);
+
+            $logger->log("Ticket for callback successfully created" . json_encode($ticket));
         }
 
-        return $res->success("response", $batchSize);
+        /*
+          $openSales = Sales::find([
+          "status = :status:",
+          "bind" => [
+          "status" => 0
+          ]
+          ]);
+
+          $openSaleCount = count($openSales);
+
+          if ($openSaleCount <= $limit) {
+          $batchSize = 1;
+          } else {
+          $batchSize = (int) ($openSaleCount / $limit) + 1;
+          }
+
+          $tiers = DelinquencyTier::find();
+          foreach ($tiers as $tier) {
+          $tier->tierCount = 0;
+          $tier->save();
+          }
+
+          for ($count = 0; $count < $batchSize; $count++) {
+          $page = $count + 1;
+
+          $offset = (int) ($page - 1) * $limit;
+
+          $sales = $res->rawSelect("SELECT s.salesID,s.paymentPlanID,pp.paymentPlanDeposit,
+          pp.salesTypeID,st.salesTypeName,pp.frequencyID,f.frequencyName,f.numberOfDays,s.amount, s.createdAt
+          FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID
+          INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f
+          ON pp.frequencyID=f.frequencyID WHERE s.status<=0 LIMIT $offset,$limit");
+
+          foreach ($sales as $sale) {
+          $elapse = date_diff(new DateTime(), new DateTime($sale['createdAt']), TRUE);
+          $numDays = (int) $elapse->days;
+          $customerTier = 0;
+
+          if ($numDays == 3) {
+          //Welcome Call Ticket and update tier count
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 0)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          } else if ($numDays > 3 && $numDays <= 5) {
+          $customerTier = 1;
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 1)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          //UPDATE delinquency_tier SET tierCount=tierCount+2 WHERE tierName=6
+          //First Delinquent Tier: generate ticket and update tierCount
+          } else if ($numDays > 5 && $numDays <= 10) {
+          $customerTier = 2;
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 2)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          //Second Delinquent Tier: generate ticket and update tierCount
+          } else if ($numDays > 10 && $numDays <= 20) {
+          $customerTier = 3;
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 3)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          //Third Delinquent Tier: generate ticket and update tierCount
+          } else if ($numDays > 20 && $numDays <= 40) {
+          $customerTier = 4;
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 4)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          //Fourth Delinquent Tier: generate ticket and update tierCount
+          } else if ($numDays > 40 && $numDays <= 45) {
+          $customerTier = 5;
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 5)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          //Fifth Delinquent Tier: generate ticket and update tierCount
+          } else if ($numDays > 45 && $numDays <= 89) {
+          $customerTier = 6;
+          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
+          'bind' => array("tierName" => 6)));
+          if ($tier) {
+          $tier->tierCount = $tier->tierCount + 1;
+          $tier->save();
+          }
+          //Sixth Delinquent Tier: generate ticket and update tierCount
+          } else if ($numDays == 90) {
+          $customerTier = 7;
+          //Default Customer
+          }
+
+          $logger->log("Days Since Commencement " . $numDays . " Customer Tier: " . $customerTier);
+          }
+          }
+
+          return $res->success("response", $batchSize); */
     }
 
     public function updateOldSales() {
