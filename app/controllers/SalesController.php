@@ -1154,8 +1154,8 @@ class SalesController extends Controller {
         $dbTransaction = $transactionManager->get();
         /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;" */
         try {
-            //$salesQuery = "select * from sales where createdAt='0000-00-00 00:00:00' and customerID > 0 ";
-            $salesQuery = " select * from sales where createdAt<>'0000-00-00 00:00:00' ";
+            
+            /*$salesQuery = " select * from sales where createdAt<>'0000-00-00 00:00:00' ";
 
             $sales = $this->rawSelect($salesQuery);
              foreach ($sales as $sale) {
@@ -1188,9 +1188,9 @@ class SalesController extends Controller {
  
                 }
 
-             }
+             }*/
 
-/*
+             $salesQuery = "select * from sales ";
             foreach ($sales as $sale) {
                 $contactsID = $sale["customerID"];
                 $saleID = $sale["salesID"];
@@ -1214,16 +1214,20 @@ class SalesController extends Controller {
                                 'bind' => array("id" => $saleID)));
 
 
-                    if ($paidAmount > 2000) {
+                    if ($paidAmount > 0) {
                         $sale_object->status = 1;
                         // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    } elseif ($paidAmount == 0) {
+                    } 
+                    else{
+                        $sale_object->status = 0;
+                    }
+                    /*elseif ($paidAmount == 0) {
                         $sale_object->status = -1;
                         // return $res->success("sale updated ".$paidAmount, $sale_object);
                     } else {
                         $sale_object->status = 3;
                         // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    }
+                    }*/
 
                     
 
@@ -1240,7 +1244,7 @@ class SalesController extends Controller {
                     }
                 }
                  }
-                */
+                
 
                 // return $res->success("sale updated ", $sale_object);
            
