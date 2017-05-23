@@ -612,7 +612,7 @@ class SalesController extends Controller {
                 . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.status, s.createdAt ";
 
-        $defaultQuery = "FROM sales s INNER JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
+        $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
                 . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
                 . "ON pp.frequencyID=f.frequencyID LEFT JOIN customer cu on s.customerID=cu.customerID "
                 . "LEFT JOIN contacts c on cu.contactsID=c.contactsID LEFT JOIN product p "
@@ -672,10 +672,13 @@ class SalesController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
 
-        $logger->log("Sales Request Query: " . $selectQuery);
+        //$logger->log("Sales Request Query: " . $selectQuery);
+        //$return 
+        return $res->success("Sales ", $selectQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
+
 
 //        $displaySales = array();
 //        foreach ($sales as $sale) {
