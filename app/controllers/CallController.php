@@ -62,7 +62,7 @@ class CallController extends Controller {
 
         try {
 
-            $logger->log("Request Data: " . json_encode($json));
+//            $logger->log("Request Data: " . json_encode($json));
             $call = new Call();
             $call->callTypeID = $callTypeID;
             $call->contactsID = $contactsID;
@@ -116,19 +116,8 @@ class CallController extends Controller {
                     $promoterScore->contactsID = $contactsID;
                     $promoterScore->createdAt = date("Y-m-d H:i:s");
                 }
-            }
 
-            if ($call->save() === false) {
-                $errors = array();
-                $messages = $call->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                return $res->dataError('call log failed', $errors);
-            } else {
-                if ($promoterScore->save() === false) {
+                if ($call->save() === false) {
                     $errors = array();
                     $messages = $call->getMessages();
                     foreach ($messages as $message) {
@@ -138,11 +127,33 @@ class CallController extends Controller {
                     }
                     return $res->dataError('call log failed', $errors);
                 } else {
-                    return $res->success("call successfully created ", $call);
+                    if ($promoterScore->save() === false) {
+                        $errors = array();
+                        $messages = $call->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        return $res->dataError('call log failed', $errors);
+                    } else {
+                        return $res->success("call successfully created ", $call);
+                    }
+                }
+            } else {
+                if ($call->save() === false) {
+                    $errors = array();
+                    $messages = $call->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    return $res->dataError('call log failed', $errors);
                 }
             }
 
-            //return $res->success("call successfully created ", $call);
+            return $res->success("call successfully created ", $call);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('call log error', $message);
