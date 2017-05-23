@@ -30,6 +30,7 @@ class InboxController extends Controller
        $MSISDN = $json->MSISDN;
        $message = $json->message;
 
+/*
         $tokenData = $jwtManager->verifyToken($token,'openRequest');
 
         if(!$token || !$MSISDN || !$message){
@@ -40,7 +41,7 @@ class InboxController extends Controller
 	    if(!$tokenData){
 	        return $res->dataError("Data compromised");
 	      }
-
+*/
        try {
        	  $inbox = new Inbox();
        	  $inbox->MSISDN = $MSISDN;
