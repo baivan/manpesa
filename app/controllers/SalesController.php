@@ -867,8 +867,8 @@ class SalesController extends Controller {
         $salesID = $request->getQuery('salesID');
 
         $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
-                . "from sales_item si join item i on si.itemID=i.itemID join product p on i.productID=p.productID "
-                . "join category c on p.categoryID=c.categoryID";
+                . "from sales_item si left join item i on si.itemID=i.itemID left join product p on i.productID=p.productID "
+                . "left join category c on p.categoryID=c.categoryID";
 
 
         if (!$token) {
