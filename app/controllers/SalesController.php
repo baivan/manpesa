@@ -889,7 +889,7 @@ class SalesController extends Controller {
         $saleItems = $this->rawSelect($selectQuery);
 
 
-        return $res->success("saleItems", $selectQuery);
+        return $res->success("saleItems", $saleItems);
     }
 
     public function getSaleItems($salesID) {
