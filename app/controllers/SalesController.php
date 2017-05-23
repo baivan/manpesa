@@ -617,9 +617,10 @@ class SalesController extends Controller {
                 . "ON pp.frequencyID=f.frequencyID LEFT JOIN customer cu on s.customerID=cu.customerID "
                 . "LEFT JOIN contacts c on cu.contactsID=c.contactsID LEFT JOIN product p "
                 . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
-                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID ";
+                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
 
         $whereArray = [
+            's.status' => 404,
             'filter' => $filter,
             's.salesID' => $salesID,
             's.customerID' => $customerID,
@@ -647,7 +648,7 @@ class SalesController extends Controller {
                 }
                 $whereQuery .= $valueString;
             } else if ($key == 's.status' && $value == 404) {
-                $valueString = "" . $key . "=0" . " AND ";
+                $valueString = "" . $key . ">0" . " AND ";
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
@@ -664,7 +665,8 @@ class SalesController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "AND $whereQuery " : "";
+        //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
@@ -674,7 +676,7 @@ class SalesController extends Controller {
 
         //$logger->log("Sales Request Query: " . $selectQuery);
         //$return 
-       // return $res->success("Sales ", $selectQuery);
+//        return $res->success("Sales ", $countQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
