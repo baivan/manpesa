@@ -676,7 +676,7 @@ class SalesController extends Controller {
 
         //$logger->log("Sales Request Query: " . $selectQuery);
         //$return 
-        return $res->success("Sales ", $countQuery);
+        //return $res->success("Sales ", $countQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
