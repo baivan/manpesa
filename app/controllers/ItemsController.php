@@ -248,7 +248,7 @@ class ItemsController extends Controller {
     public function getTableItems() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
-        
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -280,7 +280,7 @@ class ItemsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['i.serialNumber','co.fullName','co.workMobile'];
+                $searchColumns = ['i.serialNumber', 'co.fullName', 'co.workMobile'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -317,31 +317,9 @@ class ItemsController extends Controller {
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
-        
+
         $logger->log("TableProductItems Query: " . $selectQuery);
 
-//        if ($productID && $filter) {
-//            //$selectQuery = $selectQuery." WHERE i.productID=$productID ";
-//            $condition = " WHERE i.productID=$productID AND ";
-//        } elseif (!$productID && !$filter) {
-//            $condition = " WHERE ";
-//        } elseif ($productID && !$filter) {
-//            $condition = " WHERE i.productID=$productID ";
-//        }
-//        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit, $filter);
-//
-//        if ($queryBuilder) {
-//            $selectQuery = $selectQuery . $condition . " " . $queryBuilder;
-//            if ($filter) {
-//                $countQuery = $countQuery . $condition . " " . $queryBuilder;
-//            } else {
-//                $countQuery = $countQuery . $condition;
-//            }
-//        } else {
-//            $selectQuery = $selectQuery . $condition;
-//            $countQuery = $countQuery . $condition;
-//        }
-        //  return $res->success($selectQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
 
@@ -531,6 +509,49 @@ class ItemsController extends Controller {
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Item create error', $message);
+        }
+    }
+
+    public function deleteItem() {//{itemID,token}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+        $token = $json->token;
+        $itemID = $json->itemID;
+
+        if (!$token || !$itemID) {
+            return $res->dataError("Missing data ");
+        }
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        try {
+
+            $userItem = UserItems::findFirst(array("itemID=:itemId:",
+                        'bind' => array("itemId" => $itemID)));
+            $item = Item::findFirst(array("itemID=:itemId: ",
+                        'bind' => array("itemId" => $itemID)));
+
+            if ($userItem) {
+                $userItem->delete();
+            }
+
+            if ($item) {
+                $item->delete();
+            }
+
+            $dbTransaction->commit();
+            return $res->success("Item deleted successfully",[]);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('Item delete error', $message);
         }
     }
 
