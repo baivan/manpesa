@@ -966,17 +966,17 @@ class SalesController extends Controller {
         $limit = 5;
         $batchSize = 1;
 
-//        $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
-//                . "log.contactsID, c.fullName, log.recipient, log.comment, "
-//                . "log.userID FROM call_log log INNER JOIN call_type ct "
-//                . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
-//                . "WHERE date(callback)=curdate()");
+       $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
+               . "log.contactsID, c.fullName, log.recipient, log.comment, "
+               . "log.userID FROM call_log log INNER JOIN call_type ct "
+               . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
+               . "WHERE date(callback)=curdate()");
         
-        $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
+      /*  $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
                 . "log.contactsID, c.fullName, log.recipient, log.comment, "
                 . "log.userID FROM call_log log INNER JOIN call_type ct "
                 . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
-                . "WHERE date(callback)<=curdate() AND date(callback)>'00-00-00'");
+                . "WHERE date(callback)<=curdate() AND date(callback)>'00-00-00'");*/
 
         foreach ($activeCallbacks as $activeCallback) {
 
