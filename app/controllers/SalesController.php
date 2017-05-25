@@ -1193,6 +1193,8 @@ class SalesController extends Controller {
              $salesQuery = "select * from sales ";
               $sales = $this->rawSelect($salesQuery);
             foreach ($sales as $sale) {
+                $saleID = $sale["salesID"];
+                /*
                 $contactsID = $sale["contactsID"];
                 $saleID = $sale["salesID"];
                 $contactsQuery = "select * from contacts where contactsID=$contactsID";
@@ -1222,29 +1224,36 @@ class SalesController extends Controller {
                     else{
                         $sale_object->status = 0;
                     }
-                    /*elseif ($paidAmount == 0) {
-                        $sale_object->status = -1;
-                        // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    } else {
-                        $sale_object->status = 3;
-                        // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    }*/
+                    */
+                    $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
+                    $productIDs = $this->rawSelect($productIDQuery);
+                    foreach ($productIDs as $id) {
+                       $productID = $id['productID'];
 
-                    
+                        $sale_object = Sales::findFirst(array("salesID=:id: ",
+                                'bind' => array("id" => $saleID)));
+                        if($sale_object && $productID > 0){
+                            $sale_object->productID = $productID;
 
+                   
 
-                    if ($sale_object->save() === false) {
-                        $errors = array();
-                        $messages = $sale_object->getMessages();
-                        foreach ($messages as $message) {
-                            $e["message"] = $message->getMessage();
-                            $e["field"] = $message->getField();
-                            $errors[] = $e;
+                            if ($sale_object->save() === false) {
+                                $errors = array();
+                                $messages = $sale_object->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                            }
+
                         }
-                        $dbTransaction->rollback("sale create failed " . json_encode($errors));
-                    }
-                }
-                 }
+
+                        
+                     }
+                
+            }
                 
 
                 // return $res->success("sale updated ", $sale_object);
