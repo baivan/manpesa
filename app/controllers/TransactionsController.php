@@ -596,7 +596,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
+                $searchColumns = ['t.fullName','t.salesID', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
