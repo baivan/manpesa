@@ -1,7 +1,6 @@
 <?php
 
-class Outbox extends \Phalcon\Mvc\Model
-{
+class Outbox extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -29,9 +28,16 @@ class Outbox extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
     public $contactsID;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=100, nullable=true)
+     */
+    public $recipient;
 
     /**
      *
@@ -59,8 +65,7 @@ class Outbox extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
+    public function getSource() {
         return 'outbox';
     }
 
@@ -70,8 +75,7 @@ class Outbox extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Outbox[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -81,8 +85,7 @@ class Outbox extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Outbox
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 
