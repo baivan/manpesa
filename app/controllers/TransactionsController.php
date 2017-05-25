@@ -567,7 +567,7 @@ class TransactionsController extends Controller {
 //                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
         $selectQuery = "SELECT ct.customerTransactionID AS transactionID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
-                . "t.mobile, t.depositAmount, c.fullName, t.createdAt ";
+                . "t.mobile, t.depositAmount, c.fullName, t.salesID AS accountNumber, t.createdAt ";
 
         $countQuery = "SELECT count(DISTINCT ct.customerTransactionID) as totalTransaction ";
 
