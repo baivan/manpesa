@@ -19,6 +19,9 @@ class OutboxController extends Controller {
     }
 
     public function create() { //{message,contactsID,userID,status}
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -30,10 +33,11 @@ class OutboxController extends Controller {
         $message = $json->message;
         $status = $json->status;
         $contactsID = $json->contactsID;
+        $recipient = $json->recipient;
         $userID = $json->userID;
 
 
-        if (!$token || !$message || !$userID || !$contactsID) {
+        if (!$token || !$message || !$userID || (!$contactsID && !$recipient)) {
             return $res->dataError("Fields missing ");
         }
 
@@ -50,6 +54,7 @@ class OutboxController extends Controller {
             $outbox->userID = $userID;
             $outbox->status = $status;
             $outbox->contactsID = $contactsID;
+            $outbox->recipient = $recipient;
             $outbox->createdAt = date("Y-m-d H:i:s");
 
             if ($outbox->save() === false) {
@@ -63,10 +68,27 @@ class OutboxController extends Controller {
                 //return $res->dataError('sale create failed',$errors);
                 $dbTransaction->rollback('outbox create failed' . json_encode($errors));
             }
+
+
+            $outboxID = $outbox->outboxID;
+            
+            $logger->log("I have reached here: "+$outboxID);
+
+            $outboxRecipient = $this->rawSelect("SELECT c.workMobile, o.recipient FROM outbox o LEFT JOIN contacts c "
+                    . "ON o.contactsID=c.contactsID WHERE outboxID=$outboxID");
+
+            if ($outboxRecipient) {
+                $recipientObj = $outboxRecipient[0]['recipient'];
+                $workMobile = $outboxRecipient[0]['workMobile'];
+
+                if ($workMobile) {
+                    $res->sendMessage($workMobile, $message);
+                } else {
+                    $res->sendMessage($recipientObj, $message);
+                }
+            }
+            //$res->sendMessage($workMobile[0]['workMobile'], $message);
             $dbTransaction->commit();
-            $selectQuery = "SELECT workMobile FROM contacts WHERE contactsID=$contactsID";
-            $workMobile = $this->rawSelect($selectQuery);
-            $res->sendMessage($workMobile[0]['workMobile'], $message);
 
             return $res->success("outbox successfully created ", $outbox);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -81,7 +103,6 @@ class OutboxController extends Controller {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
-        $token = $request->getQuery('token') ? $request->getQuery('token') : '';
         $sort = $request->getQuery('sort') ? $request->getQuery('sort') : '';
         $order = $request->getQuery('order') ? $request->getQuery('order') : '';
         $page = $request->getQuery('page') ? $request->getQuery('page') : '';
@@ -90,19 +111,31 @@ class OutboxController extends Controller {
         $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
         $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
+        $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
+        $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+
+        if ($customerID) {
+            $customer = Customer::findFirst(array("customerID=:customerID:",
+                        'bind' => array("customerID" => $customerID)));
+            if ($customer) {
+                $contactsID = $customer->contactsID;
+            }
+        }
 
 
         $countQuery = "SELECT count(outboxID) as totalOutBox ";
 
-        $selectQuery = "SELECT o.outboxID,o.message,o.status,o.userID,cust.customerID,c.contactsID,c.fullName,c.workMobile,o.createdAt ";
+        $selectQuery = "SELECT o.outboxID, o.contactsID, c.fullName AS contactName, c.workMobile, "
+                . "o.recipient, o.status, o.userID, c1.fullName, o.message, o.createdAt ";
 
-        $baseQuery = "FROM outbox o INNER JOIN contacts c ON o.contactsID=c.contactsID INNER JOIN customer cust ON o.contactsID=cust.contactsID ";
+        $baseQuery = "FROM outbox o LEFT JOIN contacts c ON o.contactsID=c.contactsID "
+                . "LEFT JOIN users u ON o.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID ";
 
         $whereArray = [
             'o.contactsID' => $contactsID,
             'filter' => $filter,
             'o.userID' => $userID,
-            'cust.customerID' => $customerID
+            'date' => [$startDate, $endDate]
         ];
 
         $whereQuery = "";
@@ -110,7 +143,7 @@ class OutboxController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['o.message', 'c.fullName', 'c.workMobile'];
+                $searchColumns = ['o.message', 'c.fullName', 'c.workMobile', 'o.contact'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -119,7 +152,7 @@ class OutboxController extends Controller {
                 $valueString = chop($valueString, " ||");
                 if ($valueString) {
                     $valueString = "(" . $valueString;
-                    $valueString .= ") AND";
+                    $valueString .= ") AND ";
                 }
                 $whereQuery .= $valueString;
             } else if ($key == 'status' && $value == 404) {
@@ -127,17 +160,17 @@ class OutboxController extends Controller {
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
-                    $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $valueString = " DATE(o.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
                 $whereQuery .= $valueString;
             }
         }
 
         if ($whereQuery) {
-            $whereQuery = chop($whereQuery, " AND");
+            $whereQuery = chop($whereQuery, " AND ");
         }
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
