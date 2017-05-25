@@ -1233,7 +1233,7 @@ class SalesController extends Controller {
                                 'bind' => array("id" => $saleID)));
                         $sale_object->productID = $productID;
 
-                    }
+                   
 
                     if ($sale_object->save() === false) {
                         $errors = array();
@@ -1245,6 +1245,7 @@ class SalesController extends Controller {
                         }
                         $dbTransaction->rollback("sale create failed " . json_encode($errors));
                     }
+                     }
                 
             }
                 
