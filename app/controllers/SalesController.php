@@ -1216,6 +1216,9 @@ class SalesController extends Controller {
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
                                 'bind' => array("id" => $saleID)));
 
+                    if($sale_object && $paidAmount > 0){
+                         $sale_object->status = 1;
+
                      if ($sale_object->save() === false) {
                                 $errors = array();
                                 $messages = $sale_object->getMessages();
@@ -1226,15 +1229,16 @@ class SalesController extends Controller {
                                 }
                                 $dbTransaction->rollback("sale create failed " . json_encode($errors));
                             }
+                        }
 
 
-                    if ($paidAmount > 0) {
-                        $sale_object->status = 1;
-                        // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    } 
-                    else{
-                        $sale_object->status = 0;
-                    }
+                    // if ($paidAmount > 0) {
+                    //     $sale_object->status = 1;
+                    //     // return $res->success("sale updated ".$paidAmount, $sale_object);
+                    // } 
+                    // else{
+                    //     $sale_object->status = 0;
+                    // }
                     
                   /*  $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
                     $productIDs = $this->rawSelect($productIDQuery);
