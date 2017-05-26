@@ -7,68 +7,102 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+class InboxController extends Controller {
 
-class InboxController extends Controller
-{
+    protected function rawSelect($statement) {
+        $connection = $this->di->getShared("db");
+        $success = $connection->query($statement);
+        $success->setFetchMode(Phalcon\Db::FETCH_ASSOC);
+        $success = $success->fetchAll($success);
+        return $success;
+    }
 
-    protected function rawSelect($statement)
-           { 
-              $connection = $this->di->getShared("db"); 
-              $success = $connection->query($statement);
-              $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
-              $success = $success->fetchAll($success); 
-              return $success;
-           }
+    public function create() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        //$json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
 
-    public function create(){ 
-        	   $jwtManager = new JwtManager();
-        	   $request = new Request();
-        	   $res = new SystemResponses();
-        	   //$json = $request->getJsonRawBody();
-        	   $transactionManager = new TransactionManager(); 
-               $dbTransaction = $transactionManager->get();
 
-      
-       $MSISDN =  $request->getQuery('sender');
-       $message = $request->getQuery('text');
-       $shortCode =$request->getQuery('receiver');
-       $receivedAt = $request->getQuery('when');
+        $MSISDN = $request->getQuery('sender');
+        $message = $request->getQuery('text');
+        $shortCode = $request->getQuery('receiver');
+        $receivedAt = $request->getQuery('when');
 
-       try {
-       	  $inbox = new Inbox();
-       	  $inbox->MSISDN = $MSISDN;
-       	  $inbox->message =$message;
-          $inbox->receivedAt=$receivedAt;
-          $inbox->shortCode=$shortCode;
-       	  $inbox->createdAt = date("Y-m-d H:i:s");
+        try {
+            $inbox = new Inbox();
+            $inbox->MSISDN = $MSISDN;
+            $inbox->message = $message;
+            $inbox->receivedAt = $receivedAt;
+            $inbox->shortCode = $shortCode;
+            $inbox->createdAt = date("Y-m-d H:i:s");
 
-       	  if($inbox->save()===false){
-	            $errors = array();
-	                    $messages = $inbox->getMessages();
-	                    foreach ($messages as $message) 
-	                       {
-	                         $e["message"] = $message->getMessage();
-	                         $e["field"] = $message->getField();
-	                          $errors[] = $e;
-	                        }
-	               //return $res->dataError('sale create failed',$errors);
-	                $dbTransaction->rollback('inbox create failed' . json_encode($errors));  
-	          }
-	        $dbTransaction->commit();
+            if ($inbox->save() === false) {
+                $errors = array();
+                $messages = $inbox->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                //return $res->dataError('sale create failed',$errors);
+                $dbTransaction->rollback('inbox create failed' . json_encode($errors));
+            }
 
-	      return $res->success("Inbox successfully created ");
-       	
-       }  catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
-	       $message = $e->getMessage(); 
-	       return $res->dataError('Inbox create error', $message); 
-       }
-  }
+            //Generate warranty ticket
 
-  public function getTableInbox(){ //sort, order, page, limit,filter
-      $jwtManager = new JwtManager();
-      $request = new Request();
-      $res = new SystemResponses();
-      $token = $request->getQuery('token');
+            $contact = Contacts::findFirst(array("workMobile=:workMobile:",
+                        'bind' => array("workMobile" => $MSISDN)));
+            $contactsID = NULL;
+            $otherOwner = NULL;
+
+            if ($contact) {
+                $contactsID = $contact->contactsID;
+            } else {
+                $otherOwner = $MSISDN;
+            }
+
+            $ticket = new Ticket();
+            $ticket->ticketTitle = "Warranty Activation";
+            $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
+            $ticket->contactsID = $contactsID;
+            $ticket->otherOwner = $otherOwner;
+            $ticket->assigneeID = NULL;
+            $ticket->ticketCategoryID = 5; // Warranty SMS ticket
+            $ticket->otherCategory = NULL;
+            $ticket->priorityID = 1; //High priority
+            $ticket->userID = NULL;
+            $ticket->status = 0;
+            $ticket->createdAt = date("Y-m-d H:i:s");
+
+            if ($ticket->save() === false) {
+                $errors = array();
+                $messages = $ticket->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $res->dataError('ticket create failed', $errors);
+                //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
+            }
+
+            $dbTransaction->commit();
+
+            return $res->success("Inbox successfully created ", []);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('Inbox create error', $message);
+        }
+    }
+
+    public function getTableInbox() { //sort, order, page, limit,filter
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
