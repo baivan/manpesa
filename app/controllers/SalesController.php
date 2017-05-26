@@ -1229,7 +1229,7 @@ class SalesController extends Controller {
                                 }
                                 $dbTransaction->rollback("sale create failed " . json_encode($errors));
                             }
-                        }
+                    }
 
 
                     // if ($paidAmount > 0) {
