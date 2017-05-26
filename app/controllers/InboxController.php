@@ -65,29 +65,34 @@ class InboxController extends Controller {
                     $otherOwner = $MSISDN;
                 }
 
-                $ticket = new Ticket();
-                $ticket->ticketTitle = "Warranty Activation";
-                $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
-                $ticket->contactsID = $contactsID;
-                $ticket->otherOwner = $otherOwner;
-                $ticket->assigneeID = NULL;
-                $ticket->ticketCategoryID = 5; // Warranty SMS ticket
-                $ticket->otherCategory = NULL;
-                $ticket->priorityID = 1; //High priority
-                $ticket->userID = NULL;
-                $ticket->status = 0;
-                $ticket->createdAt = date("Y-m-d H:i:s");
+                $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND otherOwner=:otherOwner: AND status=0",
+                            'bind' => array("contactsID" => $contactsID, "otherOwner" => $otherOwner)));
 
-                if ($ticket->save() === false) {
-                    $errors = array();
-                    $messages = $ticket->getMessages();
-                    foreach ($messages as $message) {
-                        $e["message"] = $message->getMessage();
-                        $e["field"] = $message->getField();
-                        $errors[] = $e;
+                if (!$ticketData) {
+                    $ticket = new Ticket();
+                    $ticket->ticketTitle = "Warranty Activation";
+                    $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
+                    $ticket->contactsID = $contactsID;
+                    $ticket->otherOwner = $otherOwner;
+                    $ticket->assigneeID = NULL;
+                    $ticket->ticketCategoryID = 5; // Warranty SMS ticket
+                    $ticket->otherCategory = NULL;
+                    $ticket->priorityID = 1; //High priority
+                    $ticket->userID = NULL;
+                    $ticket->status = 0;
+                    $ticket->createdAt = date("Y-m-d H:i:s");
+
+                    if ($ticket->save() === false) {
+                        $errors = array();
+                        $messages = $ticket->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $res->dataError('ticket create failed', $errors);
+                        //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
                     }
-                    $res->dataError('ticket create failed', $errors);
-                    //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
                 }
             }
 
