@@ -19,12 +19,12 @@ class InboxController extends Controller
            }
 
     public function create(){ 
-	   $jwtManager = new JwtManager();
-	   $request = new Request();
-	   $res = new SystemResponses();
-	   //$json = $request->getJsonRawBody();
-	   $transactionManager = new TransactionManager(); 
-       $dbTransaction = $transactionManager->get();
+        	   $jwtManager = new JwtManager();
+        	   $request = new Request();
+        	   $res = new SystemResponses();
+        	   //$json = $request->getJsonRawBody();
+        	   $transactionManager = new TransactionManager(); 
+               $dbTransaction = $transactionManager->get();
 
       
        $MSISDN =  $request->getQuery('sender');
