@@ -58,15 +58,17 @@ class InboxController extends Controller {
                             'bind' => array("workMobile" => $MSISDN)));
                 $contactsID = NULL;
                 $otherOwner = NULL;
+                $ticketData = NULL;
 
                 if ($contact) {
                     $contactsID = $contact->contactsID;
+                    $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND status=0",
+                                'bind' => array("contactsID" => $contactsID)));
                 } else {
                     $otherOwner = $MSISDN;
+                    $ticketData = Ticket::findFirst(array("otherOwner=:otherOwner: AND status=0",
+                                'bind' => array("otherOwner" => $otherOwner)));
                 }
-
-                $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND otherOwner=:otherOwner: AND status=0",
-                            'bind' => array("contactsID" => $contactsID, "otherOwner" => $otherOwner)));
 
                 if (!$ticketData) {
                     $ticket = new Ticket();
@@ -125,15 +127,17 @@ class InboxController extends Controller {
                                 'bind' => array("workMobile" => $MSISDN)));
                     $contactsID = NULL;
                     $otherOwner = NULL;
+                    $ticketData = NULL;
 
                     if ($contact) {
                         $contactsID = $contact->contactsID;
+                        $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND status=0",
+                                    'bind' => array("contactsID" => $contactsID)));
                     } else {
                         $otherOwner = $MSISDN;
+                        $ticketData = Ticket::findFirst(array("otherOwner=:otherOwner: AND status=0",
+                                    'bind' => array("otherOwner" => $otherOwner)));
                     }
-
-                    $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND otherOwner=:otherOwner: AND status=0",
-                                'bind' => array("contactsID" => $contactsID, "otherOwner" => $otherOwner)));
 
                     if (!$ticketData) {
                         $ticket = new Ticket();
