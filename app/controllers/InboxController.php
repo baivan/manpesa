@@ -36,7 +36,7 @@ class InboxController extends Controller
        	  $inbox = new Inbox();
        	  $inbox->MSISDN = $MSISDN;
        	  $inbox->message =$message;
-          $inbox->receivedAt=$receivedAt
+          $inbox->receivedAt=$receivedAt;
           $inbox->shortCode=$shortCode;
        	  $inbox->createdAt = date("Y-m-d H:i:s");
 
