@@ -1218,18 +1218,17 @@ class SalesController extends Controller {
 
                     if($sale_object && $paidAmount > 0){
                          $sale_object->status = 1;
-                         $sale_object->save();
 
-                     // if ($sale_object->save() === false) {
-                     //            $errors = array();
-                     //            $messages = $sale_object->getMessages();
-                     //            foreach ($messages as $message) {
-                     //                $e["message"] = $message->getMessage();
-                     //                $e["field"] = $message->getField();
-                     //                $errors[] = $e;
-                     //            }
-                     //            $dbTransaction->rollback("sale create failed " . json_encode($errors));
-                     //        }
+                     if ($sale_object->save() === false) {
+                                $errors = array();
+                                $messages = $sale_object->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                            }
                     }
 
 
