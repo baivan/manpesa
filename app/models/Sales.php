@@ -50,7 +50,7 @@ class Sales extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
-     * @Column(type="string", length=100, nullable=false)
+     * @Column(type="string", length=100, nullable=true)
      */
     public $amount;
 
