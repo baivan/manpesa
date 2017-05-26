@@ -1194,7 +1194,7 @@ class SalesController extends Controller {
               $sales = $this->rawSelect($salesQuery);
             foreach ($sales as $sale) {
                 $saleID = $sale["salesID"];
-                /*
+                
                 $contactsID = $sale["contactsID"];
                 $saleID = $sale["salesID"];
                 $contactsQuery = "select * from contacts where contactsID=$contactsID";
@@ -1216,6 +1216,17 @@ class SalesController extends Controller {
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
                                 'bind' => array("id" => $saleID)));
 
+                     if ($sale_object->save() === false) {
+                                $errors = array();
+                                $messages = $sale_object->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                            }
+
 
                     if ($paidAmount > 0) {
                         $sale_object->status = 1;
@@ -1224,8 +1235,8 @@ class SalesController extends Controller {
                     else{
                         $sale_object->status = 0;
                     }
-                    */
-                    $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
+                    
+                  /*  $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
                     $productIDs = $this->rawSelect($productIDQuery);
                     foreach ($productIDs as $id) {
                        $productID = $id['productID'];
@@ -1248,7 +1259,7 @@ class SalesController extends Controller {
                                 $dbTransaction->rollback("sale create failed " . json_encode($errors));
                             }
 
-                        }
+                        }*/
 
                         
                      }
