@@ -205,6 +205,7 @@ $inbox_route = new MicroCollection();
 $inbox_route->setPrefix('/inbox/');
 $inbox_route->setHandler(new InboxController());
 $inbox_route->post('create', 'create'); //{MSISDN,message,token}
+$inbox_route->get('create', 'create');
 $inbox_route->post('crm/all', 'getTableInbox');
 $inbox_route->get('crm/all', 'getTableInbox');
 
