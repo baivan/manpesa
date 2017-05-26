@@ -18,34 +18,26 @@ class InboxController extends Controller
               return $success;
            }
 
-    public function create(){ //{MSISDN,message,}
+    public function create(){ 
 	   $jwtManager = new JwtManager();
 	   $request = new Request();
 	   $res = new SystemResponses();
-	   $json = $request->getJsonRawBody();
+	   //$json = $request->getJsonRawBody();
 	   $transactionManager = new TransactionManager(); 
        $dbTransaction = $transactionManager->get();
 
-       $token = $json->token;
-       $MSISDN = $json->MSISDN;
-       $message = $json->message;
+      
+       $MSISDN =  $request->getQuery('sender');
+       $message = $request->getQuery('text');
+       $shortCode =$request->getQuery('receiver');
+       $receivedAt = $request->getQuery('when');
 
-/*
-        $tokenData = $jwtManager->verifyToken($token,'openRequest');
-
-        if(!$token || !$MSISDN || !$message){
-	    	return $res->dataError("Token missing epriorityDescriptionr".json_encode($json));
-	    }
-
-
-	    if(!$tokenData){
-	        return $res->dataError("Data compromised");
-	      }
-*/
        try {
        	  $inbox = new Inbox();
        	  $inbox->MSISDN = $MSISDN;
        	  $inbox->message =$message;
+          $inbox->receivedAt=$receivedAt
+          $inbox->shortCode=$shortCode;
        	  $inbox->createdAt = date("Y-m-d H:i:s");
 
        	  if($inbox->save()===false){
@@ -62,11 +54,11 @@ class InboxController extends Controller
 	          }
 	        $dbTransaction->commit();
 
-	     return $res->success("inbox successfully created ",$sale);
+	      return $res->success("Inbox successfully created ");
        	
        }  catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
 	       $message = $e->getMessage(); 
-	       return $res->dataError('Priority create error', $message); 
+	       return $res->dataError('Inbox create error', $message); 
        }
   }
 

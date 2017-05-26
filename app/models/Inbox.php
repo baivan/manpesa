@@ -15,6 +15,13 @@ class Inbox extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
+     * @Column(type="string", length=10, nullable=true)
+     */
+    public $shortCode;
+
+    /**
+     *
+     * @var string
      * @Column(type="string", length=50, nullable=false)
      */
     public $MSISDN;
@@ -25,6 +32,13 @@ class Inbox extends \Phalcon\Mvc\Model
      * @Column(type="string", length=600, nullable=false)
      */
     public $message;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", nullable=true)
+     */
+    public $receivedAt;
 
     /**
      *

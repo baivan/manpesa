@@ -48,7 +48,7 @@ class SalesController extends Controller {
 
 
         if (!$token) {
-            return $res->dataError("Token missing er" . json_encode($json), []);
+            return $res->dataError("Token missing " . json_encode($json), []);
         }
         if (!$salesTypeID) {
             return $res->dataError("salesTypeID missing ", []);
