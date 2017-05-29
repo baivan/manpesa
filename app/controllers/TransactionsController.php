@@ -533,7 +533,8 @@ class TransactionsController extends Controller {
         $transaction = $this->rawSelect($getAmountQuery);
         $dataToReturn = array();
 
-        if(strcasecmp($transaction[0]['salesTypeName'],$cash)==0 || strcasecmp($transaction[0]['salesTypeName'],$installment)==0){
+        if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
+        || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
             $dataToReturn['amount']=$transaction[0]['amount'];
             $dataToReturn['saleAmount']=$transaction[0]['saleAmount'];
             $dataToReturn['salesTypeDeposit']=$transaction[0]['saleAmount'];
@@ -541,6 +542,7 @@ class TransactionsController extends Controller {
             $dataToReturn['status']=$transaction[0]['status'];
             $dataToReturn['salesTypeName']=$transaction[0]['salesTypeName'];
             $dataToReturn['saleItemID']=$transaction[0]['saleItemID'];
+
             return $res->success("Sale paid", $dataToReturn);
         }
         else{
