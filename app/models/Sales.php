@@ -36,7 +36,14 @@ class Sales extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=true)
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $contactsID;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
      */
     public $productID;
 

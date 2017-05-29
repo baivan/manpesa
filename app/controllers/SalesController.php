@@ -93,6 +93,7 @@ class SalesController extends Controller {
             $sale->paymentPlanID = $paymentPlanID;
             $sale->userID = $userID;
             $sale->customerID = $customerID;
+            $sale->contactsID = $contactsID;
             $sale->amount = $amount;
             $sale->productID = $productID;
             $sale->createdAt = date("Y-m-d H:i:s");
