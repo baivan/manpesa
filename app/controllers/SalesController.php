@@ -826,17 +826,17 @@ class SalesController extends Controller {
             return $res->dataError("Token missing " . json_encode($json));
         }
         if (!$date) {
-            $date = date("Y-m-d");
+            $date =  date("Y-m-d");
         }
 
         $totalSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalSales FROM transaction t ";
-        $todaysSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as todaysSale FROM transaction t where date(t.createdAt)='$date'";
+        $todaysSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as todaysSale FROM transaction t where date(t.createdAt)=CURDATE()";
 
         $totalSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID group by st.salesTypeID";
-        $todaysSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID  where date(t.createdAt)='$date' group by st.salesTypeID ";
+        $todaysSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID  where date(t.createdAt)=CURDATE() group by st.salesTypeID ";
 
         $totalProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,SUM(replace(t.depositAmount,',','')) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID group by p.productID ";
-        $todaysProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,SUM(replace(t.depositAmount,',','')) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID where date(t.createdAt)='$date' group by p.productID ";
+        $todaysProductSales = "SELECT p.productID,p.productName,count(s.productID) as numberOfProducts,SUM(replace(t.depositAmount,',','')) as totalAmount,c.categoryID,c.categoryName FROM product p join sales s on p.productID=s.productID join transaction t on s.salesID=t.salesID join category c on p.categoryID=c.categoryID where date(t.createdAt)=CURDATE() group by p.productID ";
 
         $ticketsQuery = "SELECT * from ticket ";
 
@@ -867,9 +867,11 @@ class SalesController extends Controller {
         $token = $request->getQuery('token');
         $salesID = $request->getQuery('salesID');
 
-        $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
+       /* $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
                 . "from sales_item si left join item i on si.itemID=i.itemID left join product p on i.productID=p.productID "
                 . "left join category c on p.categoryID=c.categoryID";
+                */
+             $selectQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus,s.productID,p.productName FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID left join product p  on s.productID=p.productID "
 
 
         if (!$token) {
