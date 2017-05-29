@@ -126,8 +126,8 @@ class SalesController extends Controller {
 
     public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction, $repaymentPeriodID = 0) {
         $res = new SystemResponses();
-        $paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: ",
-                    'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID)));
+        $paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: AND paymentPlanDeposit=:pp_deposit:",
+                    'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID,'pp_deposit'=>$paymentPlanDeposit)));
 
         if ($paymentPlan) {
             return $paymentPlan->paymentPlanID;
@@ -683,7 +683,7 @@ class SalesController extends Controller {
 
         //$logger->log("Sales Request Query: " . $selectQuery);
         //$return 
-        //return $res->success("Sales ", $selectQuery);
+        return $res->success("Sales ", $selectQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
