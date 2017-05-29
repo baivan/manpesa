@@ -122,6 +122,7 @@ $product_route->post('all', 'getAll');
 $product_route->get('all', 'getAll'); //getTableProducts
 $product_route->post('crm/all', 'getTableProducts');
 $product_route->get('crm/all', 'getTableProducts');
+$product_route->post('warranty', 'activateWarranty');
 
 
 $sale_type_route = new MicroCollection();
@@ -171,7 +172,6 @@ $customer_route->post('crm/all', 'getTableCustomers');
 $customer_route->get('crm/all', 'getTableCustomers');
 $customer_route->get('all', 'getAll');
 $customer_route->post('all', 'getAll');
-$customer_route->post('warranty', 'activateWarranty');
 $customer_route->post('partner/create', 'create');
 
 $user_item_route = new MicroCollection();

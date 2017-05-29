@@ -107,6 +107,7 @@ class InboxController extends Controller {
         }
     }
 
+//For earlier warranty smses
     public function reconcile() {
 
         $res = new SystemResponses();
