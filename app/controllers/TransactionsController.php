@@ -13,6 +13,7 @@ class TransactionsController extends Controller {
     private $salePaid = 1;
     private $installment = "installment";
     private $cash = "cash";
+    private $paygo = "Pay As you Go";
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -556,8 +557,18 @@ class TransactionsController extends Controller {
         $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID ";
 
         $transaction = $this->rawSelect($transactionQuery);
-        if ($transaction[0]["amount"] >= $transaction[0]["saleAmount"] || $transaction[0]["amount"] >= $transaction[0]["salesTypeDeposit"]) {
 
+        $amountpaid = $transaction[0]["amount"];
+        $amountToCompare = 0;
+
+          if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
+        || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
+            $amountToCompare = $transaction[0]["saleAmount"] ;
+          }
+          elseif(strcasecmp($transaction[0]['salesTypeName'],$this->paygo)==0 ){
+            $amountToCompare= $transaction[0]["salesTypeDeposit"];
+          }
+        if ($amountpaid>=$amountToCompare && $amountpaid>0 ) {
             return true;
         } else {
             return false;
