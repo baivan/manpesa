@@ -594,6 +594,7 @@ class SalesController extends Controller {
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
+        $unsorted = $request->getQuery('unsorted');
         $salesID = $request->getQuery('salesID');
         $customerID = $request->getQuery('customerID');
         $startDate = $request->getQuery('start');
@@ -629,6 +630,7 @@ class SalesController extends Controller {
 
         $whereArray = [
             's.status' => 404,
+            'unsorted' =>$unsorted,
             'filter' => $filter,
             's.salesID' => $salesID,
             's.customerID' => $customerID,
@@ -657,6 +659,10 @@ class SalesController extends Controller {
                 $whereQuery .= $valueString;
             } else if ($key == 's.status' && $value == 404) {
                 $valueString = "" . $key . ">0" . " AND ";
+                $whereQuery .= $valueString;
+            } 
+            else if ($key == 'unsorted') {
+                $valueString =  " s.status=0 AND ";
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
@@ -871,7 +877,7 @@ class SalesController extends Controller {
                 . "from sales_item si left join item i on si.itemID=i.itemID left join product p on i.productID=p.productID "
                 . "left join category c on p.categoryID=c.categoryID";
                 */
-             $selectQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus,s.productID,p.productName FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID left join product p  on s.productID=p.productID ";
+        $selectQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus,s.productID,p.productName FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID left join product p  on s.productID=p.productID ";
 
 
         if (!$token) {
