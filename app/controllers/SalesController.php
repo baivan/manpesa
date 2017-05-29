@@ -838,7 +838,7 @@ class SalesController extends Controller {
         }
 
         $totalSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalSales FROM transaction t ";
-        $todaysSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as todaysSale FROM transaction t where date(t.createdAt)=CURDATE()";
+        $todaysSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as todaysSales FROM transaction t where date(t.createdAt)=CURDATE()";
 
         $totalSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID group by st.salesTypeID";
         $todaysSaleType = "SELECT st.salesTypeID,st.salesTypeName,SUM(replace(t.depositAmount,',','')) as totalAmount from sales_type st join payment_plan pp on st.salesTypeID=pp.salesTypeID join sales s on pp.paymentPlanID=s.paymentPlanID join transaction t on s.salesID=t.salesID  where date(t.createdAt)=CURDATE() group by st.salesTypeID ";
