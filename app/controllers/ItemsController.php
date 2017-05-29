@@ -18,6 +18,7 @@ class ItemsController extends Controller {
     protected $received = 1;
     protected $sold = 2;
     protected $returned = 3;
+    protected $warranted = 5;
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -328,6 +329,85 @@ class ItemsController extends Controller {
         return $res->success("product items", $data);
     }
 
+    public function getTableSoldItems() { //sort, order, page, limit,filter
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $sort = $request->getQuery('sort');
+        $order = $request->getQuery('order');
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+
+        $selectQuery = "SELECT i.itemID, i.serialNumber, i.productID, p.productName, i.status, i.createdAt, i.warrantedAt ";
+
+        $baseQuery = "FROM item i LEFT JOIN product p on i.productID=p.productID ";
+
+        $countQuery = "SELECT count(i.itemID) as totalItems ";
+
+
+        $whereArray = [
+            'i.status' => 2,
+            'filter' => $filter
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['i.serialNumber', 'p.productName'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND ";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'i.status') {
+                $valueString = "" . $key . "=2 || " . $key . "=5" . " AND ";
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND ");
+        }
+
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+
+        $countQuery = $countQuery . $baseQuery . $whereQuery;
+        $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+        $logger->log("TableProductItems Query: " . $selectQuery);
+
+        $count = $this->rawSelect($countQuery);
+        $items = $this->rawSelect($selectQuery);
+
+        $data["totalItems"] = $count[0]['totalItems'];
+        $data["items"] = $items;
+        return $res->success("product items", $data);
+    }
+
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = "ORDER BY $sort $order";
@@ -548,7 +628,7 @@ class ItemsController extends Controller {
             }
 
             $dbTransaction->commit();
-            return $res->success("Item deleted successfully",[]);
+            return $res->success("Item deleted successfully", []);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Item delete error', $message);
@@ -672,6 +752,62 @@ class ItemsController extends Controller {
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Item create error', $message);
+        }
+    }
+
+    public function activateWarranty() {//{serialNumber,userID,token}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+        $serialNumber = $json->serialNumber;
+        $userID = $json->userID;
+        $token = $json->token;
+
+        if (!$token || !$serialNumber || !$userID) {
+            return $res->dataError("Missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        if (!$tokenData) {
+            return $res->dataError("Data compromised",[]);
+        }
+
+        try {
+
+            $item = Item::findFirst(array("serialNumber=:serialNumber: ",
+                        'bind' => array("serialNumber" => $serialNumber)));
+            if (!$item) {
+                return $res->dataError("the serial number does not exist.please link it to a sale", $serialNumber);
+            }
+
+            $item->status = 5;
+            $item->warrantedAt = date('Y-m-d H:i:s');
+
+            $saleItem = SalesItem::findFirst(array("itemID=:itemID: ",
+                        'bind' => array("itemID" => $item->itemID)));
+            if ($saleItem) {
+                $saleItem->status = 5;
+                $saleItem->save();
+            }
+
+            if ($item->save() === false) {
+                $errors = array();
+                $messages = $item->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback("warranty activation for product failed " . $errors);
+            }
+            $dbTransaction->commit();
+            return $res->success("product warranty activated successfully", $item);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('product warranty activation error', $message);
         }
     }
 
