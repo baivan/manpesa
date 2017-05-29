@@ -657,15 +657,16 @@ class SalesController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-            } else if ($key == 's.status' && $value == 404 && $key != 'unsorted') {
-                $valueString =$value ? "" . $key . ">0" . " AND ":"";
-                $whereQuery .= $valueString;
             } 
             else if ($key == 'unsorted') {
 
                 $valueString =  $value ? "s.status=0 AND" : "";
                 $whereQuery .= $valueString;
-            } else if ($key == 'date') {
+            }else if ($key == 's.status' && $value == 404 && $key != 'unsorted') {
+                $valueString =$value ? "" . $key . ">0" . " AND ":"";
+                $whereQuery .= $valueString;
+            } 
+             else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
                     $valueString = " DATE(s.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
