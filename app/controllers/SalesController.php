@@ -657,12 +657,13 @@ class SalesController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-            } else if ($key == 's.status' && $value == 404) {
-                $valueString = "" . $key . ">0" . " AND ";
+            } else if ($key == 's.status' && $value == 404 && $key != 'unsorted') {
+                $valueString =$value ? "" . $key . ">0" . " AND ":"";
                 $whereQuery .= $valueString;
             } 
             else if ($key == 'unsorted') {
-                $valueString =  " s.status=0 AND ";
+
+                $valueString =  $value ? "s.status=0 AND" : "";
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
