@@ -29,7 +29,7 @@ class Item extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
     public $productID;
 
@@ -39,6 +39,13 @@ class Item extends \Phalcon\Mvc\Model
      * @Column(type="string", nullable=false)
      */
     public $createdAt;
+    
+    /**
+     *
+     * @var string
+     * @Column(type="string", nullable=false)
+     */
+    public $warrantedAt;
 
     /**
      *

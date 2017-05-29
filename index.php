@@ -66,6 +66,8 @@ $item_route->post('all', 'getAllItems');
 $item_route->get('all', 'getAllItems');
 $item_route->post('assign', 'assignItem'); //{itemID,userID,token}
 $item_route->get('crm/all', 'getTableItems');
+$item_route->get('crm/warranties', 'getTableSoldItems');
+$item_route->post('warranty', 'activateWarranty');
 $item_route->post('crm/all', 'getTableItems');
 $item_route->post('return', 'returnItem');
 $item_route->post('receive', 'receiveItem');
@@ -76,7 +78,7 @@ $prospect_route = new MicroCollection();
 $prospect_route->setPrefix('/prospect/');
 $prospect_route->setHandler(new ProspectsController());
 $prospect_route->post('create', 'createContactProspect'); //{userID,workMobile,nationalIdNumber,fullName,location,token}
-$prospect_route ->post('update','update');
+$prospect_route->post('update', 'update');
 $prospect_route->post('contact/add', 'createProspect'); //maps existing contact to prospect
 $prospect_route->post('all', 'getAll');
 $prospect_route->get('all', 'getAll');
@@ -96,6 +98,7 @@ $sale_route->get('crm/items', 'getCRMSaleItems');
 $sale_route->post('crm/all', 'getTableSales');
 $sale_route->get('crm/all', 'getTableSales');
 $sale_route->get('crm/partners', 'getTablePartnerSales');
+$sale_route->get('crm/reconcile', 'reconcilePartnerSales');
 $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
 $sale_route->get('statistic', 'saleSummary');
@@ -122,7 +125,6 @@ $product_route->post('all', 'getAll');
 $product_route->get('all', 'getAll'); //getTableProducts
 $product_route->post('crm/all', 'getTableProducts');
 $product_route->get('crm/all', 'getTableProducts');
-$product_route->post('warranty', 'activateWarranty');
 
 
 $sale_type_route = new MicroCollection();
@@ -206,7 +208,7 @@ $inbox_route->setPrefix('/inbox/');
 $inbox_route->setHandler(new InboxController());
 $inbox_route->post('create', 'create'); //{MSISDN,message,token}
 $inbox_route->get('create', 'create');
-$inbox_route->get('reconcile', 'reconcile');//For earlier warranty messages
+$inbox_route->get('reconcile', 'reconcile'); //For earlier warranty messages
 $inbox_route->post('crm/all', 'getTableInbox');
 $inbox_route->get('crm/all', 'getTableInbox');
 

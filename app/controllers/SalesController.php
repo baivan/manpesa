@@ -128,7 +128,7 @@ class SalesController extends Controller {
     public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction, $repaymentPeriodID = 0) {
         $res = new SystemResponses();
         $paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: AND paymentPlanDeposit=:pp_deposit:",
-                    'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID,'pp_deposit'=>$paymentPlanDeposit)));
+                    'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID, 'pp_deposit' => $paymentPlanDeposit)));
 
         if ($paymentPlan) {
             return $paymentPlan->paymentPlanID;
@@ -613,14 +613,14 @@ class SalesController extends Controller {
                 . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.status, s.createdAt ";
 
-      /*  $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
-                . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
-                . "ON pp.frequencyID=f.frequencyID LEFT JOIN customer cu on s.customerID=cu.customerID "
-                . "LEFT JOIN contacts c on cu.contactsID=c.contactsID LEFT JOIN product p "
-                . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
-                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
-                */
-                $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
+        /*  $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
+          . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
+          . "ON pp.frequencyID=f.frequencyID LEFT JOIN customer cu on s.customerID=cu.customerID "
+          . "LEFT JOIN contacts c on cu.contactsID=c.contactsID LEFT JOIN product p "
+          . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
+          . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
+         */
+        $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
                 . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
                 . "ON pp.frequencyID=f.frequencyID "
                 . "LEFT JOIN contacts c on s.contactsID=c.contactsID LEFT JOIN product p "
@@ -724,13 +724,13 @@ class SalesController extends Controller {
         $endDate = $request->getQuery('end');
 
         $countQuery = "SELECT count(psi.partnerSaleItemID) as totalSales ";
-        $defaultQuery = "FROM partner_sale_item psi LEFT JOIN product p ON psi.productID=p.productID "
-                . "INNER JOIN customer cust ON psi.customerID=cust.customerID INNER JOIN contacts c "
-                . "ON cust.contactsID=c.contactsID ";
+        $defaultQuery = "FROM partner_sale_item psi INNER JOIN item i on psi.itemID=i.itemID "
+                . "LEFT JOIN product p ON i.productID=p.productID INNER JOIN customer cust "
+                . "ON psi.customerID=cust.customerID INNER JOIN contacts c ON cust.contactsID=c.contactsID ";
 
-        $selectQuery = "SELECT psi.partnerSaleItemID, psi.serialNumber, psi.productID, "
-                . "p.productName, cust.customerID, c.fullName,c.workMobile AS customerNumber, "
-                . "c.nationalIdNumber,psi.salesPartner AS partnerName, psi.status,psi.createdAt ";
+        $selectQuery = "SELECT psi.partnerSaleItemID, psi.itemID,i.serialNumber, "
+                . "i.productID, p.productName, i.status, psi.customerID, c.workMobile, "
+                . "c.nationalIdNumber, c.fullName, c.location, psi.salesPartner AS partnerName,psi.createdAt ";
 
         $whereArray = [
             'filter' => $filter,
@@ -745,7 +745,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
+                $searchColumns = ['i.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -967,22 +967,22 @@ class SalesController extends Controller {
         $limit = 5;
         $batchSize = 1;
 
-       $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
-               . "log.contactsID, c.fullName, log.recipient, log.comment, "
-               . "log.userID FROM call_log log INNER JOIN call_type ct "
-               . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
-               . "WHERE date(callback)=curdate()");
-        
-      /*  $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
+        $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
                 . "log.contactsID, c.fullName, log.recipient, log.comment, "
                 . "log.userID FROM call_log log INNER JOIN call_type ct "
                 . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
-                . "WHERE date(callback)<=curdate() AND date(callback)>'00-00-00'");*/
+                . "WHERE date(callback)=curdate()");
+
+        /*  $activeCallbacks = $res->rawSelect("SELECT log.callTypeID, ct.callTypeName,"
+          . "log.contactsID, c.fullName, log.recipient, log.comment, "
+          . "log.userID FROM call_log log INNER JOIN call_type ct "
+          . "ON log.callTypeID=ct.callTypeID LEFT JOIN contacts c on log.contactsID=c.contactsID "
+          . "WHERE date(callback)<=curdate() AND date(callback)>'00-00-00'"); */
 
         foreach ($activeCallbacks as $activeCallback) {
 
             $ticket = new Ticket();
-            $ticket->ticketTitle = "Callback on ".$activeCallback['callTypeName'];
+            $ticket->ticketTitle = "Callback on " . $activeCallback['callTypeName'];
             $ticket->ticketDescription = $activeCallback['comment'] ? $activeCallback['comment'] : 'A contact callback ticket';
             $ticket->contactsID = $activeCallback['contactsID'];
             $ticket->otherOwner = $activeCallback['recipient'];
@@ -1155,47 +1155,47 @@ class SalesController extends Controller {
         $dbTransaction = $transactionManager->get();
         /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;" */
         try {
-            
-            /*$salesQuery = " select * from sales where createdAt<>'0000-00-00 00:00:00' ";
 
-            $sales = $this->rawSelect($salesQuery);
-             foreach ($sales as $sale) {
-                $customerID = $sale["customerID"];
-                $saleID = $sale["salesID"];
-                $customerQuery = "select * from customer where customerID=$customerID";
+            /* $salesQuery = " select * from sales where createdAt<>'0000-00-00 00:00:00' ";
 
-                $customers = $this->rawSelect($customerQuery);
-
-
-                foreach ($customers as $customer) {
-                    $contactsID = $customer['contactsID'];
-
-                    $sale_object = Sales::findFirst(array("salesID=:id: ",
-                                'bind' => array("id" => $saleID)));
-
-                    $sale_object->contactsID=$contactsID;
-
-
-                     if ($sale_object->save() === false) {
-                        $errors = array();
-                        $messages = $sale_object->getMessages();
-                        foreach ($messages as $message) {
-                            $e["message"] = $message->getMessage();
-                            $e["field"] = $message->getField();
-                            $errors[] = $e;
-                        }
-                        $dbTransaction->rollback("sale create failed " . json_encode($errors));
-                    }
- 
-                }
-
-             }*/
-
-             $salesQuery = "select * from sales ";
               $sales = $this->rawSelect($salesQuery);
+              foreach ($sales as $sale) {
+              $customerID = $sale["customerID"];
+              $saleID = $sale["salesID"];
+              $customerQuery = "select * from customer where customerID=$customerID";
+
+              $customers = $this->rawSelect($customerQuery);
+
+
+              foreach ($customers as $customer) {
+              $contactsID = $customer['contactsID'];
+
+              $sale_object = Sales::findFirst(array("salesID=:id: ",
+              'bind' => array("id" => $saleID)));
+
+              $sale_object->contactsID=$contactsID;
+
+
+              if ($sale_object->save() === false) {
+              $errors = array();
+              $messages = $sale_object->getMessages();
+              foreach ($messages as $message) {
+              $e["message"] = $message->getMessage();
+              $e["field"] = $message->getField();
+              $errors[] = $e;
+              }
+              $dbTransaction->rollback("sale create failed " . json_encode($errors));
+              }
+
+              }
+
+              } */
+
+            $salesQuery = "select * from sales ";
+            $sales = $this->rawSelect($salesQuery);
             foreach ($sales as $sale) {
                 $saleID = $sale["salesID"];
-                
+
                 $contactsID = $sale["contactsID"];
                 $saleID = $sale["salesID"];
                 $contactsQuery = "select * from contacts where contactsID=$contactsID";
@@ -1210,26 +1210,26 @@ class SalesController extends Controller {
                     foreach ($transactions as $transaction) {
                         $amount = $transaction['depositAmount'];
                         $paidAmount = $paidAmount + $amount;
-                       //  return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
+                        //  return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
                     }
 
 
                     $sale_object = Sales::findFirst(array("salesID=:id: ",
                                 'bind' => array("id" => $saleID)));
 
-                    if($sale_object && $paidAmount > 0){
-                         $sale_object->status = 1;
+                    if ($sale_object && $paidAmount > 0) {
+                        $sale_object->status = 1;
 
-                     if ($sale_object->save() === false) {
-                                $errors = array();
-                                $messages = $sale_object->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
-                                }
-                                $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                        if ($sale_object->save() === false) {
+                            $errors = array();
+                            $messages = $sale_object->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
                             }
+                            $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                        }
                     }
 
 
@@ -1240,45 +1240,81 @@ class SalesController extends Controller {
                     // else{
                     //     $sale_object->status = 0;
                     // }
-                    
-                  /*  $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
-                    $productIDs = $this->rawSelect($productIDQuery);
-                    foreach ($productIDs as $id) {
-                       $productID = $id['productID'];
 
-                        $sale_object = Sales::findFirst(array("salesID=:id: ",
-                                'bind' => array("id" => $saleID)));
-                        if($sale_object && $productID > 0){
-                            $sale_object->productID = $productID;
+                    /*  $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
+                      $productIDs = $this->rawSelect($productIDQuery);
+                      foreach ($productIDs as $id) {
+                      $productID = $id['productID'];
 
-                   
+                      $sale_object = Sales::findFirst(array("salesID=:id: ",
+                      'bind' => array("id" => $saleID)));
+                      if($sale_object && $productID > 0){
+                      $sale_object->productID = $productID;
 
-                            if ($sale_object->save() === false) {
-                                $errors = array();
-                                $messages = $sale_object->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
-                                }
-                                $dbTransaction->rollback("sale create failed " . json_encode($errors));
-                            }
 
-                        }*/
 
-                        
-                     }
-                
+                      if ($sale_object->save() === false) {
+                      $errors = array();
+                      $messages = $sale_object->getMessages();
+                      foreach ($messages as $message) {
+                      $e["message"] = $message->getMessage();
+                      $e["field"] = $message->getField();
+                      $errors[] = $e;
+                      }
+                      $dbTransaction->rollback("sale create failed " . json_encode($errors));
+                      }
+
+                      } */
+                }
             }
-                
 
-                // return $res->success("sale updated ", $sale_object);
-           
+
+            // return $res->success("sale updated ", $sale_object);
+
             $dbTransaction->commit();
             return $res->success("sale updated ", $sales);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('sale update error', $message);
+        }
+    }
+
+    public function reconcilePartnerSales() {
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $partnerSales = PartnerSaleItem::find();
+
+        foreach ($partnerSales as $sale) {
+
+            $serialNumber = $sale->serialNumber;
+            $productID = $sale->productID;
+            $status = $sale->status;
+
+            $item = Item::findFirst(array("serialNumber=:serialNumber: ",
+                        'bind' => array("serialNumber" => $serialNumber)));
+
+            if ($item) {
+                $sale->itemID = $item->itemID;
+            } else {
+                $item = new Item();
+                $item->serialNumber = $serialNumber;
+                $item->status = $status;
+                $item->productID = $productID;
+                $item->createdAt = date('Y-m-d H:i:s');
+
+                if ($item->save() === false) {
+                    $sale->itemID = NULL;
+                } else {
+                    $sale->itemID = $item->itemID;
+                }
+            }
+
+            if ($sale->save() === false) {
+                $logger->log("Product item for sale could NOT be saved: " . json_encode($sale));
+            } else {
+                $logger->log("Product item for sale saved: " . json_encode($sale));
+            }
         }
     }
 

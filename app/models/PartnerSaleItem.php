@@ -14,16 +14,9 @@ class PartnerSaleItem extends \Phalcon\Mvc\Model {
     /**
      *
      * @var integer
-     * @Column(type="string", length=150, nullable=false)
-     */
-    public $serialNumber;
-
-    /**
-     *
-     * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $productID;
+    public $itemID;
 
     /**
      *
@@ -38,7 +31,21 @@ class PartnerSaleItem extends \Phalcon\Mvc\Model {
      * @Column(type="string", length=200, nullable=false)
      */
     public $salesPartner;
-
+    
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $productID;
+    
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=150, nullable=true)
+     */
+    public $serialNumber;
+    
     /**
      *
      * @var integer

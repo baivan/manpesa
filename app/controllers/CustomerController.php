@@ -31,7 +31,7 @@ class CustomerController extends Controller {
         $fullName = $json->fullName;
         $nationalIdNumber = $json->nationalIdNumber;
         $serialNumber = $json->serialNumber;
-        $productID = $json->productID ? $json->productID : 0;
+        $productID = $json->productID ? $json->productID : NULL;
         $salePartner = $json->salePartner;
         $userID = $json->userID;
 
@@ -42,27 +42,17 @@ class CustomerController extends Controller {
         try {
 
             $workMobile = $res->formatMobileNumber($workMobile);
-//            $customerContact = NULL;
 
             $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                         'bind' => array("w_mobile" => $workMobile)));
 
-            if ($contact) {
-                //$res->sendMessage($workMobile, "Dear " . $fullName . ", thankyou for your support, we value you. For any questions or comments call 0800722700 ");
-                //return $res->success("Success ", $contact);
-//                $customerContact =  $contact;
-            } else {
+            if (!$contact) {
 
                 $contact = new Contacts();
-                // $contact->workEmail = $workEmail;
-                // $contact->homeEmail=$homeEmail;
                 $contact->workMobile = $workMobile;
-                //  $contact->homeMobile=$homeMobile;
                 $contact->fullName = $fullName;
                 $contact->location = $location;
                 $contact->nationalIdNumber = $nationalIdNumber;
-                //$contact->passportNumber=$passportNumber;
-                // $contact->locationID=$locationID;
 
                 $contact->createdAt = date("Y-m-d H:i:s");
 
@@ -77,6 +67,8 @@ class CustomerController extends Controller {
                     $dbTransaction->rollback("Contacts create" . json_encode($errors));
                     return $res->dataError('sale create error', $message);
                 }
+
+                $res->sendMessage($workMobile, "Dear " . $fullName . ", welcome to Envirofit. For any questions or comments call 0800722700 ");
             }
 
             $contactsID = $contact->contactsID;
@@ -90,14 +82,12 @@ class CustomerController extends Controller {
 
             $customerID = $customer->customerID;
 
-            $item = PartnerSaleItem::findFirst(array("serialNumber=:serialNumber: ",
+            $item = Item::findFirst(array("serialNumber=:serialNumber: ",
                         'bind' => array("serialNumber" => $serialNumber)));
 
             if (!$item) {
-                $item = new PartnerSaleItem();
-                $item->customerID = $customerID;
+                $item = new Item();
                 $item->productID = $productID;
-                $item->salesPartner = $salePartner;
                 $item->serialNumber = $serialNumber;
                 $item->status = 2;
                 $item->createdAt = date("Y-m-d H:i:s");
@@ -115,8 +105,32 @@ class CustomerController extends Controller {
                 return $res->dataError('sale create error', $message);
             }
 
+            $partnerSale = PartnerSaleItem::findFirst(array("itemID=:itemID: ",
+                        'bind' => array("itemID" => $item->itemID)));
+
+            if ($partnerSale) {
+                return $res->success("sale already exists ", $item);
+            } else {
+                $partnerSale = new PartnerSaleItem();
+                $partnerSale->itemID = $item->itemID;
+                $partnerSale->customerID = $customerID;
+                $partnerSale->salesPartner = $salePartner;
+                $partnerSale->createdAt = date("Y-m-d H:i:s");
+            }
+
+            if ($partnerSale->save() === false) {
+                $errors = array();
+                $messages = $item->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback("Contacts create" . json_encode($errors));
+                return $res->dataError('sale create error', $message);
+            }
+
             $dbTransaction->commit();
-            $res->sendMessage($workMobile, "Dear " . $fullName . ", welcome to Envirofit. For any questions or comments call 0800722700 ");
 
             return $res->success("Success ", $item);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
