@@ -858,7 +858,7 @@ class SalesController extends Controller {
 
         $summaryData = array();
         $summaryData['totalSales'] = $totalSales[0]['totalSales'];
-        $summaryData['todaysSales'] = $todaysSale[0]['todaysSales'];
+        $summaryData['todaysSales'] = $todaysSales[0]['todaysSales'];
         $summaryData['totalSaleType'] = $totalSaleType;
         $summaryData['todaysSaleType'] = $todaysSaleType;
         $summaryData['totalProductSales'] = $totalProductSales;
