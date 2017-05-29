@@ -595,6 +595,7 @@ class SalesController extends Controller {
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
         $unsorted = $request->getQuery('unsorted');
+        $status = $request->getQuery('status');
         $salesID = $request->getQuery('salesID');
         $customerID = $request->getQuery('customerID');
         $startDate = $request->getQuery('start');
@@ -629,7 +630,7 @@ class SalesController extends Controller {
                 . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
 
         $whereArray = [
-            's.status' => 404,
+            's.status' => $status,
             'unsorted' =>$unsorted,
             'filter' => $filter,
             's.salesID' => $salesID,
@@ -659,10 +660,9 @@ class SalesController extends Controller {
                 $whereQuery .= $valueString;
             } 
             else if ($key == 'unsorted') {
-
                 $valueString =  $value ? "s.status=0 AND" : "";
                 $whereQuery .= $valueString;
-            }else if ($key == 's.status' && $value == 404 && $key != 'unsorted') {
+            }else if ($key == 's.status' && $value == 404 ) {
                 $valueString =$value ? "" . $key . ">0" . " AND ":"";
                 $whereQuery .= $valueString;
             } 
