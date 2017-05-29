@@ -689,7 +689,7 @@ class SalesController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
 
-        //$logger->log("Sales Request Query: " . $selectQuery);
+        $logger->log("Sales Request Query: " . $selectQuery);
         //$return 
         //return $res->success("Sales ", $selectQuery);
 
