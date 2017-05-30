@@ -56,6 +56,7 @@ $user_route->get('all', 'getUsers');
 $user_route->get('crm/all', 'getTableUsers');
 $user_route->post('crm/all', 'getTableUsers');
 $user_route->post('update/status', 'changeUserStatus');
+$user_route->get("updateOldUsers","updateOldUsers");
 
 $item_route = new MicroCollection();
 $item_route->setPrefix('/item/');
