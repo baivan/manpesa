@@ -859,7 +859,9 @@ class UsersController extends Controller {
                 $contact = Contacts::findFirst("contactsID = $contactsID");
                 if($contact){
                     $contact->workMobile=$user["username"];
-
+                    if(!$contact->nationalIdNumber||$contact->nationalIdNumber==24957364){
+                        $contact->nationalIdNumber=0;
+                    }
                     if ($contact->save() === false) {
                         $errors = array();
                         $messages = $contact->getMessages();
