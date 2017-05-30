@@ -854,27 +854,28 @@ class UsersController extends Controller {
         $users = $this->rawSelect($selectQuery);
         try {
 
-        foreach ($users as $user) {
-            $contactsID = $user["contactID"];
-            $contact = Contacts::findFirst("contactsID = $contactsID");
+            foreach ($users as $user) {
+                $contactsID = $user["contactID"];
+                $contact = Contacts::findFirst("contactsID = $contactsID");
 
-            
-                $contact->workMobile=$user["username"];
-                if ($contact->save() === false) {
-                    $errors = array();
-                    $messages = $contact->getMessages();
-                    foreach ($messages as $message) {
-                        $e["message"] = $message->getMessage();
-                        $e["field"] = $message->getField();
-                        $errors[] = $e;
+                    $contact->workMobile=$user["username"];
+
+                    if ($contact->save() === false) {
+                        $errors = array();
+                        $messages = $contact->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        // return $res->dataError('user update failed',$errors);
+                        $dbTransaction->rollback("contact status update failed " . json_encode($errors));
                     }
-                    // return $res->dataError('user update failed',$errors);
-                    $dbTransaction->rollback("contact status update failed " . $errors);
-                }
-                
-         }
-          $dbTransaction->commit();
-        return $res->success("User status updated successfully", $user);
+                    
+             }
+            
+            $dbTransaction->commit();
+            return $res->success("User status updated successfully", $user);
         
         }
          catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
