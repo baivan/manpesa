@@ -26,18 +26,18 @@ class UsersController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
 
-        $workMobile = $json->workMobile;
-        $roleID = $json->roleID;
-        $homeMobile = $json->homeMobile;
-        $homeEmail = $json->homeEmail;
-        $workEmail = $json->workEmail;
-        $passportNumber = $json->passportNumber;
-        $nationalIdNumber = $json->nationalIdNumber;
-        $fullName = $json->fullName;
-        $locationID = $json->locationID;
-        $status = $json->status;
-        $location = $json->location;
-        $agentNumber = $json->agentNumber;
+        $workMobile = isset($json->workMobile) ? $json->workMobile : NULL;
+        $roleID = isset($json->roleID) ? $json->roleID : NULL;
+        $homeMobile = isset($json->homeMobile) ? $json->homeMobile : NULL;
+        $homeEmail = isset($json->homeEmail) ? $json->homeEmail : NULL;
+        $workEmail = isset($json->workEmail) ? $json->workEmail : NULL;
+        $passportNumber = isset($json->passportNumber) ? $json->passportNumber : NULL;
+        $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
+        $fullName = isset($json->fullName) ? $json->fullName : NULL;
+        $locationID = isset($json->locationID) ? $json->locationID : NULL;
+        $status = isset($json->status) ? $json->status : NULL;
+        $location = isset($json->location) ? $json->location : NULL;
+        $agentNumber = isset($json->agentNumber) ? $json->agentNumber : NULL;
         $token = $json->token;
 
 
@@ -57,7 +57,7 @@ class UsersController extends Controller {
             $locationID = 0;
         }
         if (!$status) {
-            $status = 0;
+            $status = 1;
         }
 
 
@@ -71,7 +71,7 @@ class UsersController extends Controller {
                 $user = Users::findFirst(array("contactID=:contactID:",
                             'bind' => array("contactID" => $contact->contactsID)));
                 if ($user) {
-                    return $res->success("User exists ", $user);
+                    return $res->success("user already exists ", $user);
                 }
             } else {
                 $contact = new Contacts();
@@ -113,6 +113,12 @@ class UsersController extends Controller {
                 $code = rand(9999, 99999);
 
                 if ($roleID >= 1) {
+                    if ($agentNumber == 1) {
+                        $agentNumber = 'dsr';
+                    } else if ($agentNumber == 2) {
+                        $agentNumber = 'isa';
+                    }
+
                     $agentNumber = $this->generateAgentCode($agentNumber, $roleID);
                 } else {
                     $agentNumber = 'N/A';
@@ -157,7 +163,7 @@ class UsersController extends Controller {
                     "targetSale" => $user->targetSale,
                     "userID" => $user->userID];
 
-                return $res->success("User created successfully ", $data);
+                return $res->success("user created successfully ", $data);
             }
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
@@ -167,6 +173,10 @@ class UsersController extends Controller {
 
     public function update() {
         //userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,status
+
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -174,26 +184,27 @@ class UsersController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
 
-        $workMobile = $json->workMobile;
-        $roleID = $json->roleID;
-        $userID = $json->userID;
-        $homeMobile = $json->homeMobile;
-        $homeEmail = $json->homeEmail;
-        $workEmail = $json->workEmail;
-        $passportNumber = $json->passportNumber;
-        $nationalIdNumber = $json->nationalIdNumber;
-        $fullName = $json->fullName;
-        $locationID = $json->locationID;
-        $location = $json->location;
-        $status = $json->status;
+//        $logger->log('Update Request Data: ' . json_encode($json));
+
+        $workMobile = isset($json->workMobile)?$json->workMobile:NULL;
+        $roleID = isset($json->roleID)?$json->roleID:NULL;
+        $userID = isset($json->userID)?$json->userID:NULL;
+        $homeMobile = isset($json->homeMobile) ? $json->homeMobile : NULL;
+        $homeEmail = isset($json->homeEmail) ? $json->homeEmail : NULL;
+        $workEmail = isset($json->workEmail) ? $json->workEmail : NULL;
+        $passportNumber = isset($json->passportNumber) ? $json->passportNumber : NULL;
+        $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
+        $fullName = isset($json->fullName) ? $json->fullName : NULL;
+        $locationID = isset($json->locationID) ? $json->locationID : NULL;
+        $location = isset($json->location) ? $json->location : NULL;
+        $username = isset($json->username) ? $json->username : NULL;
+        //$status = $json->status;
         $token = $json->token;
         $contactsID = 0;
 
         if (!$token || !$userID) {
             return $res->dataError("Missing data ");
         }
-
-
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
@@ -205,7 +216,7 @@ class UsersController extends Controller {
                     'bind' => array("id" => $userID)));
 
         if (!$user) {
-            return $res->dataError("User not found ");
+            return $res->dataError("user not found ");
         }
 
         try {
@@ -534,7 +545,7 @@ class UsersController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $agentQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
+        $agentQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile, co.workEmail,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
 
         $whereArray = [
             'u.roleID' => $roleID,
@@ -603,7 +614,7 @@ class UsersController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $usersQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
+        $usersQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile, co.workEmail,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
 
         $whereArray = [
             'u.roleID' => $roleID,
@@ -674,7 +685,7 @@ class UsersController extends Controller {
         $countQuery = "SELECT count(userID) as totalUsers ";
 
         $selectQuery = "SELECT u.userID,u.status, co.fullName,co.nationalIdNumber,"
-                . "co.workMobile,co.location,r.roleID,r.roleName, u.agentNumber, u.createdAt  ";
+                . "co.workMobile, co.workEmail,co.location,r.roleID,r.roleName, u.agentType, u.agentNumber, u.createdAt  ";
 
         $baseQuery = " FROM users  u join contacts co on u.contactID=co.contactsID LEFT JOIN role r on u.roleID=r.roleID ";
 
