@@ -104,6 +104,7 @@ $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
 $sale_route->get('statistic', 'saleSummary');
 $sale_route->get('crm/monitor', 'monitorSales');
+$sale_route->post('delete', 'delete');
 //$sale_route->post('updateOldSales', 'updateOldSales');
 
 $category_route = new MicroCollection();
@@ -146,7 +147,7 @@ $frequency_route->post('update', 'update'); //{numberOfDays,frequencyName,token,
 $frequency_route->post('all', 'getAll');
 $frequency_route->get('all', 'getAll');
 $frequency_route->post('crm/all', 'getTableFrequency');
-$frequency_route->get('crm/all', 'getTableFrequency');
+$frequency_route->get('crm/all', 'getCrmFrequency');
 
 
 
