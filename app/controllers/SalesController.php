@@ -400,6 +400,43 @@ class SalesController extends Controller {
         return $res->success("Sale successfully done ", $sale);
     }
 
+    public function delete() {//salesID
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+
+        $salesID = $json->salesID;
+        $token = $json->token;
+
+        if (!$token || !$salesID) {//|| !$salesTypeID || !$userID || !$amount || !$frequencyID){
+            return $res->dataError("fields missing");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        $sale = Sales::findFirst(array("salesID=:id: ",
+                    'bind' => array("id" => $salesID)));
+        $sale->status = -2;
+
+        if ($sale->save() === false) {
+            $errors = array();
+            $messages = $sale->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('sale delete failed', $errors);
+        }
+
+        return $res->success("sale successfully deleted ", $sale);
+    }
+
     public function getCustomerDetails($customerID) {
         $customerquery = "SELECT cs.workMobile ,cs.fullName from contacts cs left join customer co on cs.contactsID=co.contactsID WHERE co.customerID=$customerID";
 
@@ -631,7 +668,7 @@ class SalesController extends Controller {
 
         $whereArray = [
             's.status' => $status,
-            'unsorted' =>$unsorted,
+            'unsorted' => $unsorted,
             'filter' => $filter,
             's.salesID' => $salesID,
             's.customerID' => $customerID,
@@ -658,15 +695,13 @@ class SalesController extends Controller {
                     $valueString .= ") AND";
                 }
                 $whereQuery .= $valueString;
-            } 
-            else if ($key == 'unsorted') {
-                $valueString =  $value ? "s.status=0 AND" : "";
+            } else if ($key == 'unsorted') {
+                $valueString = $value ? "s.status=0 AND" : "";
                 $whereQuery .= $valueString;
-            }else if ($key == 's.status' && $value == 404 ) {
-                $valueString =$value ? "" . $key . ">0" . " AND ":"";
+            } else if ($key == 's.status' && $value == 404) {
+                $valueString = $value ? "" . $key . ">0" . " AND " : "";
                 $whereQuery .= $valueString;
-            } 
-             else if ($key == 'date') {
+            } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
                     $valueString = " DATE(s.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
@@ -682,7 +717,7 @@ class SalesController extends Controller {
         }
 
         //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
-        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+        $whereQuery = $whereQuery ? " WHERE s.status>-2 AND $whereQuery " : " WHERE s.status>-2 ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
@@ -834,7 +869,7 @@ class SalesController extends Controller {
             return $res->dataError("Token missing " . json_encode($json));
         }
         if (!$date) {
-            $date =  date("Y-m-d");
+            $date = date("Y-m-d");
         }
 
         $totalSalesQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalSales FROM transaction t ";
@@ -875,10 +910,10 @@ class SalesController extends Controller {
         $token = $request->getQuery('token');
         $salesID = $request->getQuery('salesID');
 
-       /* $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
-                . "from sales_item si left join item i on si.itemID=i.itemID left join product p on i.productID=p.productID "
-                . "left join category c on p.categoryID=c.categoryID";
-                */
+        /* $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
+          . "from sales_item si left join item i on si.itemID=i.itemID left join product p on i.productID=p.productID "
+          . "left join category c on p.categoryID=c.categoryID";
+         */
         $selectQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus,s.productID,p.productName FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID left join product p  on s.productID=p.productID ";
 
 
