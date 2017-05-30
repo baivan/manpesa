@@ -352,7 +352,7 @@ class ItemsController extends Controller {
 
         $whereArray = [
             'i.status' => 2,
-            'filter' => $filter
+            'i.serialNumber' => $filter
         ];
 
         $whereQuery = "";
@@ -373,7 +373,7 @@ class ItemsController extends Controller {
                 }
                 $whereQuery .= $valueString;
             } else if ($key == 'i.status') {
-                $valueString = "" . $key . "=2 || " . $key . "=5" . " AND ";
+                $valueString = "(" . $key . "=2 || " . $key . "=5)" . " AND ";
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
@@ -381,7 +381,7 @@ class ItemsController extends Controller {
                     $whereQuery .= $valueString;
                 }
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $valueString = $value ? "" . $key . "='" . $value . "' AND " : "";
                 $whereQuery .= $valueString;
             }
         }
@@ -772,7 +772,7 @@ class ItemsController extends Controller {
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
         if (!$tokenData) {
-            return $res->dataError("Data compromised",[]);
+            return $res->dataError("Data compromised", []);
         }
 
         try {
