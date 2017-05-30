@@ -857,7 +857,7 @@ class UsersController extends Controller {
             foreach ($users as $user) {
                 $contactsID = $user["contactID"];
                 $contact = Contacts::findFirst("contactsID = $contactsID");
-
+                if($contact){
                     $contact->workMobile=$user["username"];
 
                     if ($contact->save() === false) {
@@ -871,6 +871,8 @@ class UsersController extends Controller {
                         // return $res->dataError('user update failed',$errors);
                         $dbTransaction->rollback("contact status update failed " . json_encode($errors));
                     }
+
+                }
                     
              }
             
