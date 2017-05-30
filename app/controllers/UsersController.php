@@ -842,4 +842,51 @@ class UsersController extends Controller {
         return $agentNumber;
     }
 
+    public function updateOldUsers(){
+         $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+        $selectQuery = "select * from users";
+        $users = $this->rawSelect($selectQuery);
+        try {
+
+            foreach ($users as $user) {
+                $contactsID = $user["contactID"];
+                $contact = Contacts::findFirst("contactsID = $contactsID");
+                if($contact){
+                    $contact->workMobile=$user["username"];
+                    if(!$contact->nationalIdNumber||$contact->nationalIdNumber==24957364){
+                        $contact->nationalIdNumber=0;
+                    }
+                    if ($contact->save() === false) {
+                        $errors = array();
+                        $messages = $contact->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        // return $res->dataError('user update failed',$errors);
+                        $dbTransaction->rollback("contact status update failed " . json_encode($errors));
+                    }
+
+                }
+                    
+             }
+            
+            $dbTransaction->commit();
+            return $res->success("User status updated successfully", $user);
+        
+        }
+         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('user status change error', $message);
+        }
+
+    }
+
 }
