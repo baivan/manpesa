@@ -125,7 +125,7 @@ class SalesController extends Controller {
         }
     }
 
-    public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction, $repaymentPeriodID = 0) {
+    public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $repaymentPeriodID = 0) {
         $res = new SystemResponses();
         $paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: AND paymentPlanDeposit=:pp_deposit:",
                     'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID, 'pp_deposit' => $paymentPlanDeposit)));
@@ -148,8 +148,10 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
+                
+                return 0;
                 // $res->dataError('paymentPlan create failed',$errors);
-                $dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
+                //$dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
                 //return 0;
             }
             return $paymentPlan->paymentPlanID;
@@ -1361,6 +1363,152 @@ class SalesController extends Controller {
                 $logger->log("Product item for sale saved: " . json_encode($sale));
             }
         }
+    }
+
+    public function reconcileSales() { //salesID,contactsID,productID,serialNumber,salesTypeID,frequencyID,status,userID,token,agentID
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+
+        $salesID = $json->salesID;
+        $contactsID = $json->contactsID;
+        $agentID = $json->agentID;
+        $productID = $json->productID;
+        $serialNumber = $json->serialNumber;
+        $salesTypeID = $json->salesTypeID;
+        $frequencyID = $json->frequencyID;
+        $status = $json->status ? $json->status : 0;
+        $userID = $json->userID;
+        $token = $json->token;
+
+        if (!$token || !$salesID || !$contactsID || !$agentID || !$productID || !$serialNumber || !$salesTypeID || !$frequencyID || !$userID) {
+            return $res->dataError("missing data", []);
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised", $token);
+        }
+
+        $sale = Sales::findFirst(array("salesID=:id: ",
+                    'bind' => array("id" => $salesID)));
+
+        $logger->log("Sale Data: " . json_encode($sale));
+
+        if (!$sale) {
+            return $res->dataError("this sale does not exist", $salesID);
+        }
+
+        $item = Item::findFirst(array("serialNumber=:serialNumber: ",
+                    'bind' => array("serialNumber" => $serialNumber)));
+
+        if (!$item) {
+            return $res->dataError("serial number does not exist.please assign first", $serialNumber);
+        }
+
+        $itemStatus = 0;
+        if ($status == 1) {
+            $itemStatus = 2;
+        } else if ($status == 0 && $salesTypeID == 2) {
+            $itemStatus = 2;
+        } else {
+            $itemStatus = 1;
+        }
+
+        $item->productID = $productID;
+        $item->status = $itemStatus;
+
+        if ($item->save() === false) {
+            $errors = array();
+            $messages = $sale->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('sale reconcilliation failed', $errors);
+        }
+
+        $saleItem = SalesItem::findFirst(array("itemID=:id: ",
+                    'bind' => array("id" => $item->itemID)));
+
+        if (!$saleItem) {
+            $saleItem = new SalesItem();
+            $saleItem->itemID = $item->itemID;
+            $saleItem->saleID = $salesID;
+            $saleItem->status = $itemStatus;
+            $saleItem->createdAt = date('Y-m-d H:i:s');
+        } else {
+            $saleItem->saleID = $salesID;
+            $saleItem->status = $itemStatus;
+        }
+
+        if ($saleItem->save() === false) {
+            $errors = array();
+            $messages = $sale->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('sale reconcilliation failed', $errors);
+        }
+
+        $saleType = SalesType::findFirst(array("salesTypeID=:id: ",
+                    'bind' => array("id" => $salesTypeID)));
+
+        if (!$saleType) {
+            return $res->dataError('sale type provided not valid', $errors);
+        }
+
+        $saleTypeDeposit = $saleType->salesTypeDeposit;
+
+        $frequency = Frequency::findFirst(array("frequencyID=:id: ",
+                    'bind' => array("id" => $frequencyID)));
+
+        if (!$frequency) {
+            return $res->dataError('frequency provided not valid', $errors);
+        }
+
+        $paymentPlanDeposit = 0;
+        if($salesTypeID == 1){
+            $paymentPlanDeposit = 0;
+            $frequencyID = 0;
+        }else{
+           $paymentPlanDeposit = $saleTypeDeposit + (35 * $frequency->numberOfDays); 
+        }
+        
+
+        $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID);
+
+        if (!$paymentPlanID || $paymentPlanID <= 0) {
+            return $res->dataError("Payment Plan not found");
+        }
+
+        $sale->paymentPlanID = $paymentPlanID;
+        $sale->contactsID = $contactsID;
+        $sale->productID = $productID;
+        $sale->userID = $agentID;
+        $sale->status = $status;
+        $sale->updatedBy = $userID;
+
+        if ($sale->save() === false) {
+            $errors = array();
+            $messages = $sale->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('sale reconcilliation failed', $errors);
+        }
+
+        return $res->success("sale successfully reconcilled ", $sale);
     }
 
 }

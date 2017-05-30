@@ -74,6 +74,13 @@ class Sales extends \Phalcon\Mvc\Model
      * @Column(type="string", nullable=false)
      */
     public $updatedAt;
+    
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $updatedBy;
 
     /**
      * Returns table name mapped in the model.

@@ -98,7 +98,7 @@ $sale_route->get('crm/items', 'getCRMSaleItems');
 $sale_route->post('crm/all', 'getTableSales');
 $sale_route->get('crm/all', 'getTableSales');
 $sale_route->get('crm/partners', 'getTablePartnerSales');
-$sale_route->get('crm/reconcile', 'reconcilePartnerSales');
+$sale_route->post('crm/reconcile', 'reconcileSales');
 $sale_route->post('summary', 'dashBoardSummary');
 $sale_route->get('summary', 'dashBoardSummary');
 $sale_route->get('statistic', 'saleSummary');
