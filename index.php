@@ -145,7 +145,7 @@ $frequency_route->post('update', 'update'); //{numberOfDays,frequencyName,token,
 $frequency_route->post('all', 'getAll');
 $frequency_route->get('all', 'getAll');
 $frequency_route->post('crm/all', 'getTableFrequency');
-$frequency_route->get('crm/all', 'getTableFrequency');
+$frequency_route->get('crm/all', 'getCrmFrequency');
 
 
 
