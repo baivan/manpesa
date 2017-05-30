@@ -75,6 +75,7 @@ class FrequencyController extends Controller
 		  $numberOfDays = $json->numberOfDays;
 		  $frequencyName = $json->frequencyName;
 		  $frequencyID = $json->frequencyID;
+		  $status = $json->status;
 
 		  if(!$token || !$frequencyID){
 				return $res->dataError("Missing data ");
@@ -101,6 +102,9 @@ class FrequencyController extends Controller
 	       if($frequencyName){
 	       	  $frequency->frequencyName = $frequencyName;
 	       }
+	       if($status){
+	       	  $frequency->status = $status;
+	       }
 
 	        if($frequency->save()===false){
 		            $errors = array();
@@ -125,7 +129,7 @@ class FrequencyController extends Controller
 		    	$token = $request->getQuery('token');
 		        $frequencyID = $request->getQuery('frequencyID');
 
-		        $frequencyQuery = "SELECT * FROM frequency ";
+		        $frequencyQuery = "SELECT * FROM frequency WHERE status=1";
 
 		        if(!$token  ){
 				    	return $res->dataError("Missing data ");
@@ -137,7 +141,7 @@ class FrequencyController extends Controller
 		       }
 
 		       if($frequencyID){
-		       	  $frequencyQuery = "SELECT * FROM frequency WHERE frequencyID=$frequencyID";
+		       	  $frequencyQuery = "SELECT * FROM frequency WHERE status=1 and frequencyID=$frequencyID ";
 		       }
 
 		       $frequencies = $this->rawSelect($frequencyQuery);
