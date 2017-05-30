@@ -172,7 +172,7 @@ class UsersController extends Controller {
     }
 
     public function update() {
-        //userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,status
+        //updatedBy,userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,status
 
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -186,20 +186,25 @@ class UsersController extends Controller {
 
 //        $logger->log('Update Request Data: ' . json_encode($json));
 
-        $workMobile = isset($json->workMobile)?$json->workMobile:NULL;
-        $roleID = isset($json->roleID)?$json->roleID:NULL;
-        $userID = isset($json->userID)?$json->userID:NULL;
         $homeMobile = isset($json->homeMobile) ? $json->homeMobile : NULL;
         $homeEmail = isset($json->homeEmail) ? $json->homeEmail : NULL;
-        $workEmail = isset($json->workEmail) ? $json->workEmail : NULL;
         $passportNumber = isset($json->passportNumber) ? $json->passportNumber : NULL;
-        $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
-        $fullName = isset($json->fullName) ? $json->fullName : NULL;
         $locationID = isset($json->locationID) ? $json->locationID : NULL;
+
+
+        $fullName = isset($json->fullName) ? $json->fullName : NULL;
+        $workMobile = isset($json->workMobile) ? $json->workMobile : NULL;
+        $workEmail = isset($json->workEmail) ? $json->workEmail : NULL;
+        $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
         $location = isset($json->location) ? $json->location : NULL;
+        $roleID = isset($json->roleID) ? $json->roleID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $status = isset($json->status) ? $json->status : NULL;
+        $agentType = isset($json->agentType) ? $json->agentType : NULL;
+        $agentNumber = isset($json->agentNumber) ? $json->agentNumber : NULL;
         $username = isset($json->username) ? $json->username : NULL;
-        //$status = $json->status;
-        $token = $json->token;
+        $updatedBy = isset($json->updatedBy) ? $json->updatedBy : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
         $contactsID = 0;
 
         if (!$token || !$userID) {
@@ -212,6 +217,7 @@ class UsersController extends Controller {
             return $res->dataError("Login Data compromised");
         }
 
+        //Check if user exists
         $user = Users::findFirst(array("userID=:id:",
                     'bind' => array("id" => $userID)));
 
@@ -223,12 +229,14 @@ class UsersController extends Controller {
 
             $contact = Contacts::findFirst(array("contactsID=:id:",
                         'bind' => array("id" => $user->contactID)));
+
             if (!$contact) {
                 $contact = new Contacts();
                 $contact->workEmail = $workEmail;
                 $contact->workMobile = $workMobile;
                 $contact->fullName = $fullName;
                 $contact->createdAt = date("Y-m-d H:i:s");
+
                 if ($passportNumber) {
                     $contact->passportNumber = $passportNumber;
                 }
@@ -237,9 +245,14 @@ class UsersController extends Controller {
                     $contact->nationalIdNumber = $nationalIdNumber;
                 }
 
-                if ($nationalIdNumber) {
-                    $contact->nationalIdNumber = $nationalIdNumber;
+                if ($homeMobile) {
+                    $contact->homeMobile = $homeMobile;
                 }
+
+                if ($homeEmail) {
+                    $contact->homeEmail = $homeEmail;
+                }
+
                 if ($locationID) {
                     $contact->locationID = $locationID;
                 }
@@ -279,9 +292,14 @@ class UsersController extends Controller {
                     $contact->nationalIdNumber = $nationalIdNumber;
                 }
 
-                if ($passportNumber) {
-                    $contact->passportNumber = $passportNumber;
+                if ($homeEmail) {
+                    $contact->homeEmail = $homeEmail;
                 }
+
+                if ($homeMobile) {
+                    $contact->homeMobile = $homeMobile;
+                }
+
                 if ($locationID) {
                     $contact->locationID = $locationID;
                 }
@@ -316,6 +334,18 @@ class UsersController extends Controller {
                 $user->username = $username;
             }
 
+            if ($status) {
+                $user->status = $status;
+            }
+
+            if ($agentType) {
+                $user->agentType = $agentType;
+            }
+
+            if ($agentNumber) {
+                $user->agentNumber = $agentNumber;
+            }
+
             $user->contactID = $contactsID;
 
             if ($user->save() === false) {
@@ -332,7 +362,7 @@ class UsersController extends Controller {
 
 
             $dbTransaction->commit();
-            return $res->success("User updated successfully", $user);
+            return $res->success("user updated successfully", $user);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('user update error', $message);
@@ -842,8 +872,8 @@ class UsersController extends Controller {
         return $agentNumber;
     }
 
-    public function updateOldUsers(){
-         $jwtManager = new JwtManager();
+    public function updateOldUsers() {
+        $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
@@ -857,10 +887,10 @@ class UsersController extends Controller {
             foreach ($users as $user) {
                 $contactsID = $user["contactID"];
                 $contact = Contacts::findFirst("contactsID = $contactsID");
-                if($contact){
-                    $contact->workMobile=$user["username"];
-                    if(!$contact->nationalIdNumber||$contact->nationalIdNumber==24957364){
-                        $contact->nationalIdNumber=0;
+                if ($contact) {
+                    $contact->workMobile = $user["username"];
+                    if (!$contact->nationalIdNumber || $contact->nationalIdNumber == 24957364) {
+                        $contact->nationalIdNumber = 0;
                     }
                     if ($contact->save() === false) {
                         $errors = array();
@@ -873,20 +903,15 @@ class UsersController extends Controller {
                         // return $res->dataError('user update failed',$errors);
                         $dbTransaction->rollback("contact status update failed " . json_encode($errors));
                     }
-
                 }
-                    
-             }
-            
+            }
+
             $dbTransaction->commit();
             return $res->success("User status updated successfully", $user);
-        
-        }
-         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('user status change error', $message);
         }
-
     }
 
 }
