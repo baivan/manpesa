@@ -581,7 +581,7 @@ class TransactionsController extends Controller {
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $salesID = $request->getQuery('salesID');
-        $customerID = $request->getQuery('customerID');
+        $contactsID = $request->getQuery('contactsID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
@@ -593,7 +593,7 @@ class TransactionsController extends Controller {
 //        $selectQuery = "SELECT t.fullName as depositorName,t.referenceNumber,t.depositAmount, t.mobile, "
 //                . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
 //                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
-        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, "
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
                 . "t.mobile, t.depositAmount, c.fullName, t.salesID AS accountNumber, t.createdAt ";
 
@@ -616,6 +616,7 @@ class TransactionsController extends Controller {
         $whereArray = [
             'filter' => $filter,
             'ct.salesID' => $salesID,
+            'ct.contactsID' => $contactsID,
             'date' => [$startDate, $endDate]
         ];
 
