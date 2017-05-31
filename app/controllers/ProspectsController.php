@@ -194,6 +194,9 @@ class ProspectsController extends Controller {
     }
 
     public function getTableProspects() { //sort, order, page, limit,filter
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -215,6 +218,7 @@ class ProspectsController extends Controller {
                 . "ps.sourceName, p.otherSource, p.createdAt  ";
 
         $whereArray = [
+            'p.status' => 1,
             'filter' => $filter,
             'date' => [$startDate, $endDate]
         ];
@@ -254,7 +258,7 @@ class ProspectsController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "WHERE WHERE p.status=1 $whereQuery " : " WHERE p.status=1 ";
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
@@ -262,6 +266,8 @@ class ProspectsController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
 
         $selectQuery .= $queryBuilder;
+        
+//        $logger->log("Prospects Table Query Data: " . json_encode($selectQuery));
 
         $count = $this->rawSelect($countQuery);
 
