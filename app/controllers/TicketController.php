@@ -269,37 +269,18 @@ class TicketController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
-        $roleID = $request->getQuery('roleID');
         $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 'ticketID';
         $order = $request->getQuery('order') ? $request->getQuery('order') : 'ASC';
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
         $ticketID = $request->getQuery('ticketID');
-        $contactID = $request->getQuery('contactID');
-        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : 0;
+        $contactsID = $request->getQuery('contactsID');
         $status = $request->getQuery('status');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-        $customer = Customer::findFirst(array("customerID=:id: ",
-                    'bind' => array("id" => $customerID)));
-
-        if ($customer) {
-            $contactID = $customer->contactsID;
-        }
-
         $countQuery = "SELECT count(ticketID) as totalTickets ";
-
-//        $selectQuery = "SELECT t.ticketID,t.ticketTitle,t.status,tc.ticketCategoryID,"
-//                . "tc.ticketCategoryName,tc.ticketCategoryDescription,p.priorityID,"
-//                . "t.assigneeID,t.customerID,co.fullName,p.priorityName,p.priorityDescription,"
-//                . "t.createdAt  ";
-//
-//        $baseQuery = " FROM ticket t JOIN customer cu on t.customerID=cu.customerID "
-//                . "LEFT JOIN ticket_category tc on t.ticketCategoryID=tc.ticketCategoryID "
-//                . "LEFT JOIN priority p on t.priorityID=p.priorityID LEFT JOIN contacts co "
-//                . "on cu.contactsID=co.contactsID  ";
 
         $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID, c.fullName AS owner,t.otherOwner, "
                 . "c.workMobile, t.ticketCategoryID, cat.ticketCategoryName, t.otherCategory,t.priorityID,pr.priorityName, t.userID, "
@@ -311,12 +292,11 @@ class TicketController extends Controller {
                 . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
                 . "INNER JOIN priority pr ON t.priorityID=pr.priorityID ";
 
-//        $condition = "";
         $whereArray = [
             't.status' => $status,
             'filter' => $filter,
             't.ticketID' => $ticketID,
-            't.contactsID' => $contactID,
+            't.contactsID' => $contactsID,
             'date' => [$startDate, $endDate]
         ];
 
@@ -364,20 +344,6 @@ class TicketController extends Controller {
 
         $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
-//        if ($ticketID && !$filter && $customerID) {
-//            $condition = " WHERE t.ticketID=$ticketID AND customerID=$customerID ";
-//        } elseif ($ticketID && !$filter && !$customerID) {
-//            $condition = " WHERE t.ticketID=$ticketID ";
-//        } elseif ($ticketID && $filter && $customerID) {
-//            $condition = " WHERE t.ticketID=$ticketID AND customerID=$customerID AND ";
-//        } elseif ($ticketID && $filter && !$customerID) {
-//            $condition = " WHERE t.ticketID=$ticketID AND ";
-//        } elseif (!$ticketID && $filter && $customerID) {
-//            $condition = " WHERE customerID=$customerID ";
-//        } elseif (!$ticketID && $filter && !$customerID) {
-//            $condition = " WHERE ";
-//        }
-
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
 
@@ -387,15 +353,9 @@ class TicketController extends Controller {
 
         $logger->log("Request Query: " . $selectQuery);
 
-//        if ($queryBuilder) {
-//            $selectQuery = $selectQuery . " " . $queryBuilder;
-//        }
-        //return $res->success($selectQuery);
-
         $count = $this->rawSelect($countQuery);
 
         $tickets = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalTickets"] = $count[0]['totalTickets'];
         $data["tickets"] = $tickets;
 
