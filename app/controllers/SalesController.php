@@ -148,7 +148,7 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                
+
                 return 0;
                 // $res->dataError('paymentPlan create failed',$errors);
                 //$dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
@@ -628,7 +628,7 @@ class SalesController extends Controller {
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $userID = $request->getQuery('userID');
-        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 's.salesID';
+        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 'salesID';
         $order = $request->getQuery('order') ? $request->getQuery('order') : 'ASC';
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
@@ -733,17 +733,18 @@ class SalesController extends Controller {
         $sales = $this->rawSelect($selectQuery);
 
 
-//        $displaySales = array();
-//        foreach ($sales as $sale) {
-//            $items = $this->getSaleItems($sale['salesID']);
-//            $transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
-//            $sale['items'] = $items;
-//            $sale['transactions'] = $transactions; //return $res->success("salesID",$items);
-//            array_push($displaySales, $sale);
-//        }
+        $displaySales = array();
+        
+        foreach ($sales as $sale) {
+            $items = $this->getSaleItems($sale['salesID']);
+            //$transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
+            $sale['items'] = $items;
+            //$sale['transactions'] = $transactions; //return $res->success("salesID",$items);
+            array_push($displaySales, $sale);
+        }
 //
         $data["totalSales"] = $count[0]['totalSales'];
-        $data["sales"] = $sales;
+        $data["sales"] = $displaySales;
 
 
         return $res->success("Sales ", $data);
@@ -840,6 +841,9 @@ class SalesController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
+        if ($sort == 'salesID') {
+            $sort = 's.salesID';
+        }
         $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
@@ -1474,13 +1478,13 @@ class SalesController extends Controller {
         }
 
         $paymentPlanDeposit = 0;
-        if($salesTypeID == 1){
+        if ($salesTypeID == 1) {
             $paymentPlanDeposit = 0;
             $frequencyID = 0;
-        }else{
-           $paymentPlanDeposit = $saleTypeDeposit + (35 * $frequency->numberOfDays); 
+        } else {
+            $paymentPlanDeposit = $saleTypeDeposit + (35 * $frequency->numberOfDays);
         }
-        
+
 
         $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID);
 
