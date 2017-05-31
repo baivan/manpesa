@@ -1,7 +1,6 @@
 <?php
 
-class Customer extends \Phalcon\Mvc\Model
-{
+class Customer extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -35,6 +34,20 @@ class Customer extends \Phalcon\Mvc\Model
 
     /**
      *
+     * @var integer
+     * @Column(type="integer", length=3, nullable=false)
+     */
+    public $status;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $updatedBy;
+
+    /**
+     *
      * @var string
      * @Column(type="string", nullable=false)
      */
@@ -52,8 +65,7 @@ class Customer extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
+    public function getSource() {
         return 'customer';
     }
 
@@ -63,8 +75,7 @@ class Customer extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Customer[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -74,8 +85,7 @@ class Customer extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Customer
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 

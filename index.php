@@ -177,6 +177,8 @@ $customer_route->get('crm/all', 'getTableCustomers');
 $customer_route->get('all', 'getAll');
 $customer_route->post('all', 'getAll');
 $customer_route->post('partner/create', 'create');
+$customer_route->post('update', 'update');
+$customer_route->post('delete', 'delete');
 
 $user_item_route = new MicroCollection();
 $user_item_route->setPrefix('/userItem/');

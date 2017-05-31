@@ -139,6 +139,207 @@ class CustomerController extends Controller {
         }
     }
 
+    public function update() { //token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,customerID,prospectsID
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+
+        $token = $json->token;
+        //$contactsID = $json->contactsID;
+        $customerID = $json->customerID;
+        $prospectsID = $json->prospectsID;
+        $userID = $json->userID;
+        $fullName = $json->fullName;
+        $workMobile = $json->workMobile;
+        $workEmail = $json->workEmail;
+        $nationalIdNumber = $json->nationalIdNumber;
+        $location = $json->location;
+        $sourceID = $json->sourceID;
+        $otherSource = $json->otherSource;
+
+        if (!$token || !$userID || (!$customerID && !$prospectsID)) {
+            return $res->dataError("missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        if (!$tokenData) {
+            return $res->dataError("data compromised");
+        }
+
+        $customer = NULL;
+        $contact = NULL;
+
+        if ($customerID) {
+            $customer = Customer::findFirst(array("customerID=:id: ",
+                        'bind' => array("id" => $customerID)));
+
+            if (!$customer) {
+                return $res->dataError("customer doesn't exist");
+            }
+
+            $customer->updatedBy = $userID;
+
+            $contact = Contacts::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $customer->contactsID)));
+            if (!$contact) {
+                return $res->dataError("contact doesn't exist");
+            }
+
+            if ($fullName) {
+                $contact->fullName = $fullName;
+            }
+
+            if ($nationalIdNumber) {
+                $contact->nationalIdNumber = $nationalIdNumber;
+            }
+
+            if ($workMobile) {
+                $workMobile1 = $res->formatMobileNumber($workMobile);
+                $contact->workMobile = $workMobile1;
+            }
+
+            if ($workEmail) {
+                $contact->workEmail = $workEmail;
+            }
+
+            if ($location) {
+                $contact->location = $location;
+            }
+        }
+
+        if ($prospectsID) {
+            $customer = Prospects::findFirst(array("prospectsID=:id: ",
+                        'bind' => array("id" => $prospectsID)));
+
+            if (!$customer) {
+                return $res->dataError("prospect doesn't exist");
+            }
+
+            $customer->updatedBy = $userID;
+
+            if ($sourceID) {
+                $customer->sourceID = $sourceID;
+            }
+
+            if ($otherSource) {
+                $customer->otherSource = $otherSource;
+            }
+
+            $contact = Contacts::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $customer->contactsID)));
+            if (!$contact) {
+                return $res->dataError("contact doesn't exist");
+            }
+
+            if ($fullName) {
+                $contact->fullName = $fullName;
+            }
+
+            if ($nationalIdNumber) {
+                $contact->nationalIdNumber = $nationalIdNumber;
+            }
+
+            if ($workMobile) {
+                $workMobile1 = $res->formatMobileNumber($workMobile);
+                $contact->workMobile = $workMobile1;
+            }
+
+            if ($workEmail) {
+                $contact->workEmail = $workEmail;
+            }
+
+            if ($location) {
+                $contact->location = $location;
+            }
+        }
+
+
+        if ($contact->save() === false) {
+            $errors = array();
+            $messages = $contact->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('contact edit failed', $errors);
+        }
+
+        if ($customer->save() === false) {
+            $errors = array();
+            $messages = $contact->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('customer/prospect edit failed', $errors);
+        }
+
+
+        return $res->success('contact edited successfully', $customer);
+    }
+
+    public function delete() {//customerID,prospectsID,token,userID
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+
+        $customerID = $json->customerID;
+        $prospectsID = $json->prospectsID;
+        $userID = $json->userID;
+        $token = $json->token;
+
+        if (!$token || !$userID || (!$customerID && !$prospectsID)) {
+            return $res->dataError("fields missing");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        if ($customerID) {
+            $customer = Customer::findFirst(array("customerID=:id: ",
+                        'bind' => array("id" => $customerID)));
+
+            if (!$customer) {
+                return $res->dataError('customer does not exist', []);
+            }
+
+            $customer->status = 0;
+            $customer->updatedBy = $userID;
+        }
+
+        if ($prospectsID) {
+            $customer = Prospects::findFirst(array("prospectsID=:id: ",
+                        'bind' => array("id" => $prospectsID)));
+
+            if (!$customer) {
+                return $res->dataError('prospect does not exist', []);
+            }
+
+            $customer->status = 0;
+            $customer->updatedBy = $userID;
+        }
+
+        if ($customer->save() === false) {
+            $errors = array();
+            $messages = $customer->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('customer/prospect delete failed', $errors);
+        }
+
+        return $res->success("customer/prospect successfully deleted ", $customer);
+    }
+
     public function createCustomer($userID, $contactsID, $locationID = 0) {
 
         $customer = Customer::findFirst(array("contactsID=:id: ",
@@ -252,7 +453,7 @@ class CustomerController extends Controller {
 
         $baseQuery = " FROM customer  c join contacts co on c.contactsID=co.contactsID ";
 
-        $selectQuery = "SELECT c.customerID,co.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.location, c.createdAt  ";
+        $selectQuery = "SELECT c.customerID,co.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.workEmail,co.location, c.createdAt  ";
 
 
         $whereArray = [
@@ -295,7 +496,7 @@ class CustomerController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+        $whereQuery = $whereQuery ? "WHERE c.status=1 AND $whereQuery " : " WHERE c.status=1 ";
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;

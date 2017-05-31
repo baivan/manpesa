@@ -15,7 +15,7 @@ class Prospects extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=3, nullable=false)
      */
     public $status;
 
@@ -46,6 +46,13 @@ class Prospects extends \Phalcon\Mvc\Model
      * @Column(type="string", length=200, nullable=true)
      */
     public $otherSource;
+    
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $updatedBy;
 
     /**
      *
