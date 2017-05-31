@@ -633,10 +633,9 @@ class SalesController extends Controller {
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
-        $unsorted = $request->getQuery('unsorted');
         $status = $request->getQuery('status');
         $salesID = $request->getQuery('salesID');
-        $customerID = $request->getQuery('customerID');
+        $contactsID = $request->getQuery('contactsID');
         $startDate = $request->getQuery('start');
         $endDate = $request->getQuery('end');
 
@@ -670,10 +669,9 @@ class SalesController extends Controller {
 
         $whereArray = [
             's.status' => $status,
-            'unsorted' => $unsorted,
             'filter' => $filter,
             's.salesID' => $salesID,
-            's.customerID' => $customerID,
+            's.contactsID' => $contactsID,
             's.userID' => $userID,
             'date' => [$startDate, $endDate]
         ];
