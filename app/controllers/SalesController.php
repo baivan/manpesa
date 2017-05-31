@@ -1387,7 +1387,7 @@ class SalesController extends Controller {
         $userID = $json->userID;
         $token = $json->token;
 
-        if (!$token || !$salesID || !$contactsID || !$agentID || !$productID || !$serialNumber || !$salesTypeID || !$frequencyID || !$userID) {
+        if (!$token || !$salesID || !$productID || !$serialNumber || !$salesTypeID || !$frequencyID || !$userID) {
             return $res->dataError("missing data", []);
         }
 
