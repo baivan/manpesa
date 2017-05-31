@@ -60,7 +60,7 @@ class ProspectsController extends Controller {
     }
 
     public function createContactProspect() {//{userID,workMobile,nationalIdNumber,fullName,location,token}
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
         $jwtManager = new JwtManager();
@@ -96,7 +96,7 @@ class ProspectsController extends Controller {
             $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contact->contactsID)));
             if ($prospect) {
-                return $res->success("Prospect exists ", false);
+                return $res->success("prospect exists ", false);
             }
             return $res->success("Similar mobile number exists", false);
         } else {
@@ -127,8 +127,9 @@ class ProspectsController extends Controller {
                 }
 
                 $prospect = new Prospects();
-                $prospect->status = 0;
+                $prospect->status = 1;
                 $prospect->userID = $userID;
+                $prospect->updatedBy = $userID;
                 $prospect->contactsID = $contact->contactsID;
                 $prospect->sourceID = $sourceID;
                 $prospect->otherSource = $otherSource;
