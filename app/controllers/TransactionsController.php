@@ -528,7 +528,7 @@ class TransactionsController extends Controller {
         $transaction = $this->rawSelect($getAmountQuery);
 
         if ($transaction[0]['amount'] <= 0) {
-            $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID c.workMobile <>0";
+            $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID and ";
         }
 
         $transaction = $this->rawSelect($getAmountQuery);
@@ -536,13 +536,13 @@ class TransactionsController extends Controller {
 
         if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
         || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
-            $dataToReturn['amount']=$transaction[0]['amount'];
-            $dataToReturn['saleAmount']=$transaction[0]['saleAmount'];
-            $dataToReturn['salesTypeDeposit']=$transaction[0]['saleAmount'];
-            $dataToReturn['serialNumber']=$transaction[0]['serialNumber'];
-            $dataToReturn['status']=$transaction[0]['status'];
-            $dataToReturn['salesTypeName']=$transaction[0]['salesTypeName'];
-            $dataToReturn['saleItemID']=$transaction[0]['saleItemID'];
+            $dataToReturn['amount']=(empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount'];
+            $dataToReturn['saleAmount']=(empty($transaction[0]['saleAmount'])) ? NULL : $transaction[0]['saleAmount'];//$transaction[0]['saleAmount'];
+            $dataToReturn['salesTypeDeposit']=(empty($transaction[0]['salesTypeDeposit'])) ? NULL : $transaction[0]['salesTypeDeposit'];//$transaction[0]['saleAmount'];
+            $dataToReturn['serialNumber']=(empty($transaction[0]['serialNumber'])) ? NULL : $transaction[0]['serialNumber'];//$transaction[0]['serialNumber'];
+            $dataToReturn['status']=(empty($transaction[0]['status'])) ? NULL : $transaction[0]['status'];//$transaction[0]['status'];
+            $dataToReturn['salesTypeName']=(empty($transaction[0]['salesTypeName'])) ? NULL : $transaction[0]['salesTypeName'];//$transaction[0]['salesTypeName'];
+            $dataToReturn['saleItemID']=(empty($transaction[0]['saleItemID'])) ? NULL : $transaction[0]['saleItemID'];//$transaction[0]['saleItemID'];
 
             return $res->success("Sale paid", $dataToReturn);
         }
@@ -554,7 +554,7 @@ class TransactionsController extends Controller {
     }
 
     public function checkSalePaid($salesID) {
-        $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID c.workMobile <>0";
+        $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
 
         $transaction = $this->rawSelect($transactionQuery);
 
