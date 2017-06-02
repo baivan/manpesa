@@ -205,7 +205,7 @@ $transaction_route->post('checkpayment', 'checkPayment');
 //$transaction_route->post('dummy/create', 'createTransaction'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'dummyTransaction');
 $transaction_route->get('reconcile', 'reconcilePayment');
-$transaction_route->post('reconcile', 'reconcile');
+$transaction_route->get('link', 'reconcile');
 
 $inbox_route = new MicroCollection();
 $inbox_route->setPrefix('/inbox/');

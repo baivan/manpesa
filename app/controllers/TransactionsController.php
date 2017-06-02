@@ -205,16 +205,16 @@ class TransactionsController extends Controller {
 
             if ($contact) {
                 $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
-                
+
                 $customer = Customer::findFirst(array("contactsID=:id: ",
-                        'bind' => array("id" => $contactsID)));
-                if($customer){
+                            'bind' => array("id" => $contactsID)));
+                if ($customer) {
                     $customerTransaction->customerID = $customer->customerID;
                 }
-                
+
                 $prospect = Prospects::findFirst(array("contactsID=:id: ",
-                        'bind' => array("id" => $contactsID)));
-                if($prospect){
+                            'bind' => array("id" => $contactsID)));
+                if ($prospect) {
                     $customerTransaction->prospectsID = $prospect->prospectsID;
                 }
 
@@ -260,96 +260,66 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function reconcile() { //{contactsID,serialNumber,transactionID,userID,token}
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+    public function reconcile() {
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
-
-        $jwtManager = new JwtManager();
-        $request = new Request();
         $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-        $transactionManager = new TransactionManager();
-        $dbTransaction = $transactionManager->get();
 
-        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
-        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
-        $transactionID = isset($json->transactionID) ? $json->transactionID : NULL;
-        $userID = isset($json->userID) ? $json->userID : NULL;
-        $token = isset($json->token) ? $json->token : NULL;
-
-        if (!$token || !$contactsID || !$transactionID || !$userID) {
-            return $res->dataError("Fields missing ");
-        }
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
+        $limit = 500;
+        $batchSize = 1;
 
         try {
 
-            $customerTransaction = new CustomerTransaction();
+            $transactionsRequest = $res->rawSelect("SELECT COUNT(customerTransactionID) AS transactionCount FROM customer_transaction ");
+            $transactionCount = $transactionsRequest[0]['transactionCount'];
+//            $logger->log("Transactions Count: " . json_encode($transactionCount));
 
-//            $customer = Customer::findFirst(array("contactsID=:id: ",
-//                        'bind' => array("id" => $contactsID)));
-//
-//            if (!$customer) {
-//                $dbTransaction->rollback('customer transaction create failed');
-//                return $res->dataError('customer transaction create failed', []);
-//            }
-
-            $unknown = TransactionUnknown::findFirst(array("unknownTransactionID=:id: ",
-                        'bind' => array("id" => $transactionID)));
-
-            if (!$unknown) {
-                $dbTransaction->rollback('customer transaction create failed');
-                return $res->dataError('customer transaction create failed', []);
+            if ($transactionCount <= $limit) {
+                $batchSize = 1;
+            } else {
+                $batchSize = (int) ($transactionCount / $limit) + 1;
             }
 
-//            $salesID = NULL;
-//            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-//                        'bind' => array("id" => $customer->customerID, "status" => 0)));
-//            if ($customerSale) {
-//                $salesID = $customerSale->salesID;
-//            }
+            for ($count = 0; $count < $batchSize; $count++) {
+                $page = $count + 1;
+                $offset = (int) ($page - 1) * $limit;
+                $transactions = CustomerTransaction::find([
+                            "limit" => $limit,
+                            "offset" => $offset
+                ]);
 
-            $customerTransaction->transactionID = $unknown->transactionID;
-            $customerTransaction->contactsID = $contactsID;
-            $customerTransaction->customerID = NULL;
-            $customerTransaction->createdAt = date("Y-m-d H:i:s");
+                foreach ($transactions as $transaction) {
+                    $contactsID = $transaction->contactsID;
 
-            if ($customerTransaction->save() === false) {
-                $errors = array();
-                $messages = $customerTransaction->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
+                    $customer = Customer::findFirst(array("contactsID=:id: ",
+                                'bind' => array("id" => $contactsID)));
+                    if ($customer) {
+                        $transaction->customerID = $customer->customerID;
+                    }
+
+                    $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                                'bind' => array("id" => $contactsID)));
+                    if ($prospect) {
+                        $transaction->prospectsID = $prospect->prospectsID;
+                    }
+
+                    if ($transaction->save() === false) {
+                        $errors = array();
+                        $messages = $transaction->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $logger->log("Transaction FAILED to update: ");
+                    }
+
+                    $logger->log("Transaction SUCCESSFULLY UPDATED: ");
                 }
-                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                return $res->dataError('customer transaction create failed', $messages);
             }
-
-            $unknown->status = 1;
-
-            if ($unknown->save() === false) {
-                $errors = array();
-                $messages = $unknown->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                return $res->dataError('customer transaction create failed', $messages);
-            }
-
-            $dbTransaction->commit();
-
-            return $res->success("transaction successfully reconciled ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
-            return $res->dataError('transaction reconciliation error', $message);
+            return $res->dataError('transaction update error', $message);
         }
     }
 
