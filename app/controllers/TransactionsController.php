@@ -585,7 +585,7 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, "
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, ct.customerID, ct.prospectsID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
                 . "t.mobile, t.depositAmount, c.fullName, t.salesID AS accountNumber, t.createdAt ";
 
