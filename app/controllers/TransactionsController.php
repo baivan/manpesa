@@ -114,7 +114,7 @@ class TransactionsController extends Controller {
 
 
 
-            $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
+                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
             }
 
             $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
@@ -526,32 +526,28 @@ class TransactionsController extends Controller {
         $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
 
         $transaction = $this->rawSelect($getAmountQuery);
-/*
-        if ($transaction[0]['amount'] <= 0) {
-            $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
-        }
-        */
+        /*
+          if ($transaction[0]['amount'] <= 0) {
+          $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
+          }
+         */
 
-      //  $transaction = $this->rawSelect($getAmountQuery);
+        //  $transaction = $this->rawSelect($getAmountQuery);
         $dataToReturn = array();
 
-        if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
-        || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
-            $dataToReturn['amount']=(empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount'];
-            $dataToReturn['saleAmount']=(empty($transaction[0]['saleAmount'])) ? NULL : $transaction[0]['saleAmount'];//$transaction[0]['saleAmount'];
-            $dataToReturn['salesTypeDeposit']=(empty($transaction[0]['salesTypeDeposit'])) ? NULL : $transaction[0]['salesTypeDeposit'];//$transaction[0]['saleAmount'];
-            $dataToReturn['serialNumber']=(empty($transaction[0]['serialNumber'])) ? NULL : $transaction[0]['serialNumber'];//$transaction[0]['serialNumber'];
-            $dataToReturn['status']=(empty($transaction[0]['status'])) ? NULL : $transaction[0]['status'];//$transaction[0]['status'];
-            $dataToReturn['salesTypeName']=(empty($transaction[0]['salesTypeName'])) ? NULL : $transaction[0]['salesTypeName'];//$transaction[0]['salesTypeName'];
-            $dataToReturn['saleItemID']=(empty($transaction[0]['saleItemID'])) ? NULL : $transaction[0]['saleItemID'];//$transaction[0]['saleItemID'];
+        if (strcasecmp($transaction[0]['salesTypeName'], $this->cash) == 0 || strcasecmp($transaction[0]['salesTypeName'], $this->installment) == 0) {
+            $dataToReturn['amount'] = (empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount'];
+            $dataToReturn['saleAmount'] = (empty($transaction[0]['saleAmount'])) ? NULL : $transaction[0]['saleAmount']; //$transaction[0]['saleAmount'];
+            $dataToReturn['salesTypeDeposit'] = (empty($transaction[0]['salesTypeDeposit'])) ? NULL : $transaction[0]['salesTypeDeposit']; //$transaction[0]['saleAmount'];
+            $dataToReturn['serialNumber'] = (empty($transaction[0]['serialNumber'])) ? NULL : $transaction[0]['serialNumber']; //$transaction[0]['serialNumber'];
+            $dataToReturn['status'] = (empty($transaction[0]['status'])) ? NULL : $transaction[0]['status']; //$transaction[0]['status'];
+            $dataToReturn['salesTypeName'] = (empty($transaction[0]['salesTypeName'])) ? NULL : $transaction[0]['salesTypeName']; //$transaction[0]['salesTypeName'];
+            $dataToReturn['saleItemID'] = (empty($transaction[0]['saleItemID'])) ? NULL : $transaction[0]['saleItemID']; //$transaction[0]['saleItemID'];
 
             return $res->success("Sale paid", $dataToReturn);
-        }
-        else{
+        } else {
             return $res->success("Sale paid", $transaction[0]);
         }
-
-        
     }
 
     public function checkSalePaid($salesID) {
@@ -562,14 +558,12 @@ class TransactionsController extends Controller {
         $amountpaid = $transaction[0]["amount"];
         $amountToCompare = 0;
 
-          if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
-        || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
-            $amountToCompare = $transaction[0]["saleAmount"] ;
-          }
-          elseif(strcasecmp($transaction[0]['salesTypeName'],$this->paygo)==0 ){
-            $amountToCompare= $transaction[0]["salesTypeDeposit"];
-          }
-        if ($amountpaid>=$amountToCompare && $amountpaid>0 ) {
+        if (strcasecmp($transaction[0]['salesTypeName'], $this->cash) == 0 || strcasecmp($transaction[0]['salesTypeName'], $this->installment) == 0) {
+            $amountToCompare = $transaction[0]["saleAmount"];
+        } elseif (strcasecmp($transaction[0]['salesTypeName'], $this->paygo) == 0) {
+            $amountToCompare = $transaction[0]["salesTypeDeposit"];
+        }
+        if ($amountpaid >= $amountToCompare && $amountpaid > 0) {
             return true;
         } else {
             return false;
@@ -591,27 +585,16 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-//        $selectQuery = "SELECT t.fullName as depositorName,t.referenceNumber,t.depositAmount, t.mobile, "
-//                . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
-//                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
-        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, "
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, cust.customerID, p.prospectsID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
                 . "t.mobile, t.depositAmount, c.fullName, t.salesID AS accountNumber, t.createdAt ";
 
         $countQuery = "SELECT count(DISTINCT ct.customerTransactionID) as totalTransaction ";
 
-        /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
-         */
-
-//        $baseQuery = "FROM transaction t LEFT JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber "
-//                . "LEFT JOIN customer cu ON co.contactsID=cu.contactsID "
-//                . "LEFT JOIN sales s ON cu.customerID=s.customerID "
-//                . "LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
-//                . "LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
-
         $baseQuery = "FROM customer_transaction ct INNER JOIN transaction t "
                 . "ON ct.transactionID=t.transactionID INNER JOIN contacts c "
-                . "ON ct.contactsID=c.contactsID  ";
+                . "ON ct.contactsID=c.contactsID LEFT JOIN customer cust on c.contactsID=cust.contactsID "
+                . "LEFT JOIN prospects p on c.contactsID=p.contactsID ";
 
 
         $whereArray = [
@@ -626,7 +609,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName','t.salesID', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
+                $searchColumns = ['t.fullName', 't.salesID', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -759,7 +742,7 @@ class TransactionsController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = "group By transactionID ORDER BY $sort $order";
+        $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
