@@ -186,59 +186,7 @@ class TransactionsController extends Controller {
 
             $customerTransaction = new CustomerTransaction();
             $contact = NULL;
-
-//            $customerMapping = Customer::findFirst(array("customerID=:id: ",
-//                        'bind' => array("id" => $accounNumber)));
-//
-//            if ($customerMapping) {
-//                $customer = $customerMapping;
-//                $salesID = NULL;
-//                $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-//                            'bind' => array("id" => $customer->customerID, "status" => 0)));
-//                if ($customerSale) {
-//                    $salesID = $customerSale->salesID;
-//                }
-//
-//                $customerTransaction->transactionID = $transactionID;
-//                $customerTransaction->contactsID = $customerMapping->contactsID;
-//                $customerTransaction->customerID = $customerMapping->customerID;
-//                $customerTransaction->salesID = $salesID;
-//                $customerTransaction->createdAt = date("Y-m-d H:i:s");
-//            } else {
-//            $saleMapping = Sales::findFirst(array("salesID=:id: ",
-//                            'bind' => array("id" => $accounNumber)));
-//                if ($saleMapping) {
-//                    $customer = Customer::findFirst(array("customerID=:id: ",
-//                                'bind' => array("id" => $saleMapping->customerID)));
-//
-//                    if ($customer) {
-//                        $salesID = NULL;
-//                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-//                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
-//                        if ($customerSale) {
-//                            $salesID = $customerSale->salesID;
-//                        }
-//
-//                        $customerTransaction->transactionID = $transactionID;
-//                        $customerTransaction->contactsID = $customer->contactsID;
-//                        $customerTransaction->customerID = $customer->customerID;
-//                        $customerTransaction->salesID = $salesID;
-//                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
-//                    } else {
-//                        
-//                    }
-//                } else {
-//                            $userID = $customerSale->userID;
-//
-//                $pushNotificationData = array();
-//                $pushNotificationData['nationalID'] = $nationalID;
-//                $pushNotificationData['mobile'] = $mobile;
-//                $pushNotificationData['amount'] = $depositAmount;
-//                $pushNotificationData['saleAmount'] = $customerSale->amount;
-//                $pushNotificationData['fullName'] = $fullName;
-//
-//                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
-
+            $contactsID = NULL;
 
             $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
                     . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
@@ -257,6 +205,18 @@ class TransactionsController extends Controller {
 
             if ($contact) {
                 $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
+                
+                $customer = Customer::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+                if($customer){
+                    $customerTransaction->customerID = $customer->customerID;
+                }
+                
+                $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+                if($prospect){
+                    $customerTransaction->prospectsID = $prospect->prospectsID;
+                }
 
                 if ($customerTransaction->save() === false) {
                     $errors = array();
