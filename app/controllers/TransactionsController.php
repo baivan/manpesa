@@ -585,7 +585,7 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, cust.customerID, p.prospectsID, "
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
                 . "t.mobile, t.depositAmount, c.fullName, t.salesID AS accountNumber, t.createdAt ";
 
@@ -593,8 +593,7 @@ class TransactionsController extends Controller {
 
         $baseQuery = "FROM customer_transaction ct INNER JOIN transaction t "
                 . "ON ct.transactionID=t.transactionID INNER JOIN contacts c "
-                . "ON ct.contactsID=c.contactsID LEFT JOIN customer cust on c.contactsID=cust.contactsID "
-                . "LEFT JOIN prospects p on c.contactsID=p.contactsID ";
+                . "ON ct.contactsID=c.contactsID ";
 
 
         $whereArray = [
