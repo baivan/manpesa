@@ -29,7 +29,7 @@ class Sales extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
     public $customerID;
 
@@ -39,6 +39,13 @@ class Sales extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $contactsID;
+    
+        /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $prospectsID;
 
     /**
      *
