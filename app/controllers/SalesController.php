@@ -734,7 +734,7 @@ class SalesController extends Controller {
 
 
         $displaySales = array();
-        
+
         foreach ($sales as $sale) {
             $items = $this->getSaleItems($sale['salesID']);
             //$transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
@@ -1378,16 +1378,18 @@ class SalesController extends Controller {
 
         $salesID = $json->salesID;
         $contactsID = $json->contactsID;
-        $agentID = $json->agentID;
-        $productID = $json->productID;
-        $serialNumber = $json->serialNumber;
-        $salesTypeID = $json->salesTypeID;
-        $frequencyID = $json->frequencyID;
+        $agentID = isset($json->agentID) ? $json->agentID : NULL;
+        $productID = isset($json->productID) ? $json->productID : 0;
+        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : 0;
+        $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : 0;
+        $frequencyID = isset($json->frequencyID) ? $json->frequencyID : 0;
         $status = $json->status ? $json->status : 0;
         $userID = $json->userID;
         $token = $json->token;
+        
+        $logger->log("Reconcilliation Request Data: " . json_encode($json));
 
-        if (!$token || !$salesID || !$productID || !$serialNumber || !$salesTypeID || !$frequencyID || !$userID) {
+        if (!$token || !$salesID || !$contactsID || !$agentID || !$productID || !$salesTypeID || !$frequencyID || !$userID) {
             return $res->dataError("missing data", []);
         }
 
@@ -1400,65 +1402,69 @@ class SalesController extends Controller {
         $sale = Sales::findFirst(array("salesID=:id: ",
                     'bind' => array("id" => $salesID)));
 
-        $logger->log("Sale Data: " . json_encode($sale));
+//        $logger->log("Sale Data: " . json_encode($sale));
 
         if (!$sale) {
             return $res->dataError("this sale does not exist", $salesID);
         }
 
-        $item = Item::findFirst(array("serialNumber=:serialNumber: ",
-                    'bind' => array("serialNumber" => $serialNumber)));
+        //Incase serial number is provided
+        if ($serialNumber) {
 
-        if (!$item) {
-            return $res->dataError("serial number does not exist.please assign first", $serialNumber);
-        }
+            $item = Item::findFirst(array("serialNumber=:serialNumber: ",
+                        'bind' => array("serialNumber" => $serialNumber)));
 
-        $itemStatus = 0;
-        if ($status == 1) {
-            $itemStatus = 2;
-        } else if ($status == 0 && $salesTypeID == 2) {
-            $itemStatus = 2;
-        } else {
-            $itemStatus = 1;
-        }
-
-        $item->productID = $productID;
-        $item->status = $itemStatus;
-
-        if ($item->save() === false) {
-            $errors = array();
-            $messages = $sale->getMessages();
-            foreach ($messages as $message) {
-                $e["message"] = $message->getMessage();
-                $e["field"] = $message->getField();
-                $errors[] = $e;
+            if (!$item) {
+                return $res->dataError("serial number does not exist.please assign first", $serialNumber);
             }
-            return $res->dataError('sale reconcilliation failed', $errors);
-        }
 
-        $saleItem = SalesItem::findFirst(array("itemID=:id: ",
-                    'bind' => array("id" => $item->itemID)));
-
-        if (!$saleItem) {
-            $saleItem = new SalesItem();
-            $saleItem->itemID = $item->itemID;
-            $saleItem->saleID = $salesID;
-            $saleItem->status = $itemStatus;
-            $saleItem->createdAt = date('Y-m-d H:i:s');
-        } else {
-            $saleItem->saleID = $salesID;
-            $saleItem->status = $itemStatus;
-        }
-
-        if ($saleItem->save() === false) {
-            $errors = array();
-            $messages = $sale->getMessages();
-            foreach ($messages as $message) {
-                $e["message"] = $message->getMessage();
-                $e["field"] = $message->getField();
-                $errors[] = $e;
+            $itemStatus = 0;
+            if ($status == 1) {
+                $itemStatus = 2;
+            } else if ($status == 0 && $salesTypeID == 2) {
+                $itemStatus = 2;
+            } else {
+                $itemStatus = 1;
             }
-            return $res->dataError('sale reconcilliation failed', $errors);
+
+            $item->productID = $productID;
+            $item->status = $itemStatus;
+
+            if ($item->save() === false) {
+                $errors = array();
+                $messages = $sale->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('sale reconcilliation failed', $errors);
+            }
+
+            $saleItem = SalesItem::findFirst(array("itemID=:id: ",
+                        'bind' => array("id" => $item->itemID)));
+
+            if (!$saleItem) {
+                $saleItem = new SalesItem();
+                $saleItem->itemID = $item->itemID;
+                $saleItem->saleID = $salesID;
+                $saleItem->status = $itemStatus;
+                $saleItem->createdAt = date('Y-m-d H:i:s');
+            } else {
+                $saleItem->saleID = $salesID;
+                $saleItem->status = $itemStatus;
+            }
+
+            if ($saleItem->save() === false) {
+                $errors = array();
+                $messages = $sale->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                return $res->dataError('sale reconcilliation failed', $errors);
+            }
         }
 
         $saleType = SalesType::findFirst(array("salesTypeID=:id: ",
