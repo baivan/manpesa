@@ -342,7 +342,14 @@ class ContactsController extends Controller {
                         }
 
                         $duplicate->status = 1;
-                        if(!$duplicate->location){
+                        if (!$duplicate->location) {
+                            $duplicate->location = 'N/A';
+                        }
+                        if (!$duplicate->workMobile) {
+                            $duplicate->workMobile = 0;
+                        }
+
+                        if (!$duplicate->nationalIdNumber) {
                             $duplicate->location = 'N/A';
                         }
                         if ($duplicate->save() == FALSE) {
