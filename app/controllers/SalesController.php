@@ -10,7 +10,6 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class SalesController extends Controller {
 
-
     public function indexAction() {
         
     }
@@ -63,7 +62,6 @@ class SalesController extends Controller {
         if (!$frequencyID) {
             //return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
-
         }
         if (!$productID) {
             return $res->dataError("product missing ", []);
@@ -92,7 +90,7 @@ class SalesController extends Controller {
             $prospectsID = NULL;
             $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contactsID)));
-            if($prospect){
+            if ($prospect) {
                 $prospectsID = $prospect->prospectsID;
             }
 
@@ -140,7 +138,7 @@ class SalesController extends Controller {
                     'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID, 'pp_deposit' => $paymentPlanDeposit)));
         $saleType = SalesType::findFirst(array("salesTypeID=:id: ",
                     'bind' => array("id" => $salesTypeID)));
-        
+
         if ($paymentPlan) {
             return $paymentPlan->paymentPlanID;
         } else {
@@ -662,7 +660,7 @@ class SalesController extends Controller {
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
                 . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
                 . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
-                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.status, s.createdAt ";
+                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.paid, s.status, s.createdAt ";
 
         /*  $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
           . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
