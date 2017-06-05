@@ -10,6 +10,7 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class SalesController extends Controller {
 
+
     public function indexAction() {
         
     }
@@ -62,11 +63,11 @@ class SalesController extends Controller {
         if (!$frequencyID) {
             //return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
+
         }
         if (!$productID) {
             return $res->dataError("product missing ", []);
         }
-
 
 
 
@@ -137,7 +138,9 @@ class SalesController extends Controller {
         $res = new SystemResponses();
         $paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: AND paymentPlanDeposit=:pp_deposit:",
                     'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID, 'pp_deposit' => $paymentPlanDeposit)));
-
+        $saleType = SalesType::findFirst(array("salesTypeID=:id: ",
+                    'bind' => array("id" => $salesTypeID)));
+        
         if ($paymentPlan) {
             return $paymentPlan->paymentPlanID;
         } else {
