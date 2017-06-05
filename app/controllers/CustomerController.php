@@ -6,6 +6,7 @@ use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
+use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class CustomerController extends Controller {
 
@@ -140,6 +141,9 @@ class CustomerController extends Controller {
     }
 
     public function update() { //token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,customerID,prospectsID
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -157,9 +161,11 @@ class CustomerController extends Controller {
         $location = $json->location;
         $sourceID = $json->sourceID;
         $otherSource = $json->otherSource;
+        
+//        $logger->log("Update Request Data: " . json_encode($json));
 
         if (!$token || !$userID || (!$customerID && !$prospectsID)) {
-            return $res->dataError("missing data ");
+            return $res->dataError("missing data ", []);
         }
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');

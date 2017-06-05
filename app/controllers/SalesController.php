@@ -89,11 +89,19 @@ class SalesController extends Controller {
             $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction);
             $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
+            $prospectsID = NULL;
+            $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+            if($prospect){
+                $prospectsID = $prospect->prospectsID;
+            }
+
             $sale = new Sales();
             $sale->status = 0;
             $sale->paymentPlanID = $paymentPlanID;
             $sale->userID = $userID;
             $sale->customerID = $customerID;
+            $sale->prospectsID = $prospectsID;
             $sale->contactsID = $contactsID;
             $sale->amount = $amount;
             $sale->productID = $productID;
@@ -652,7 +660,7 @@ class SalesController extends Controller {
 
         $selectQuery = "SELECT s.salesID, s.paymentPlanID,pp.paymentPlanDeposit AS planDepositAmount,"
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
-                . "f.frequencyName,s.customerID, s.contactsID,c.fullName AS customerName, "
+                . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
                 . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.status, s.createdAt ";
 
@@ -1389,7 +1397,7 @@ class SalesController extends Controller {
         $status = $json->status ? $json->status : 0;
         $userID = $json->userID;
         $token = $json->token;
-        
+
         $logger->log("Reconcilliation Request Data: " . json_encode($json));
 
         if (!$token || !$salesID || !$contactsID || !$agentID || !$productID || !$salesTypeID || !$frequencyID || !$userID) {

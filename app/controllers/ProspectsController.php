@@ -170,7 +170,7 @@ class ProspectsController extends Controller {
         }
 
         $prospectQuery = "SELECT p.prospectsID, p.status, p.contactsID,c.workMobile, "
-                . "c.fullName,c.nationalIdNumber, c.workEmail,c.location, p.sourceID, ps.sourceName,"
+                . "c.fullName,c.nationalIdNumber, c.workEmail,c.location, p.sourceID, ps.sourceName, p.createdAt, "
                 . "p.otherSource FROM prospects p INNER JOIN contacts c ON p.contactsID=c.contactsID "
                 . "LEFT JOIN prospect_source ps ON p.sourceID=ps.sourceID ";
 

@@ -114,7 +114,7 @@ class TransactionsController extends Controller {
 
 
 
-            $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
+                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
             }
 
             $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
@@ -186,59 +186,7 @@ class TransactionsController extends Controller {
 
             $customerTransaction = new CustomerTransaction();
             $contact = NULL;
-
-//            $customerMapping = Customer::findFirst(array("customerID=:id: ",
-//                        'bind' => array("id" => $accounNumber)));
-//
-//            if ($customerMapping) {
-//                $customer = $customerMapping;
-//                $salesID = NULL;
-//                $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-//                            'bind' => array("id" => $customer->customerID, "status" => 0)));
-//                if ($customerSale) {
-//                    $salesID = $customerSale->salesID;
-//                }
-//
-//                $customerTransaction->transactionID = $transactionID;
-//                $customerTransaction->contactsID = $customerMapping->contactsID;
-//                $customerTransaction->customerID = $customerMapping->customerID;
-//                $customerTransaction->salesID = $salesID;
-//                $customerTransaction->createdAt = date("Y-m-d H:i:s");
-//            } else {
-//            $saleMapping = Sales::findFirst(array("salesID=:id: ",
-//                            'bind' => array("id" => $accounNumber)));
-//                if ($saleMapping) {
-//                    $customer = Customer::findFirst(array("customerID=:id: ",
-//                                'bind' => array("id" => $saleMapping->customerID)));
-//
-//                    if ($customer) {
-//                        $salesID = NULL;
-//                        $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-//                                    'bind' => array("id" => $customer->customerID, "status" => 0)));
-//                        if ($customerSale) {
-//                            $salesID = $customerSale->salesID;
-//                        }
-//
-//                        $customerTransaction->transactionID = $transactionID;
-//                        $customerTransaction->contactsID = $customer->contactsID;
-//                        $customerTransaction->customerID = $customer->customerID;
-//                        $customerTransaction->salesID = $salesID;
-//                        $customerTransaction->createdAt = date("Y-m-d H:i:s");
-//                    } else {
-//                        
-//                    }
-//                } else {
-//                            $userID = $customerSale->userID;
-//
-//                $pushNotificationData = array();
-//                $pushNotificationData['nationalID'] = $nationalID;
-//                $pushNotificationData['mobile'] = $mobile;
-//                $pushNotificationData['amount'] = $depositAmount;
-//                $pushNotificationData['saleAmount'] = $customerSale->amount;
-//                $pushNotificationData['fullName'] = $fullName;
-//
-//                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
-
+            $contactsID = NULL;
 
             $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
                     . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
@@ -257,6 +205,18 @@ class TransactionsController extends Controller {
 
             if ($contact) {
                 $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
+
+                $customer = Customer::findFirst(array("contactsID=:id: ",
+                            'bind' => array("id" => $contactsID)));
+                if ($customer) {
+                    $customerTransaction->customerID = $customer->customerID;
+                }
+
+                $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                            'bind' => array("id" => $contactsID)));
+                if ($prospect) {
+                    $customerTransaction->prospectsID = $prospect->prospectsID;
+                }
 
                 if ($customerTransaction->save() === false) {
                     $errors = array();
@@ -300,96 +260,66 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function reconcile() { //{contactsID,serialNumber,transactionID,userID,token}
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+    public function reconcile() {
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
-
-        $jwtManager = new JwtManager();
-        $request = new Request();
         $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-        $transactionManager = new TransactionManager();
-        $dbTransaction = $transactionManager->get();
 
-        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
-        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
-        $transactionID = isset($json->transactionID) ? $json->transactionID : NULL;
-        $userID = isset($json->userID) ? $json->userID : NULL;
-        $token = isset($json->token) ? $json->token : NULL;
-
-        if (!$token || !$contactsID || !$transactionID || !$userID) {
-            return $res->dataError("Fields missing ");
-        }
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
+        $limit = 500;
+        $batchSize = 1;
 
         try {
 
-            $customerTransaction = new CustomerTransaction();
+            $transactionsRequest = $res->rawSelect("SELECT COUNT(customerTransactionID) AS transactionCount FROM customer_transaction ");
+            $transactionCount = $transactionsRequest[0]['transactionCount'];
+//            $logger->log("Transactions Count: " . json_encode($transactionCount));
 
-//            $customer = Customer::findFirst(array("contactsID=:id: ",
-//                        'bind' => array("id" => $contactsID)));
-//
-//            if (!$customer) {
-//                $dbTransaction->rollback('customer transaction create failed');
-//                return $res->dataError('customer transaction create failed', []);
-//            }
-
-            $unknown = TransactionUnknown::findFirst(array("unknownTransactionID=:id: ",
-                        'bind' => array("id" => $transactionID)));
-
-            if (!$unknown) {
-                $dbTransaction->rollback('customer transaction create failed');
-                return $res->dataError('customer transaction create failed', []);
+            if ($transactionCount <= $limit) {
+                $batchSize = 1;
+            } else {
+                $batchSize = (int) ($transactionCount / $limit) + 1;
             }
 
-//            $salesID = NULL;
-//            $customerSale = Sales::findFirst(array("customerID=:id: AND status=:status: ",
-//                        'bind' => array("id" => $customer->customerID, "status" => 0)));
-//            if ($customerSale) {
-//                $salesID = $customerSale->salesID;
-//            }
+            for ($count = 0; $count < $batchSize; $count++) {
+                $page = $count + 1;
+                $offset = (int) ($page - 1) * $limit;
+                $transactions = CustomerTransaction::find([
+                            "limit" => $limit,
+                            "offset" => $offset
+                ]);
 
-            $customerTransaction->transactionID = $unknown->transactionID;
-            $customerTransaction->contactsID = $contactsID;
-            $customerTransaction->customerID = NULL;
-            $customerTransaction->createdAt = date("Y-m-d H:i:s");
+                foreach ($transactions as $transaction) {
+                    $contactsID = $transaction->contactsID;
 
-            if ($customerTransaction->save() === false) {
-                $errors = array();
-                $messages = $customerTransaction->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
+                    $customer = Customer::findFirst(array("contactsID=:id: ",
+                                'bind' => array("id" => $contactsID)));
+                    if ($customer) {
+                        $transaction->customerID = $customer->customerID;
+                    }
+
+                    $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                                'bind' => array("id" => $contactsID)));
+                    if ($prospect) {
+                        $transaction->prospectsID = $prospect->prospectsID;
+                    }
+
+                    if ($transaction->save() === false) {
+                        $errors = array();
+                        $messages = $transaction->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $logger->log("Transaction FAILED to update: ");
+                    }
+
+                    $logger->log("Transaction SUCCESSFULLY UPDATED: ");
                 }
-                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                return $res->dataError('customer transaction create failed', $messages);
             }
-
-            $unknown->status = 1;
-
-            if ($unknown->save() === false) {
-                $errors = array();
-                $messages = $unknown->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                return $res->dataError('customer transaction create failed', $messages);
-            }
-
-            $dbTransaction->commit();
-
-            return $res->success("transaction successfully reconciled ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
-            return $res->dataError('transaction reconciliation error', $message);
+            return $res->dataError('transaction update error', $message);
         }
     }
 
@@ -526,32 +456,28 @@ class TransactionsController extends Controller {
         $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
 
         $transaction = $this->rawSelect($getAmountQuery);
-/*
-        if ($transaction[0]['amount'] <= 0) {
-            $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
-        }
-        */
+        /*
+          if ($transaction[0]['amount'] <= 0) {
+          $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t join sales s on t.salesID=s.salesID  JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID WHERE t.salesID=$salesID ";
+          }
+         */
 
-      //  $transaction = $this->rawSelect($getAmountQuery);
+        //  $transaction = $this->rawSelect($getAmountQuery);
         $dataToReturn = array();
 
-        if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
-        || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
-            $dataToReturn['amount']=(empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount'];
-            $dataToReturn['saleAmount']=(empty($transaction[0]['saleAmount'])) ? NULL : $transaction[0]['saleAmount'];//$transaction[0]['saleAmount'];
-            $dataToReturn['salesTypeDeposit']=(empty($transaction[0]['salesTypeDeposit'])) ? NULL : $transaction[0]['salesTypeDeposit'];//$transaction[0]['saleAmount'];
-            $dataToReturn['serialNumber']=(empty($transaction[0]['serialNumber'])) ? NULL : $transaction[0]['serialNumber'];//$transaction[0]['serialNumber'];
-            $dataToReturn['status']=(empty($transaction[0]['status'])) ? NULL : $transaction[0]['status'];//$transaction[0]['status'];
-            $dataToReturn['salesTypeName']=(empty($transaction[0]['salesTypeName'])) ? NULL : $transaction[0]['salesTypeName'];//$transaction[0]['salesTypeName'];
-            $dataToReturn['saleItemID']=(empty($transaction[0]['saleItemID'])) ? NULL : $transaction[0]['saleItemID'];//$transaction[0]['saleItemID'];
+        if (strcasecmp($transaction[0]['salesTypeName'], $this->cash) == 0 || strcasecmp($transaction[0]['salesTypeName'], $this->installment) == 0) {
+            $dataToReturn['amount'] = (empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount'];
+            $dataToReturn['saleAmount'] = (empty($transaction[0]['saleAmount'])) ? NULL : $transaction[0]['saleAmount']; //$transaction[0]['saleAmount'];
+            $dataToReturn['salesTypeDeposit'] = (empty($transaction[0]['salesTypeDeposit'])) ? NULL : $transaction[0]['salesTypeDeposit']; //$transaction[0]['saleAmount'];
+            $dataToReturn['serialNumber'] = (empty($transaction[0]['serialNumber'])) ? NULL : $transaction[0]['serialNumber']; //$transaction[0]['serialNumber'];
+            $dataToReturn['status'] = (empty($transaction[0]['status'])) ? NULL : $transaction[0]['status']; //$transaction[0]['status'];
+            $dataToReturn['salesTypeName'] = (empty($transaction[0]['salesTypeName'])) ? NULL : $transaction[0]['salesTypeName']; //$transaction[0]['salesTypeName'];
+            $dataToReturn['saleItemID'] = (empty($transaction[0]['saleItemID'])) ? NULL : $transaction[0]['saleItemID']; //$transaction[0]['saleItemID'];
 
             return $res->success("Sale paid", $dataToReturn);
-        }
-        else{
+        } else {
             return $res->success("Sale paid", $transaction[0]);
         }
-
-        
     }
 
     public function checkSalePaid($salesID) {
@@ -562,14 +488,12 @@ class TransactionsController extends Controller {
         $amountpaid = $transaction[0]["amount"];
         $amountToCompare = 0;
 
-          if(strcasecmp($transaction[0]['salesTypeName'],$this->cash)==0 
-        || strcasecmp($transaction[0]['salesTypeName'],$this->installment)==0){
-            $amountToCompare = $transaction[0]["saleAmount"] ;
-          }
-          elseif(strcasecmp($transaction[0]['salesTypeName'],$this->paygo)==0 ){
-            $amountToCompare= $transaction[0]["salesTypeDeposit"];
-          }
-        if ($amountpaid>=$amountToCompare && $amountpaid>0 ) {
+        if (strcasecmp($transaction[0]['salesTypeName'], $this->cash) == 0 || strcasecmp($transaction[0]['salesTypeName'], $this->installment) == 0) {
+            $amountToCompare = $transaction[0]["saleAmount"];
+        } elseif (strcasecmp($transaction[0]['salesTypeName'], $this->paygo) == 0) {
+            $amountToCompare = $transaction[0]["salesTypeDeposit"];
+        }
+        if ($amountpaid >= $amountToCompare && $amountpaid > 0) {
             return true;
         } else {
             return false;
@@ -591,27 +515,15 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-//        $selectQuery = "SELECT t.fullName as depositorName,t.referenceNumber,t.depositAmount, t.mobile, "
-//                . "s.salesID,s.paymentPlanID,s.customerID,co.fullName as customerName, "
-//                . "s.amount,st.salesTypeName,st.salesTypeDeposit,t.createdAt ";
-        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, "
+        $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, ct.customerID, ct.prospectsID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
                 . "t.mobile, t.depositAmount, c.fullName, t.salesID AS accountNumber, t.createdAt ";
 
         $countQuery = "SELECT count(DISTINCT ct.customerTransactionID) as totalTransaction ";
 
-        /* $baseQuery = " FROM transaction t LEFT JOIN sales s on t.salesID=s.salesID LEFT JOIN customer cu ON s.customerID=cu.customerID LEFT JOIN contacts co on cu.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID ";
-         */
-
-//        $baseQuery = "FROM transaction t LEFT JOIN contacts co ON t.salesID=co.workMobile OR t.salesID=co.nationalIdNumber "
-//                . "LEFT JOIN customer cu ON co.contactsID=cu.contactsID "
-//                . "LEFT JOIN sales s ON cu.customerID=s.customerID "
-//                . "LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
-//                . "LEFT JOIN sales_type st on st.salesTypeID=pp.salesTypeID  ";
-
         $baseQuery = "FROM customer_transaction ct INNER JOIN transaction t "
                 . "ON ct.transactionID=t.transactionID INNER JOIN contacts c "
-                . "ON ct.contactsID=c.contactsID  ";
+                . "ON ct.contactsID=c.contactsID ";
 
 
         $whereArray = [
@@ -626,7 +538,7 @@ class TransactionsController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['t.fullName','t.salesID', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
+                $searchColumns = ['t.fullName', 't.salesID', 't.mobile', 'c.fullName', 't.referenceNumber', 'c.workMobile', 'c.nationalIdNumber', 't.nationalID'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -759,7 +671,7 @@ class TransactionsController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = "group By transactionID ORDER BY $sort $order";
+        $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
