@@ -696,7 +696,7 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-        $selectQuery = "SELECT tu.unknownTransactionID AS transactionID, t.referenceNumber, "
+        $selectQuery = "SELECT tu.unknownTransactionID, tu.transactionID, t.referenceNumber, "
                 . "t.nationalID, t.fullName AS depositorName, t.mobile, t.depositAmount, t.salesID AS accountNumber, t.createdAt ";
 
         $countQuery = "SELECT count(DISTINCT tu.unknownTransactionID) as totalTransaction ";
