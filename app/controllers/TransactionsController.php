@@ -365,9 +365,9 @@ class TransactionsController extends Controller {
                                 $incompleteSale->paid = $pay;
                                 $incompleteSale->status = 1;
                             } else {
-                                $depositAmount = 0;
                                 $pay = $paid + $depositAmount;
                                 $incompleteSale->paid = $pay;
+                                $depositAmount = 0;
                             }
 
                             if ($incompleteSale->save() === false) {
