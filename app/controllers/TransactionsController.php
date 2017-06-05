@@ -351,12 +351,12 @@ class TransactionsController extends Controller {
 
                         //$logger->log("Transaction exists: " . json_encode($depositAmount));
 
-                        $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
-                                    'bind' => array("id" => $contactsID, "status" => 1)));
+                        $incompleteSales = Sales::find(array("contactsID=:id: ",
+                                    'bind' => array("id" => $contactsID)));
 
                         foreach ($incompleteSales as $incompleteSale) {
                             $amount = floatval($incompleteSale->amount);
-                            $paid = floatval($incompleteSale->paid);
+                            $paid = 0;//floatval($incompleteSale->paid);
                             $unpaid = $amount - $paid;
 
                             if ($depositAmount >= $unpaid) {
