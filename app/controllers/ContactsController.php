@@ -6,6 +6,7 @@ use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
+use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class ContactsController extends Controller {
 
