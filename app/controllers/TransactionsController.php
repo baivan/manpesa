@@ -333,7 +333,10 @@ class TransactionsController extends Controller {
                             "offset" => $offset
                 ]);
 
+                $logger->log("Batch NO: " . json_encode($page));
+
                 foreach ($transactions as $transaction) {
+                    //$logger->log("Customer Transaction: " . json_encode($transaction));
                     $contactsID = $transaction->contactsID;
                     $transactionID = $transaction->transactionID;
 
@@ -341,12 +344,16 @@ class TransactionsController extends Controller {
                                 'bind' => array("id" => $transactionID)));
 
                     if ($trans) {
+
                         $depositAmount = $trans->depositAmount;
                         //Find incomplete sales
                         $depositAmount = floatval(str_replace(',', '', $depositAmount));
 
+                        //$logger->log("Transaction exists: " . json_encode($depositAmount));
+
                         $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
                                     'bind' => array("id" => $contactsID, "status" => 0)));
+
                         foreach ($incompleteSales as $incompleteSale) {
                             $amount = floatval($incompleteSale->amount);
                             $paid = floatval($incompleteSale->paid);
@@ -378,7 +385,7 @@ class TransactionsController extends Controller {
                                 //return $res->success("Payment received", TRUE);
                             }
 
-                            $logger->log("Amount Remaining: " . json_encode($depositAmount));
+                            $logger->log("Customer Sale: " . json_encode($incompleteSale));
 
                             if ($depositAmount == 0) {
                                 break;
