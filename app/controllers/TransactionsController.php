@@ -335,31 +335,81 @@ class TransactionsController extends Controller {
 
                 foreach ($transactions as $transaction) {
                     $contactsID = $transaction->contactsID;
+                    $transactionID = $transaction->transactionID;
 
-                    $customer = Customer::findFirst(array("contactsID=:id: ",
-                                'bind' => array("id" => $contactsID)));
-                    if ($customer) {
-                        $transaction->customerID = $customer->customerID;
-                    }
+                    $trans = Transaction::findFirst(array("transactionID=:id: ",
+                                'bind' => array("id" => $transactionID)));
 
-                    $prospect = Prospects::findFirst(array("contactsID=:id: ",
-                                'bind' => array("id" => $contactsID)));
-                    if ($prospect) {
-                        $transaction->prospectsID = $prospect->prospectsID;
-                    }
+                    if ($trans) {
+                        $depositAmount = $trans->depositAmount;
+                        //Find incomplete sales
+                        $depositAmount = floatval(str_replace(',', '', $depositAmount));
 
-                    if ($transaction->save() === false) {
-                        $errors = array();
-                        $messages = $transaction->getMessages();
-                        foreach ($messages as $message) {
-                            $e["message"] = $message->getMessage();
-                            $e["field"] = $message->getField();
-                            $errors[] = $e;
+                        $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
+                                    'bind' => array("id" => $contactsID, "status" => 0)));
+                        foreach ($incompleteSales as $incompleteSale) {
+                            $amount = floatval($incompleteSale->amount);
+                            $paid = floatval($incompleteSale->paid);
+                            $unpaid = $amount - $paid;
+
+                            if ($depositAmount >= $unpaid) {
+                                $pay = $paid + $unpaid;
+                                $depositAmount = $depositAmount - $unpaid;
+                                $incompleteSale->paid = $pay;
+                                $incompleteSale->status = 1;
+                            } else {
+                                $depositAmount = 0;
+                                $pay = $paid + $depositAmount;
+                                $incompleteSale->paid = $pay;
+                            }
+
+                            if ($incompleteSale->save() === false) {
+                                $errors = array();
+                                $messages = $incompleteSale->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $logger->log("Error while saving sale data: " . json_encode($errors));
+
+                                //$dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                                $res->dataError('customer transaction create failed', $messages);
+                                //return $res->success("Payment received", TRUE);
+                            }
+
+                            $logger->log("Amount Remaining: " . json_encode($depositAmount));
+
+                            if ($depositAmount == 0) {
+                                break;
+                            }
                         }
-                        $logger->log("Transaction FAILED to update: ");
                     }
 
-                    $logger->log("Transaction SUCCESSFULLY UPDATED: ");
+                    /*                     * $customer = Customer::findFirst(array("contactsID=:id: ",
+                      'bind' => array("id" => $contactsID)));
+                      if ($customer) {
+                      $transaction->customerID = $customer->customerID;
+                      }
+
+                      $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                      'bind' => array("id" => $contactsID)));
+                      if ($prospect) {
+                      $transaction->prospectsID = $prospect->prospectsID;
+                      }
+
+                      if ($transaction->save() === false) {
+                      $errors = array();
+                      $messages = $transaction->getMessages();
+                      foreach ($messages as $message) {
+                      $e["message"] = $message->getMessage();
+                      $e["field"] = $message->getField();
+                      $errors[] = $e;
+                      }
+                      $logger->log("Transaction FAILED to update: ");
+                      }
+
+                      $logger->log("Transaction SUCCESSFULLY UPDATED: "); */
                 }
             }
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -646,6 +696,128 @@ class TransactionsController extends Controller {
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
+        }
+    }
+
+    public function updateContactPaymentStatus() {
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $res = new SystemResponses();
+        $limit = 500;
+        $batchSize = 1;
+
+        try {
+
+            $payment = CustomerTransaction::findFirst(array("transactionID=:id: AND contactsID=:contactsID: ",
+                        'bind' => array("id" => $transactionID, "contactsID" => $contactsID)));
+
+            $customerTransaction = new CustomerTransaction();
+            $customerTransaction->transactionID = $transactionID;
+            $customerTransaction->contactsID = $contactsID;
+            $customerTransaction->status = 1;
+            $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
+            $customer = Customer::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+            if ($customer) {
+                $customerTransaction->customerID = $customer->customerID;
+            }
+
+            $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+            if ($prospect) {
+                $customerTransaction->prospectsID = $prospect->prospectsID;
+            }
+
+            if ($customerTransaction->save() === false) {
+                $errors = array();
+                $messages = $customerTransaction->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                return $res->dataError('failed to reconcile payment', $messages);
+            }
+
+            $transaction = Transaction::findFirst(array("transactionID=:id: ",
+                        'bind' => array("id" => $transactionID)));
+
+            if ($transaction) {
+                $depositAmount = $transaction->depositAmount;
+                //Find incomplete sales
+                $depositAmount = floatval(str_replace(',', '', $depositAmount));
+
+                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
+                            'bind' => array("id" => $contactsID, "status" => 0)));
+                foreach ($incompleteSales as $incompleteSale) {
+                    $amount = floatval($incompleteSale->amount);
+                    $paid = floatval($incompleteSale->paid);
+                    $unpaid = $amount - $paid;
+
+                    if ($depositAmount >= $unpaid) {
+                        $pay = $paid + $unpaid;
+                        $depositAmount = $depositAmount - $unpaid;
+                        $incompleteSale->paid = $pay;
+                        $incompleteSale->status = 1;
+                    } else {
+                        $depositAmount = 0;
+                        $pay = $paid + $depositAmount;
+                        $incompleteSale->paid = $pay;
+                    }
+
+                    if ($incompleteSale->save() === false) {
+                        $errors = array();
+                        $messages = $incompleteSale->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $logger->log("Error while saving sale data: " . json_encode($errors));
+
+                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                        $res->dataError('customer transaction create failed', $messages);
+                        return $res->success("Payment received", TRUE);
+                    }
+
+                    $logger->log("Amount Remaining: " . json_encode($depositAmount));
+
+                    if ($depositAmount == 0) {
+                        break;
+                    }
+                }
+            }
+
+            $unknownPayment = TransactionUnknown::findFirst(array("transactionID=:id: ",
+                        'bind' => array("id" => $transactionID)));
+
+            if ($unknownPayment) {
+                $unknownPayment->status = 1;
+
+                if ($unknownPayment->save() === false) {
+                    $errors = array();
+                    $messages = $unknown->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('failed to reconcile payment' . json_encode($errors));
+                    return $res->dataError('failed to reconcile payment', $messages);
+                }
+            }
+
+            $dbTransaction->commit();
+
+            $logger->log("payment successfully reconciled: " . json_encode($customerTransaction));
+
+            return $res->success("payment successfully reconciled ", true);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('failed to reconcile payment', $message);
         }
     }
 

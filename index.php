@@ -202,11 +202,11 @@ $transaction_route->post('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
-//$transaction_route->post('dummy/create', 'createTransaction'); //workMobile,nationalIdNumber,fullName,location
+$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'dummyTransaction');
 $transaction_route->post('reconcilepayment', 'reconcilePayment');//To reconcile unknown payments
 //$transaction_route->get('reconcile', 'reconcileTransaction');
-//$transaction_route->get('link', 'reconcile');
+$transaction_route->get('link', 'reconcile');
 
 $inbox_route = new MicroCollection();
 $inbox_route->setPrefix('/inbox/');
