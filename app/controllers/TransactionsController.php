@@ -408,6 +408,25 @@ class TransactionsController extends Controller {
                 return $res->dataError('failed to reconcile payment', $messages);
             }
 
+            $unknownPayment = TransactionUnknown::findFirst(array("transactionID=:id: ",
+                        'bind' => array("id" => $transactionID)));
+
+            if ($unknownPayment) {
+                $unknownPayment->status = 1;
+
+                if ($unknownPayment->save() === false) {
+                    $errors = array();
+                    $messages = $unknown->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('failed to reconcile payment' . json_encode($errors));
+                    return $res->dataError('failed to reconcile payment', $messages);
+                }
+            }
+
             $dbTransaction->commit();
 
             $logger->log("payment successfully reconciled: " . json_encode($customerTransaction));
