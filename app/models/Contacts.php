@@ -74,6 +74,13 @@ class Contacts extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $locationID;
+    
+        /**
+     *
+     * @var integer
+     * @Column(type="integer", length=3, nullable=false)
+     */
+    public $status;
 
     /**
      *
