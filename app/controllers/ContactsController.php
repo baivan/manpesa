@@ -220,7 +220,7 @@ class ContactsController extends Controller {
 
         try {
 
-            $contactsRequest = $res->rawSelect("SELECT COUNT(contactsID) AS contactsCount FROM contacts ");
+            $contactsRequest = $res->rawSelect("SELECT COUNT(contactsID) AS contactsCount FROM contacts WHERE status=0");
             $contactsCount = $contactsRequest[0]['contactsCount'];
             $logger->log("Contacts Count: " . $contactsCount);
 
