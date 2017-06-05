@@ -355,6 +355,7 @@ class TransactionsController extends Controller {
                         'bind' => array("id" => $transactionID, "contactsID" => $contactsID)));
 
             if ($payment) {
+                $logger->log("Unknown payment exists: " . json_encode($payment));
                 $unknownPayment = TransactionUnknown::findFirst(array("transactionID=:id: ",
                             'bind' => array("id" => $transactionID)));
 
@@ -406,6 +407,8 @@ class TransactionsController extends Controller {
             }
 
             $dbTransaction->commit();
+
+            $logger->log("payment successfully reconciled: " . json_encode($customerTransaction));
 
             return $res->success("payment successfully reconciled ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
