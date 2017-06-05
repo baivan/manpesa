@@ -128,7 +128,7 @@ class TransactionsController extends Controller {
     }
 
     public function create() { //{mobile,account,referenceNumber,amount,fullName,token}
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
         $jwtManager = new JwtManager();
@@ -182,6 +182,8 @@ class TransactionsController extends Controller {
                 return $res->success("Payment received", TRUE);
             }
 
+            //Determine customer
+
             $transactionID = $transaction->transactionID;
 
             $customerTransaction = new CustomerTransaction();
@@ -229,6 +231,49 @@ class TransactionsController extends Controller {
                     $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
                     $res->dataError('customer transaction create failed', $messages);
                     return $res->success("Payment received", TRUE);
+                }
+
+                //Find incomplete sales
+                $depositAmount = floatval(str_replace(',', '', $depositAmount));
+
+                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
+                            'bind' => array("id" => $contactsID, "status" => 0)));
+                foreach ($incompleteSales as $incompleteSale) {
+                    $amount = floatval($incompleteSale->amount);
+                    $paid = floatval($incompleteSale->paid);
+                    $unpaid = $amount - $paid;
+
+                    if ($depositAmount >= $unpaid) {
+                        $pay = $paid + $unpaid;
+                        $depositAmount = $depositAmount - $unpaid;
+                        $incompleteSale->paid = $pay;
+                        $incompleteSale->status = 1;
+                    } else {
+                        $depositAmount = 0;
+                        $pay = $paid + $depositAmount;
+                        $incompleteSale->paid = $pay;
+                    }
+
+                    if ($incompleteSale->save() === false) {
+                        $errors = array();
+                        $messages = $incompleteSale->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $logger->log("Error while saving sale data: " . json_encode($errors));
+                        
+                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                        $res->dataError('customer transaction create failed', $messages);
+                        return $res->success("Payment received", TRUE);
+                    }
+
+                    $logger->log("Amount Remaining: " . json_encode($depositAmount));
+
+                    if ($depositAmount == 0) {
+                        break;
+                    }
                 }
             } else {
                 $unknown = new TransactionUnknown();

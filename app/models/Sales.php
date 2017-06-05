@@ -1,7 +1,6 @@
 <?php
 
-class Sales extends \Phalcon\Mvc\Model
-{
+class Sales extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -39,8 +38,8 @@ class Sales extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $contactsID;
-    
-        /**
+
+    /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
@@ -71,6 +70,13 @@ class Sales extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
+     * @Column(type="string", length=100, nullable=true)
+     */
+    public $paid;
+
+    /**
+     *
+     * @var string
      * @Column(type="string", nullable=false)
      */
     public $createdAt;
@@ -81,7 +87,7 @@ class Sales extends \Phalcon\Mvc\Model
      * @Column(type="string", nullable=false)
      */
     public $updatedAt;
-    
+
     /**
      *
      * @var integer
@@ -94,8 +100,7 @@ class Sales extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
+    public function getSource() {
         return 'sales';
     }
 
@@ -105,8 +110,7 @@ class Sales extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Sales[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -116,8 +120,7 @@ class Sales extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return Sales
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 
