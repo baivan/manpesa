@@ -324,11 +324,11 @@ class ContactsController extends Controller {
                         }
 
                         //Get Users
-                        $users = Users::find(array("contactsID=:id: ",
+                        $users = Users::find(array("contactID=:id: ",
                                     'bind' => array("id" => $duplicate->contactsID)));
 
                         foreach ($users as $user) {
-                            $user->contactsID = $first->contactsID;
+                            $user->contactID = $first->contactsID;
                             if ($user->save() == FALSE) {
                                 $errors = array();
                                 $messages = $user->getMessages();
