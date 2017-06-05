@@ -356,7 +356,7 @@ class TransactionsController extends Controller {
 
                         foreach ($incompleteSales as $incompleteSale) {
                             $amount = floatval($incompleteSale->amount);
-                            $paid = floatval($incompleteSale->paid);
+                            $paid = 0;//floatval($incompleteSale->paid);
                             $unpaid = $amount - $paid;
 
                             if ($depositAmount >= $unpaid) {
