@@ -193,6 +193,7 @@ $contacts_route->post('search', 'searchContacts');
 $contacts_route->get('search', 'searchContacts');
 $contacts_route->get('crm/search', 'searchCrmContacts');
 $contacts_route->post('create', 'createContact'); //workMobile,nationalIdNumber,fullName,location
+$contacts_route->get('reconcile', 'reconcile');
 
 $transaction_route = new MicroCollection();
 $transaction_route->setPrefix('/transaction/');
