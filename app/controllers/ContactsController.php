@@ -342,6 +342,9 @@ class ContactsController extends Controller {
                         }
 
                         $duplicate->status = 1;
+                        if(!$duplicate->location){
+                            $duplicate->location = 'N/A';
+                        }
                         if ($duplicate->save() == FALSE) {
                             $errors = array();
                             $messages = $duplicate->getMessages();
