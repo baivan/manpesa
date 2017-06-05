@@ -380,6 +380,7 @@ class TransactionsController extends Controller {
             $customerTransaction = new CustomerTransaction();
             $customerTransaction->transactionID = $transactionID;
             $customerTransaction->contactsID = $contactsID;
+            $customerTransaction->status = 1;
             $customerTransaction->createdAt = date("Y-m-d H:i:s");
 
             $customer = Customer::findFirst(array("contactsID=:id: ",
