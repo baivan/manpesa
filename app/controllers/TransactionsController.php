@@ -323,7 +323,103 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function reconcilePayment() { //{mobile,account,referenceNumber,amount,fullName,token}
+    public function reconcilePayment() { //contactsID, transactionID, userID,token
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+        $transactionID = isset($json->transactionID) ? $json->transactionID : NULL;
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
+
+        if (!$token || !$transactionID || !$contactsID || !$userID) {
+            return $res->dataError("data missing ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        try {
+
+            $payment = CustomerTransaction::findFirst(array("transactionID=:id: AND contactsID=:contactsID: ",
+                        'bind' => array("id" => $transactionID, "contactsID" => $contactsID)));
+
+            if ($payment) {
+                $logger->log("Unknown payment exists: " . json_encode($payment));
+                $unknownPayment = TransactionUnknown::findFirst(array("transactionID=:id: ",
+                            'bind' => array("id" => $transactionID)));
+
+                if ($unknownPayment) {
+                    $unknownPayment->status = 1;
+
+                    if ($unknownPayment->save() === false) {
+                        $errors = array();
+                        $messages = $unknown->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $dbTransaction->rollback('failed to reconcile payment' . json_encode($errors));
+                        return $res->dataError('failed to reconcile payment', $messages);
+                    }
+                }
+                $dbTransaction->commit();
+                return $res->success("payment successfully reconciled", $payment);
+            }
+
+            $customerTransaction = new CustomerTransaction();
+            $customerTransaction->transactionID = $transactionID;
+            $customerTransaction->contactsID = $contactsID;
+            $customerTransaction->status = 1;
+            $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
+            $customer = Customer::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+            if ($customer) {
+                $customerTransaction->customerID = $customer->customerID;
+            }
+
+            $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                        'bind' => array("id" => $contactsID)));
+            if ($prospect) {
+                $customerTransaction->prospectsID = $prospect->prospectsID;
+            }
+
+            if ($customerTransaction->save() === false) {
+                $errors = array();
+                $messages = $customerTransaction->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                return $res->dataError('failed to reconcile payment', $messages);
+            }
+
+            $dbTransaction->commit();
+
+            $logger->log("payment successfully reconciled: " . json_encode($customerTransaction));
+
+            return $res->success("payment successfully reconciled ", true);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('failed to reconcile payment', $message);
+        }
+    }
+
+    public function reconcileTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -602,7 +698,7 @@ class TransactionsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
 
-        $selectQuery = "SELECT tu.unknownTransactionID AS transactionID, t.referenceNumber, "
+        $selectQuery = "SELECT tu.unknownTransactionID, tu.transactionID, t.referenceNumber, "
                 . "t.nationalID, t.fullName AS depositorName, t.mobile, t.depositAmount, t.salesID AS accountNumber, t.createdAt ";
 
         $countQuery = "SELECT count(DISTINCT tu.unknownTransactionID) as totalTransaction ";
