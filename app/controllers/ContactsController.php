@@ -233,17 +233,13 @@ class ContactsController extends Controller {
             for ($count = 0; $count < $batchSize; $count++) {
                 $page = $count + 1;
                 $offset = (int) ($page - 1) * $limit;
-                $contacts = Contacts::find([
-                            "status" => 0,
-                            "limit" => $limit,
-                            "offset" => $offset
-                ]);
+                $contacts = $this->rawSelect("SELECT * FROM contacts WHERE status=0 LIMIT $offset,$limit");
 
                 $logger->log("Batch NO: " . $page);
 
                 foreach ($contacts as $contact) {
                     //$logger->log("Customer Transaction: " . json_encode($transaction));
-                    $workMobile = $contact->workMobile;
+                    $workMobile = $contact['workMobile'];
 
                     $duplicates = Contacts::find(array("workMobile=:id: ",
                                 'bind' => array("id" => $workMobile)));
