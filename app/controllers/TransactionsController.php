@@ -374,6 +374,7 @@ class TransactionsController extends Controller {
                         return $res->dataError('failed to reconcile payment', $messages);
                     }
                 }
+                $dbTransaction->commit();
                 return $res->success("payment successfully reconciled", $payment);
             }
 
