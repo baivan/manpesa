@@ -6,6 +6,7 @@ use Phalcon\Mvc\Model\Query;
 use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
+use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class ProductSaleTypePriceController extends Controller {
 
@@ -38,8 +39,8 @@ class ProductSaleTypePriceController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $productSaleTypePrice = ProductSaleTypePrice::findFirst(array("salesTypeID=:salesTypeID: AND productID=:productID: AND categoryID=:categoryID: ",
-                    'bind' => array("salesTypeID" => $salesTypeID, "productID" => $productID, "categoryID" => $categoryID)));
+        $productSaleTypePrice = ProductSaleTypePrice::findFirst(array("salesTypeID=:salesTypeID: AND productID=:productID: AND price=:price: ",
+                    'bind' => array("salesTypeID" => $salesTypeID, "productID" => $productID, "price" => $price)));
 
         if ($productSaleTypePrice) {
             return $res->dataError("same price exists");
@@ -64,7 +65,7 @@ class ProductSaleTypePriceController extends Controller {
             return $res->dataError('ProductSaleTypePrice create failed', $errors);
         }
 
-        return $res->success("ProductSaleTypePrice created successfully ", $productSaleTypePrice);
+        return $res->success("product price created successfully ", $productSaleTypePrice);
     }
 
     public function update() {//{productID,salesTypeID,categoryID,price,productSaleTypePriceID,$deposit}
@@ -73,15 +74,16 @@ class ProductSaleTypePriceController extends Controller {
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
         $token = $json->token;
-        $productID = $json->productID;
-        $salesTypeID = $json->salesTypeID;
-        $categoryID = $json->categoryID;
-        $price = $json->price;
-        $deposit = $json->deposit;
-        $productSaleTypePriceID = $json->productSaleTypePriceID;
+        $productID = isset($json->productID) ? $json->productID : NULL;
+        $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : NULL;
+        $categoryID = isset($json->categoryID) ? $json->categoryID : NULL;
+        $price = isset($json->price) ? $json->price : NULL;
+        $deposit = isset($json->deposit) ? $json->deposit : 0;
+        $status = isset($json->status) ? $json->status : 0;
+        $productSaleTypePriceID = isset($json->productSaleTypePriceID) ? $json->productSaleTypePriceID : NULL;
 
         if (!$token || !$productSaleTypePriceID) {
-            return $res->dataError("Missing data ");
+            return $res->dataError("missing data ");
         }
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
@@ -93,7 +95,7 @@ class ProductSaleTypePriceController extends Controller {
                     'bind' => array("id" => $productSaleTypePriceID)));
 
         if (!$productSaleTypePrice) {
-            return $res->dataError("price doesnot exist");
+            return $res->dataError("price does not exist");
         }
 
         if ($productID) {
@@ -112,6 +114,10 @@ class ProductSaleTypePriceController extends Controller {
             $productSaleTypePrice->deposit = $deposit;
         }
 
+        if ($status) {
+            $productSaleTypePrice->status = $status;
+        }
+
 
         if ($productSaleTypePrice->save() === false) {
             $errors = array();
@@ -122,6 +128,27 @@ class ProductSaleTypePriceController extends Controller {
                 $errors[] = $e;
             }
             return $res->dataError('ProductSaleTypePrice update failed', $errors);
+        }
+
+        if ($status) {
+            $similar = ProductSaleTypePrice::find(array("productID=:productID: AND salesTypeID=:salesTypeID: ",
+                        'bind' => array("productID" => $productSaleTypePrice->productID, "salesTypeID" => $productSaleTypePrice->salesTypeID)));
+            foreach ($similar as $similarPrice) {
+                if ($similarPrice->productSaleTypePriceID != $productSaleTypePrice->productSaleTypePriceID) {
+                    $similarPrice->status = 0;
+
+                    if ($similarPrice->save() === false) {
+                        $errors = array();
+                        $messages = $similarPrice->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        return $res->dataError('ProductSaleTypePrice update failed', $errors);
+                    }
+                }
+            }
         }
 
         return $res->success("ProductSaleTypePrice updated successfully ", $productSaleTypePrice);
@@ -156,6 +183,8 @@ class ProductSaleTypePriceController extends Controller {
     }
 
     public function getTablePrices() { //sort, order, page, limit,filter
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -170,7 +199,7 @@ class ProductSaleTypePriceController extends Controller {
         $countQuery = "SELECT count(productSaleTypePriceID) as totalPrices ";
         $baseQuery = " FROM product_sale_type_price ps join product p on ps.productID=p.productID LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID ";
 
-        $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,ps.deposit ,ps.price  ";
+        $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName,st.salesTypeName,ps.deposit ,ps.price, ps.status, ps.createdAt  ";
         $condition = "";
 
         //$countQuery = $countQuery.$baseQuery;
