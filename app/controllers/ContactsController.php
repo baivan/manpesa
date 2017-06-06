@@ -215,12 +215,12 @@ class ContactsController extends Controller {
         $logger = new FileAdapter($logPathLocation);
         $res = new SystemResponses();
 
-        $limit = 500;
+        $limit = 50;
         $batchSize = 1;
 
         try {
 
-            $contactsRequest = $res->rawSelect("SELECT COUNT(contactsID) AS contactsCount FROM contacts WHERE status=0");
+            $contactsRequest = $res->rawSelect("select COUNT(contactsID) AS contactsCount from contacts where workMobile !=0");
             $contactsCount = $contactsRequest[0]['contactsCount'];
             $logger->log("Contacts Count: " . $contactsCount);
 
@@ -233,9 +233,10 @@ class ContactsController extends Controller {
             for ($count = 0; $count < $batchSize; $count++) {
                 $page = $count + 1;
                 $offset = (int) ($page - 1) * $limit;
-                $contacts = $this->rawSelect("SELECT * FROM contacts WHERE status=0 LIMIT $offset,$limit");
+                $contacts = $this->rawSelect("SELECT contactsID,workMobile FROM contacts WHERE workMobile !=0 LIMIT $offset,$limit");
+                $toDelete = [];
 
-                $logger->log("Batch NO: " . $page);
+                //$logger->log("Batch NO: " . $page);
 
                 foreach ($contacts as $contact) {
                     //$logger->log("Customer Transaction: " . json_encode($transaction));
@@ -247,120 +248,125 @@ class ContactsController extends Controller {
 
                     foreach ($duplicates as $duplicate) {
 
-                        //Get transactions
-                        $transactions = CustomerTransaction::find(array("contactsID=:id: ",
-                                    'bind' => array("id" => $duplicate->contactsID)));
+                        $contactsID = $duplicate->contactsID;
 
-                        foreach ($transactions as $transaction) {
-                            $transaction->contactsID = $first->contactsID;
-                            if ($transaction->save() == FALSE) {
-                                $errors = array();
-                                $messages = $transaction->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
+                        if ($contactsID != $first->contactsID) {
+                            //Get Customers
+                            $customers = Customer::find(array("contactsID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
+
+                            foreach ($customers as $customer) {
+                                $customer->contactsID = $first->contactsID;
+                                if ($customer->save() == FALSE) {
+                                    $errors = array();
+                                    $messages = $customer->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                    $logger->log("Could NOT save Customer contactsID: " . json_encode($errors));
                                 }
-                                $logger->log("Could NOT save transaction contactsID: " . json_encode($errors));
                             }
-                        }
 
-                        //Get Sales
-                        $sales = Sales::find(array("contactsID=:id: ",
-                                    'bind' => array("id" => $duplicate->contactsID)));
+                            //Get Prospects
+                            $prospects = Prospects::find(array("contactsID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
 
-                        foreach ($sales as $sale) {
-                            $sale->contactsID = $first->contactsID;
-                            if ($sale->save() == FALSE) {
-                                $errors = array();
-                                $messages = $sale->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
+                            foreach ($prospects as $prospect) {
+                                $prospect->contactsID = $first->contactsID;
+                                if ($prospect->save() == FALSE) {
+                                    $errors = array();
+                                    $messages = $prospect->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                    $logger->log("Could NOT save Prospect contactsID: " . json_encode($errors));
                                 }
-                                $logger->log("Could NOT save Sale contactsID: " . json_encode($errors));
                             }
-                        }
 
-                        //Get Customers
-                        $customers = Customer::find(array("contactsID=:id: ",
-                                    'bind' => array("id" => $duplicate->contactsID)));
+                            //Get Users
+                            $users = Users::find(array("contactID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
 
-                        foreach ($customers as $customer) {
-                            $customer->contactsID = $first->contactsID;
-                            if ($customer->save() == FALSE) {
-                                $errors = array();
-                                $messages = $customer->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
+                            foreach ($users as $user) {
+                                $user->contactID = $first->contactsID;
+                                if ($user->save() == FALSE) {
+                                    $errors = array();
+                                    $messages = $user->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                    $logger->log("Could NOT save User contactsID: " . json_encode($errors));
                                 }
-                                $logger->log("Could NOT save Customer contactsID: " . json_encode($errors));
                             }
-                        }
 
-                        //Get Prospects
-                        $prospects = Prospects::find(array("contactsID=:id: ",
-                                    'bind' => array("id" => $duplicate->contactsID)));
+                            //Get Sales
+                            $sales = Sales::find(array("contactsID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
 
-                        foreach ($prospects as $prospect) {
-                            $prospect->contactsID = $first->contactsID;
-                            if ($prospect->save() == FALSE) {
-                                $errors = array();
-                                $messages = $prospect->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
+                            foreach ($sales as $sale) {
+                                $sale->contactsID = $first->contactsID;
+                                if ($sale->save() == FALSE) {
+                                    $errors = array();
+                                    $messages = $sale->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                    $logger->log("Could NOT save Sale contactsID: " . json_encode($errors));
                                 }
-                                $logger->log("Could NOT save Prospect contactsID: " . json_encode($errors));
                             }
-                        }
 
-                        //Get Users
-                        $users = Users::find(array("contactID=:id: ",
-                                    'bind' => array("id" => $duplicate->contactsID)));
 
-                        foreach ($users as $user) {
-                            $user->contactID = $first->contactsID;
-                            if ($user->save() == FALSE) {
-                                $errors = array();
-                                $messages = $user->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
+                            //Get transactions
+                            $transactions = CustomerTransaction::find(array("contactsID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
+
+                            foreach ($transactions as $transaction) {
+                                $transaction->contactsID = $first->contactsID;
+                                if ($transaction->save() == FALSE) {
+                                    $errors = array();
+                                    $messages = $transaction->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                    $logger->log("Could NOT save transaction contactsID: " . json_encode($errors));
                                 }
-                                $logger->log("Could NOT save User contactsID: " . json_encode($errors));
                             }
-                        }
 
-                        $duplicate->status = 1;
-                        if (!$duplicate->location) {
-                            $duplicate->location = 'N/A';
+                            $toDelete[] = $contactsID;
                         }
-                        if (!$duplicate->workMobile) {
-                            $duplicate->workMobile = 0;
-                        }
+                    }
 
-                        if (!$duplicate->nationalIdNumber) {
-                            $duplicate->location = 'N/A';
-                        }
-                        if ($duplicate->save() == FALSE) {
+                    $logger->log("MAIN CONTACT: " . json_encode($first));
+                }
+
+                foreach ($toDelete as $itemID) {
+                    $item = Contacts::findFirst(array("contactsID=:id: ",
+                                'bind' => array("id" => $itemID)));
+
+                    if ($item) {
+                        if ($item->delete() == FALSE) {
                             $errors = array();
-                            $messages = $duplicate->getMessages();
+                            $messages = $item->getMessages();
                             foreach ($messages as $message) {
                                 $e["message"] = $message->getMessage();
                                 $e["field"] = $message->getField();
                                 $errors[] = $e;
                             }
-                            $logger->log("Could NOT save Contact Duplicate STATUS: " . json_encode($errors));
+                            $logger->log("Could NOT DELETE DUPLICATE CONTACT: " . json_encode($errors));
+                        } else {
+                            $logger->log("DUPLICATE CONTACT DELETED: " . json_encode($item));
                         }
                     }
-
-                    $logger->log("MAIN CONTACT: " . json_encode($first));
                 }
             }
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
