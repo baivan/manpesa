@@ -1,7 +1,6 @@
 <?php
 
-class ProductSaleTypePrice extends \Phalcon\Mvc\Model
-{
+class ProductSaleTypePrice extends \Phalcon\Mvc\Model {
 
     /**
      *
@@ -46,13 +45,20 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model
      * @Column(type="string", length=10, nullable=false)
      */
     public $deposit;
-    
-        /**
+
+    /**
      *
      * @var integer
      * @Column(type="integer", length=3, nullable=false)
      */
     public $status;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $userID;
 
     /**
      *
@@ -73,8 +79,7 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model
      *
      * @return string
      */
-    public function getSource()
-    {
+    public function getSource() {
         return 'product_sale_type_price';
     }
 
@@ -84,8 +89,7 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return ProductSaleTypePrice[]
      */
-    public static function find($parameters = null)
-    {
+    public static function find($parameters = null) {
         return parent::find($parameters);
     }
 
@@ -95,8 +99,7 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model
      * @param mixed $parameters
      * @return ProductSaleTypePrice
      */
-    public static function findFirst($parameters = null)
-    {
+    public static function findFirst($parameters = null) {
         return parent::findFirst($parameters);
     }
 
