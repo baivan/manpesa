@@ -602,7 +602,7 @@ class TransactionsController extends Controller {
 
         try {
 
-            $limit = 50;
+            $limit = 500;
             $batchSize = 1;
 
             $transactionsData = Transaction::find();
@@ -649,6 +649,18 @@ class TransactionsController extends Controller {
                             $customerTransaction->transactionID = $transactionID;
                             $customerTransaction->contactsID = $contactsID;
                             $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
+                            $customer = Customer::findFirst(array("contactsID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
+                            if ($customer) {
+                                $customerTransaction->customerID = $customer->customerID;
+                            }
+
+                            $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                                        'bind' => array("id" => $contactsID)));
+                            if ($prospect) {
+                                $customerTransaction->prospectsID = $prospect->prospectsID;
+                            }
                         }
 
                         if ($contact) {
@@ -664,6 +676,55 @@ class TransactionsController extends Controller {
                                 }
                                 $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
                                 $res->dataError('customer transaction create failed', $messages);
+                            }
+
+                            $transaction = Transaction::findFirst(array("transactionID=:id: ",
+                                        'bind' => array("id" => $transactionID)));
+
+                            if ($transaction) {
+                                $depositAmount = $transaction->depositAmount;
+                                //Find incomplete sales
+                                $depositAmount = floatval(str_replace(',', '', $depositAmount));
+
+                                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
+                                            'bind' => array("id" => $contactsID, "status" => 0)));
+                                foreach ($incompleteSales as $incompleteSale) {
+                                    $amount = floatval($incompleteSale->amount);
+                                    $paid = floatval($incompleteSale->paid);
+                                    $unpaid = $amount - $paid;
+
+                                    if ($depositAmount >= $unpaid) {
+                                        $pay = $paid + $unpaid;
+                                        $depositAmount = $depositAmount - $unpaid;
+                                        $incompleteSale->paid = $pay;
+                                        $incompleteSale->status = 1;
+                                    } else {
+                                        $pay = $paid + $depositAmount;
+                                        $incompleteSale->paid = $pay;
+                                        $depositAmount = 0;
+                                    }
+
+                                    if ($incompleteSale->save() === false) {
+                                        $errors = array();
+                                        $messages = $incompleteSale->getMessages();
+                                        foreach ($messages as $message) {
+                                            $e["message"] = $message->getMessage();
+                                            $e["field"] = $message->getField();
+                                            $errors[] = $e;
+                                        }
+                                        $logger->log("Error while saving sale data: " . json_encode($errors));
+
+                                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                                        $res->dataError('customer transaction create failed', $messages);
+                                        return $res->success("Payment received", TRUE);
+                                    }
+
+                                    $logger->log("Amount Remaining: " . json_encode($depositAmount));
+
+                                    if ($depositAmount == 0) {
+                                        break;
+                                    }
+                                }
                             }
                         } else {
 
