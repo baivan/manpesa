@@ -777,13 +777,21 @@ class SalesController extends Controller {
         $endDate = $request->getQuery('end');
 
         $countQuery = "SELECT count(psi.partnerSaleItemID) as totalSales ";
-        $defaultQuery = "FROM partner_sale_item psi INNER JOIN item i on psi.itemID=i.itemID "
-                . "LEFT JOIN product p ON i.productID=p.productID INNER JOIN customer cust "
-                . "ON psi.customerID=cust.customerID INNER JOIN contacts c ON cust.contactsID=c.contactsID ";
 
-        $selectQuery = "SELECT psi.partnerSaleItemID, psi.itemID,i.serialNumber, "
-                . "i.productID, p.productName, i.status, psi.customerID, c.workMobile, "
-                . "c.nationalIdNumber, c.fullName, c.location, psi.salesPartner AS partnerName,psi.createdAt ";
+        $defaultQuery = "FROM partner_sale_item psi LEFT JOIN product p on psi.productID=p.productID "
+                . "LEFT JOIN contacts c on psi.contactsID=c.contactsID ";
+
+        $selectQuery = "SELECT psi.partnerSaleItemID,psi.serialNumber,psi.productID,"
+                . "p.productName,psi.salesPartner,psi.customerID,psi.contactsID,"
+                . "c.workMobile,c.nationalIdNumber,c.fullName,c.location,psi.createdAt ";
+
+//        $defaultQuery = "FROM partner_sale_item psi INNER JOIN item i on psi.itemID=i.itemID "
+//                . "LEFT JOIN product p ON i.productID=p.productID INNER JOIN customer cust "
+//                . "ON psi.customerID=cust.customerID INNER JOIN contacts c ON cust.contactsID=c.contactsID ";
+//
+//        $selectQuery = "SELECT psi.partnerSaleItemID, psi.itemID,i.serialNumber, "
+//                . "i.productID, p.productName, i.status, psi.customerID, c.workMobile, "
+//                . "c.nationalIdNumber, c.fullName, c.location, psi.salesPartner AS partnerName,psi.createdAt ";
 
         $whereArray = [
             'filter' => $filter,
