@@ -794,7 +794,7 @@ class TransactionsController extends Controller {
                 $dataToReturn['amount'] = (empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount'];
             }
             else{
-                $dataToReturn['amount'] = (empty($transaction[0]['amount'])) ? NULL : $transaction[0]['saleAmount']-$transaction[0]['amount'];
+                $dataToReturn['amount'] = (empty($transaction[0]['amount'])) ? NULL : $transaction[0]['amount']-$transaction[0]['saleAmount'];
             }
             
             $dataToReturn['saleAmount'] = (empty($transaction[0]['saleAmount'])) ? NULL : $transaction[0]['saleAmount']; //$transaction[0]['saleAmount'];
