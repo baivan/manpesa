@@ -772,7 +772,7 @@ class SalesController extends Controller {
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
-        $customerID = $request->getQuery('customerID');
+        $contactsID = $request->getQuery('contactsID');
         $startDate = $request->getQuery('start');
         $endDate = $request->getQuery('end');
 
@@ -795,7 +795,7 @@ class SalesController extends Controller {
 
         $whereArray = [
             'filter' => $filter,
-            'psi.customerID' => $customerID,
+            'psi.contactsID' => $contactsID,
             'date' => [$startDate, $endDate]
         ];
 
@@ -806,7 +806,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['i.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
+                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -858,9 +858,6 @@ class SalesController extends Controller {
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        if ($sort == 'salesID') {
-            $sort = 's.salesID';
-        }
         $sortClause = "ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
