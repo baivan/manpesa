@@ -105,6 +105,7 @@ $sale_route->get('summary', 'dashBoardSummary');
 $sale_route->get('statistic', 'saleSummary');
 $sale_route->get('crm/monitor', 'monitorSales');
 $sale_route->post('delete', 'delete');
+$sale_route->post('crm/updatepartnersale', 'updatePartnerSale');
 //$sale_route->post('updateOldSales', 'updateOldSales');
 
 $category_route = new MicroCollection();
@@ -205,7 +206,7 @@ $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
 $transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'dummyTransaction');
-$transaction_route->post('reconcilepayment', 'reconcilePayment');//To reconcile unknown payments
+$transaction_route->post('reconcilepayment', 'reconcilePayment'); //To reconcile unknown payments
 $transaction_route->get('reconcile', 'reconcileTransaction');
 $transaction_route->get('link', 'reconcile');
 

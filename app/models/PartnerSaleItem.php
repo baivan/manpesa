@@ -31,21 +31,28 @@ class PartnerSaleItem extends \Phalcon\Mvc\Model {
      * @Column(type="string", length=200, nullable=false)
      */
     public $salesPartner;
-    
+
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=true)
      */
     public $productID;
-    
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $contactsID;
+
     /**
      *
      * @var string
      * @Column(type="string", length=150, nullable=true)
      */
     public $serialNumber;
-    
+
     /**
      *
      * @var integer

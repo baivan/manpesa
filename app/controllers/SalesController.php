@@ -760,19 +760,17 @@ class SalesController extends Controller {
     }
 
     public function getTablePartnerSales() { //sort, order, page, limit,filter,userID
-        $logPathLocation = $this->config->logPath->location . 'error.log';
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
-        $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
-        $token = $request->getQuery('token');
-        $userID = $request->getQuery('userID');
+        $userID = $request->getQuery('userID') ? $request->getQuery('userID') : NULL;
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
-        $contactsID = $request->getQuery('contactsID');
+        $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : 0;
         $startDate = $request->getQuery('start');
         $endDate = $request->getQuery('end');
 
@@ -799,7 +797,7 @@ class SalesController extends Controller {
             'date' => [$startDate, $endDate]
         ];
 
-        $logger->log("Sales Request Data: " . json_encode($whereArray));
+        $logger->log("Partner Sales Request Data: " . json_encode($whereArray));
 
         $whereQuery = "";
 
@@ -1531,6 +1529,49 @@ class SalesController extends Controller {
         }
 
         return $res->success("sale successfully reconcilled ", $sale);
+    }
+
+    public function updatePartnerSale() {//partnerSaleItemID, contactsID,token
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+
+        $partnerSaleItemID = $json->partnerSaleItemID;
+        $contactsID = $json->contactsID;
+        $token = $json->token;
+
+        if (!$token || !$partnerSaleItemID || !$contactsID) {
+            return $res->dataError("data missing ",[]);
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised",[]);
+        }
+
+        $partnerSale = PartnerSaleItem::findFirst(array("partnerSaleItemID=:id: ",
+                    'bind' => array("id" => $partnerSaleItemID)));
+
+        if (!$partnerSale) {
+            return $res->dataError("partner sale does not exist", []);
+        }
+
+        $partnerSale->contactsID = $contactsID;
+
+        if ($partnerSale->save() === false) {
+            $errors = array();
+            $messages = $partnerSale->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('partner sale update failed', $errors);
+        }
+
+        return $res->success("partner sale successfully updated ", $partnerSale);
     }
 
 }
