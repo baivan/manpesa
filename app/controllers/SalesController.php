@@ -726,7 +726,7 @@ class SalesController extends Controller {
         }
 
         //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
-        $whereQuery = $whereQuery ? " WHERE s.status>-2 AND $whereQuery " : " WHERE s.status>-2 ";
+        $whereQuery = $whereQuery ? " WHERE s.status=1 || s.status=2 AND $whereQuery " : " WHERE s.status=1 || s.status=2 ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
@@ -757,6 +757,117 @@ class SalesController extends Controller {
 
 
         return $res->success("Sales ", $data);
+    }
+
+    public function getTablePendingSales() { //sort, order, page, limit,filter,userID
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+        $request = new Request();
+        $res = new SystemResponses();
+        $userID = $request->getQuery('userID');
+        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 'salesID';
+        $order = $request->getQuery('order') ? $request->getQuery('order') : 'ASC';
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+        $status = $request->getQuery('status');
+        $salesID = $request->getQuery('salesID');
+        $contactsID = $request->getQuery('contactsID');
+        $startDate = $request->getQuery('start');
+        $endDate = $request->getQuery('end');
+
+        $countQuery = "SELECT count(DISTINCT s.salesID) as totalSales ";
+
+        $selectQuery = "SELECT s.salesID, s.paymentPlanID,pp.paymentPlanDeposit AS planDepositAmount,"
+                . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
+                . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
+                . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
+                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.paid, s.status, s.createdAt ";
+
+        $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
+                . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
+                . "ON pp.frequencyID=f.frequencyID "
+                . "LEFT JOIN contacts c on s.contactsID=c.contactsID LEFT JOIN product p "
+                . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
+                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
+
+        $whereArray = [
+            's.status' => $status,
+            'filter' => $filter,
+            's.salesID' => $salesID,
+            's.contactsID' => $contactsID,
+            's.userID' => $userID,
+            'date' => [$startDate, $endDate]
+        ];
+
+//        $logger->log("Sales Request Data: " . json_encode($whereArray));
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'unsorted') {
+                $valueString = $value ? "s.status=0 AND" : "";
+                $whereQuery .= $valueString;
+            } else if ($key == 's.status' && $value == 404) {
+                $valueString = $value ? "" . $key . ">0" . " AND " : "";
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(s.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND");
+        }
+
+        //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
+        $whereQuery = $whereQuery ? " WHERE s.status=0 AND $whereQuery " : " WHERE s.status=0 ";
+
+        $countQuery = $countQuery . $defaultQuery . $whereQuery;
+        $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+        $logger->log("Pending Sales Request Query: " . $selectQuery);
+
+        $count = $this->rawSelect($countQuery);
+        $sales = $this->rawSelect($selectQuery);
+
+
+        $displaySales = array();
+
+        foreach ($sales as $sale) {
+            $items = $this->getSaleItems($sale['salesID']);
+            $sale['items'] = $items;
+            array_push($displaySales, $sale);
+        }
+        
+        $data["totalSales"] = $count[0]['totalSales'];
+        $data["sales"] = $displaySales;
+
+
+        return $res->success("pending sales ", $data);
     }
 
     public function getTablePartnerSales() { //sort, order, page, limit,filter,userID
@@ -1542,13 +1653,13 @@ class SalesController extends Controller {
         $token = $json->token;
 
         if (!$token || !$partnerSaleItemID || !$contactsID) {
-            return $res->dataError("data missing ",[]);
+            return $res->dataError("data missing ", []);
         }
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
         if (!$tokenData) {
-            return $res->dataError("Data compromised",[]);
+            return $res->dataError("Data compromised", []);
         }
 
         $partnerSale = PartnerSaleItem::findFirst(array("partnerSaleItemID=:id: ",
