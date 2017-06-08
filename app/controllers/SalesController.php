@@ -862,7 +862,7 @@ class SalesController extends Controller {
             $sale['items'] = $items;
             array_push($displaySales, $sale);
         }
-        
+
         $data["totalSales"] = $count[0]['totalSales'];
         $data["sales"] = $displaySales;
 
@@ -1499,20 +1499,17 @@ class SalesController extends Controller {
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
 
-        $salesID = $json->salesID;
-        $contactsID = $json->contactsID;
+        $salesID = isset($json->salesID) ? $json->salesID : NULL;
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
         $agentID = isset($json->agentID) ? $json->agentID : NULL;
-        $productID = isset($json->productID) ? $json->productID : 0;
-        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : 0;
-        $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : 0;
-        $frequencyID = isset($json->frequencyID) ? $json->frequencyID : 0;
-        $status = $json->status ? $json->status : 0;
-        $userID = $json->userID;
-        $token = $json->token;
+        $productID = isset($json->productID) ? $json->productID : NULL;
+        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
 
         $logger->log("Reconcilliation Request Data: " . json_encode($json));
 
-        if (!$token || !$salesID || !$contactsID || !$agentID || !$productID || !$salesTypeID || !$frequencyID || !$userID) {
+        if (!$token || !$salesID || !$userID) {
             return $res->dataError("missing data", []);
         }
 
@@ -1528,30 +1525,21 @@ class SalesController extends Controller {
 //        $logger->log("Sale Data: " . json_encode($sale));
 
         if (!$sale) {
-            return $res->dataError("this sale does not exist", $salesID);
+            return $res->dataError("sale does not exist", $salesID);
         }
 
         //Incase serial number is provided
-        if ($serialNumber) {
+        if ($serialNumber && $productID) {
 
             $item = Item::findFirst(array("serialNumber=:serialNumber: ",
                         'bind' => array("serialNumber" => $serialNumber)));
 
             if (!$item) {
-                return $res->dataError("serial number does not exist.please assign first", $serialNumber);
-            }
-
-            $itemStatus = 0;
-            if ($status == 1) {
-                $itemStatus = 2;
-            } else if ($status == 0 && $salesTypeID == 2) {
-                $itemStatus = 2;
-            } else {
-                $itemStatus = 1;
+                return $res->dataError("serial number does not exist.please contact logistics", $serialNumber);
             }
 
             $item->productID = $productID;
-            $item->status = $itemStatus;
+            $item->status = 2;
 
             if ($item->save() === false) {
                 $errors = array();
@@ -1571,11 +1559,11 @@ class SalesController extends Controller {
                 $saleItem = new SalesItem();
                 $saleItem->itemID = $item->itemID;
                 $saleItem->saleID = $salesID;
-                $saleItem->status = $itemStatus;
+                $saleItem->status = 2;
                 $saleItem->createdAt = date('Y-m-d H:i:s');
             } else {
                 $saleItem->saleID = $salesID;
-                $saleItem->status = $itemStatus;
+                $saleItem->status = 2;
             }
 
             if ($saleItem->save() === false) {
@@ -1590,42 +1578,17 @@ class SalesController extends Controller {
             }
         }
 
-        $saleType = SalesType::findFirst(array("salesTypeID=:id: ",
-                    'bind' => array("id" => $salesTypeID)));
-
-        if (!$saleType) {
-            return $res->dataError('sale type provided not valid', $errors);
+        if ($contactsID) {
+            $sale->contactsID = $contactsID;
         }
 
-        $saleTypeDeposit = $saleType->salesTypeDeposit;
-
-        $frequency = Frequency::findFirst(array("frequencyID=:id: ",
-                    'bind' => array("id" => $frequencyID)));
-
-        if (!$frequency) {
-            return $res->dataError('frequency provided not valid', $errors);
+        if ($productID) {
+            $sale->productID = $productID;
+        }
+        if ($agentID) {
+            $sale->userID = $agentID;
         }
 
-        $paymentPlanDeposit = 0;
-        if ($salesTypeID == 1) {
-            $paymentPlanDeposit = 0;
-            $frequencyID = 0;
-        } else {
-            $paymentPlanDeposit = $saleTypeDeposit + (35 * $frequency->numberOfDays);
-        }
-
-
-        $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID);
-
-        if (!$paymentPlanID || $paymentPlanID <= 0) {
-            return $res->dataError("Payment Plan not found");
-        }
-
-        $sale->paymentPlanID = $paymentPlanID;
-        $sale->contactsID = $contactsID;
-        $sale->productID = $productID;
-        $sale->userID = $agentID;
-        $sale->status = $status;
         $sale->updatedBy = $userID;
 
         if ($sale->save() === false) {
