@@ -726,7 +726,7 @@ class SalesController extends Controller {
         }
 
         //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
-        $whereQuery = $whereQuery ? " WHERE s.status=1 || s.status=2 AND $whereQuery " : " WHERE s.status=1 || s.status=2 ";
+        $whereQuery = $whereQuery ? " WHERE (s.status=1 || s.status=2) AND $whereQuery " : " WHERE (s.status=1 || s.status=2) ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
