@@ -100,7 +100,7 @@ class TransactionsController extends Controller {
                     $dbTransaction->rollback('transaction create failed' . json_encode($errors));
                 }
 
-                $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
+                $userQuery = "SELECT userID as userId from sales WHERE salesID=".$sale->salesID;
 
 
                 $userID = $this->rawSelect($userQuery);
@@ -114,7 +114,7 @@ class TransactionsController extends Controller {
 
 
 
-                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
+                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID[0]['userID']);
             }
 
             $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
@@ -247,10 +247,11 @@ class TransactionsController extends Controller {
                         $pay = $paid + $unpaid;
                         $depositAmount = $depositAmount - $unpaid;
                         $incompleteSale->paid = $pay;
-                        $incompleteSale->status = 1;
+                        $incompleteSale->status = $this->paid;
                     } else {
                         $pay = $paid + $depositAmount;
                         $incompleteSale->paid = $pay;
+                        $incompleteSale->status = $this->paid;
                         $depositAmount = 0;
                     }
 
