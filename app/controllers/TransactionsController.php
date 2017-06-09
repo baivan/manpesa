@@ -100,7 +100,7 @@ class TransactionsController extends Controller {
                     $dbTransaction->rollback('transaction create failed' . json_encode($errors));
                 }
 
-                $userQuery = "SELECT userID as userId from sales WHERE salesID=$salesID";
+                $userQuery = "SELECT userID as userId from sales WHERE salesID=".$sale->salesID;
 
 
                 $userID = $this->rawSelect($userQuery);
@@ -114,7 +114,7 @@ class TransactionsController extends Controller {
 
 
 
-                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID);
+                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID[0]['userID']);
             }
 
             $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
@@ -247,10 +247,11 @@ class TransactionsController extends Controller {
                         $pay = $paid + $unpaid;
                         $depositAmount = $depositAmount - $unpaid;
                         $incompleteSale->paid = $pay;
-                        $incompleteSale->status = 1;
+                        $incompleteSale->status = $this->paid;
                     } else {
                         $pay = $paid + $depositAmount;
                         $incompleteSale->paid = $pay;
+                        $incompleteSale->status = $this->paid;
                         $depositAmount = 0;
                     }
 
@@ -813,7 +814,9 @@ class TransactionsController extends Controller {
     }
 
     public function checkSalePaid($salesID) {
-        $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
+       /* $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
+       */
+       $transactionQuery =" SELECT s.paid as amount,s.amount as saleAmount,st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from sales s JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID where s.salesID=$salesID";
 
         $transaction = $this->rawSelect($transactionQuery);
 
