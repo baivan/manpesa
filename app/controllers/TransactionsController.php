@@ -363,10 +363,11 @@ class TransactionsController extends Controller {
                                 $pay = $paid + $unpaid;
                                 $depositAmount = $depositAmount - $unpaid;
                                 $incompleteSale->paid = $pay;
-                                $incompleteSale->status = 1;
+                                $incompleteSale->status = 2;
                             } else {
                                 $pay = $paid + $depositAmount;
                                 $incompleteSale->paid = $pay;
+                                $incompleteSale->status = 1;
                                 $depositAmount = 0;
                             }
 
