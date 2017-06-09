@@ -22,7 +22,10 @@ class SalesController extends Controller {
         return $success;
     }
 
-    protected function isDateBetweenDates(DateTime $date, DateTime $startDate, DateTime $endDate) {
+    protected function isDateBetweenDates( $date,  $startDate, $endDate) {
+              $date = new DateTime($date);
+              $startDate = new DateTime($startDate);
+              $endDate = new DateTime($endDate);
              return $date > $startDate && $date < $endDate;
         }
 
@@ -1653,8 +1656,8 @@ class SalesController extends Controller {
         }
          if(!$status && $paymentPlanID > 0){
             $sale->amount = $amount;
-            $sale->dateCreated = $dateCreated;
-            $paymentPlanID = $paymentPlanID;
+            $sale->createdAt = $dateCreated;
+            $sale->paymentPlanID = $paymentPlanID;
          }
 
 
