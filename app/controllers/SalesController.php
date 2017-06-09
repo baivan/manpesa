@@ -1777,7 +1777,7 @@ class SalesController extends Controller {
                 $sale->contactsID = $contactsID;
                 $sale->amount = $amount;
                 $sale->productID = $productID;
-                $sale->createdAt = new DateTime($createdAt)
+                $sale->createdAt = new DateTime($createdAt);
 
                 if ($sale->save() === false) {
                     $errors = array();
