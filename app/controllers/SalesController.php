@@ -1656,7 +1656,7 @@ class SalesController extends Controller {
         }
          if(!$status && $paymentPlanID > 0){
             $sale->amount = $amount;
-            $sale->dateCreated = $dateCreated;
+            $sale->createdAt = $dateCreated;
             $sale->paymentPlanID = $paymentPlanID;
          }
 
