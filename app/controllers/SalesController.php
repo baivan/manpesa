@@ -1724,7 +1724,7 @@ class SalesController extends Controller {
         return $res->success("partner sale successfully updated ", $partnerSale);
     }
 
-    public function crmCreateSale(){ //{amount,createdAt,paymentPlanDeposit,paid,workMobile,fullName,nationalIdNumber,location,productID,salesTypeID}
+    public function crmCreateSale(){ //{amount,createdAt,paymentPlanDeposit,paid,workMobile,fullName,nationalIdNumber,location,productID,salesTypeID,userID,contactsID}
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -1767,6 +1767,8 @@ class SalesController extends Controller {
                         $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction);
                     }
                 }
+            $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, 0, $dbTransaction);
+            $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
                 $sale = new Sales();
                 $sale->status = 0;
