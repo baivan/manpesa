@@ -236,8 +236,8 @@ class TransactionsController extends Controller {
                 //Find incomplete sales
                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
 
-                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
-                            'bind' => array("id" => $contactsID, "status" => 0)));
+                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: AND amount>:amount: ",
+                            'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
                 foreach ($incompleteSales as $incompleteSale) {
                     $amount = floatval($incompleteSale->amount);
                     $paid = floatval($incompleteSale->paid);
@@ -520,8 +520,8 @@ class TransactionsController extends Controller {
                 //Find incomplete sales
                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
 
-                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
-                            'bind' => array("id" => $contactsID, "status" => 0)));
+                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: AND amount>:amount: ",
+                            'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
                 foreach ($incompleteSales as $incompleteSale) {
                     $amount = floatval($incompleteSale->amount);
                     $paid = floatval($incompleteSale->paid);
@@ -535,6 +535,7 @@ class TransactionsController extends Controller {
                     } else {
                         $pay = $paid + $depositAmount;
                         $incompleteSale->paid = $pay;
+                        $incompleteSale->status = 1;
                         $depositAmount = 0;
                     }
 
@@ -688,8 +689,8 @@ class TransactionsController extends Controller {
                                 //Find incomplete sales
                                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
 
-                                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: ",
-                                            'bind' => array("id" => $contactsID, "status" => 0)));
+                                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: AND amount>:amount: ",
+                                            'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
                                 foreach ($incompleteSales as $incompleteSale) {
                                     $amount = floatval($incompleteSale->amount);
                                     $paid = floatval($incompleteSale->paid);
@@ -703,6 +704,7 @@ class TransactionsController extends Controller {
                                     } else {
                                         $pay = $paid + $depositAmount;
                                         $incompleteSale->paid = $pay;
+                                        $incompleteSale->status = 0;
                                         $depositAmount = 0;
                                     }
 
