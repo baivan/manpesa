@@ -22,12 +22,12 @@ class SalesController extends Controller {
         return $success;
     }
 
-    protected function isDateBetweenDates( $date,  $startDate, $endDate) {
-              $date = new DateTime($date);
-              $startDate = new DateTime($startDate);
-              $endDate = new DateTime($endDate);
-             return $date > $startDate && $date < $endDate;
-        }
+    protected function isDateBetweenDates($date, $startDate, $endDate) {
+        $date = new DateTime($date);
+        $startDate = new DateTime($startDate);
+        $endDate = new DateTime($endDate);
+        return $date > $startDate && $date < $endDate;
+    }
 
     public function create() { //{contactsID,amount,userID,salesTypeID,frequencyID,productID}
         $jwtManager = new JwtManager();
@@ -67,7 +67,7 @@ class SalesController extends Controller {
             return $res->dataError("amount missing ", []);
         }
         if (!$frequencyID) {
-            //return $res->dataError("frequencyID missing ");
+//return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
         }
         if (!$productID) {
@@ -120,7 +120,7 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                //return $res->dataError('sale create failed',$errors);
+//return $res->dataError('sale create failed',$errors);
                 $dbTransaction->rollback('sale create failed' . json_encode($errors));
             }
 
@@ -139,7 +139,7 @@ class SalesController extends Controller {
         }
     }
 
-    public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $repaymentPeriodID = 0) {
+    public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction, $repaymentPeriodID = 0) {
         $res = new SystemResponses();
         $paymentPlan = PaymentPlan::findFirst(array("salesTypeID=:s_id: AND frequencyID=:f_id: AND paymentPlanDeposit=:pp_deposit:",
                     'bind' => array("s_id" => $salesTypeID, "f_id" => $frequencyID, 'pp_deposit' => $paymentPlanDeposit)));
@@ -166,9 +166,9 @@ class SalesController extends Controller {
                 }
 
                 return 0;
-                // $res->dataError('paymentPlan create failed',$errors);
-                //$dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
-                //return 0;
+// $res->dataError('paymentPlan create failed',$errors);
+//$dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
+//return 0;
             }
             return $paymentPlan->paymentPlanID;
         }
@@ -179,7 +179,7 @@ class SalesController extends Controller {
         $customer = Customer::findFirst(array("contactsID=:id: ",
                     'bind' => array("id" => $contactsID)));
 
-        //$res->dataError("select user $userID contact $contactsID");
+//$res->dataError("select user $userID contact $contactsID");
         if ($customer) {
             return $customer->customerID;
         } else {
@@ -196,9 +196,9 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                //  $res->dataError('customer create failed',$errors);
+//  $res->dataError('customer create failed',$errors);
                 $dbTransaction->rollback('customer create failed' . json_encode($errors));
-                //return 0;
+//return 0;
             }
 
             return $customer->customerID;
@@ -239,9 +239,9 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                // $res->dataError('contact create failed',$errors);
+// $res->dataError('contact create failed',$errors);
                 $dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
-                // return 0;
+// return 0;
             }
 
             $res->sendMessage($workMobile, "Dear " . $fullName . ", welcome to Envirofit. For any questions or comments call 0800722700 ");
@@ -296,7 +296,7 @@ class SalesController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
-        //$items = $json->items;
+//$items = $json->items;
 
         $salesTypeID = $json->salesTypeID;
         $frequencyID = $json->frequencyID;
@@ -328,7 +328,7 @@ class SalesController extends Controller {
             return $res->dataError("amount missing ");
         }
         if (!$frequencyID) {
-            //return $res->dataError("frequencyID missing ");
+//return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
         }
 
@@ -362,7 +362,7 @@ class SalesController extends Controller {
             return $res->dataError("Prospect not found");
         }
 
-        //then we create customer if customerId not provided
+//then we create customer if customerId not provided
         if (!$customerID || $customerID <= 0) {
             $customerID = $this->createCustomer($userID, $contactsID);
         }
@@ -372,7 +372,7 @@ class SalesController extends Controller {
             return $res->dataError("Customer not found");
         }
 
-        //after creating customer and contacts above we create payment plan
+//after creating customer and contacts above we create payment plan
         $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID);
 
         if (!$paymentPlanID || $paymentPlanID <= 0) {
@@ -380,7 +380,7 @@ class SalesController extends Controller {
         }
 
 
-        //now we can create a sale
+//now we can create a sale
         $sale = new Sales();
         $sale->status = 0;
         $sale->paymentPlanID = $paymentPlanID;
@@ -406,11 +406,11 @@ class SalesController extends Controller {
 
         $saleStatus = $this->mapItemToSale($sale->saleID, $itemID);
 
-        //now we map this sale to item mapItemToSale($saleID,$itemID)
+//now we map this sale to item mapItemToSale($saleID,$itemID)
         if (!$saleStatus || $saleStatus <= 0) {
             return $res->dataError("Item not mapped to sale, please contact system admin $itemID");
         }
-        //set item as sold
+//set item as sold
         if (!$this->updateItemToSold($itemID)) {
             return $res->dataError('Item not marked as sold, please contact system admin', $sale);
         }
@@ -547,7 +547,7 @@ class SalesController extends Controller {
             $customerID = $customer->customerID;
         }
 
-        //  create sale
+//  create sale
         $sale = new Sales();
         $sale->status = 0;
         $sale->paymentPlanID = $paymentPlanID;
@@ -569,7 +569,7 @@ class SalesController extends Controller {
 
 
 
-        //mapp items to this sale
+//mapp items to this sale
         foreach ($items as $itemID) {
             $saleItem = SalesItem::findFirst("itemID=$itemID");
             if ($saleItem) {
@@ -732,7 +732,7 @@ class SalesController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
+//$whereQuery = $whereQuery ? "AND $whereQuery " : "";
         $whereQuery = $whereQuery ? " WHERE (s.status=1 || s.status=2) AND $whereQuery " : " WHERE (s.status=1 || s.status=2) ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
@@ -742,8 +742,8 @@ class SalesController extends Controller {
         $selectQuery .= $queryBuilder;
 
         $logger->log("Sales Request Query: " . $selectQuery);
-        //$return 
-        //return $res->success("Sales ", $selectQuery);
+//$return 
+//return $res->success("Sales ", $selectQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
@@ -753,9 +753,9 @@ class SalesController extends Controller {
 
         foreach ($sales as $sale) {
             $items = $this->getSaleItems($sale['salesID']);
-            //$transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
+//$transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
             $sale['items'] = $items;
-            //$sale['transactions'] = $transactions; //return $res->success("salesID",$items);
+//$sale['transactions'] = $transactions; //return $res->success("salesID",$items);
             array_push($displaySales, $sale);
         }
 //
@@ -847,7 +847,7 @@ class SalesController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        //$whereQuery = $whereQuery ? "AND $whereQuery " : "";
+//$whereQuery = $whereQuery ? "AND $whereQuery " : "";
         $whereQuery = $whereQuery ? " WHERE s.status=0 AND $whereQuery " : " WHERE s.status=0 ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
@@ -1182,8 +1182,8 @@ class SalesController extends Controller {
                     $errors[] = $e;
                 }
                 $logger->log("Ticket save failed for callback" . json_encode($activeCallback));
-                //return $res->dataError('sale create failed',$errors);
-                //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
+//return $res->dataError('sale create failed',$errors);
+//$dbTransaction->rollback('ticket create failed' . json_encode($errors));
             }
 
             $ticketID = $ticket->ticketID;
@@ -1389,7 +1389,7 @@ class SalesController extends Controller {
                     foreach ($transactions as $transaction) {
                         $amount = $transaction['depositAmount'];
                         $paidAmount = $paidAmount + $amount;
-                        //  return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
+//  return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
                     }
 
 
@@ -1412,13 +1412,13 @@ class SalesController extends Controller {
                     }
 
 
-                    // if ($paidAmount > 0) {
-                    //     $sale_object->status = 1;
-                    //     // return $res->success("sale updated ".$paidAmount, $sale_object);
-                    // } 
-                    // else{
-                    //     $sale_object->status = 0;
-                    // }
+// if ($paidAmount > 0) {
+//     $sale_object->status = 1;
+//     // return $res->success("sale updated ".$paidAmount, $sale_object);
+// } 
+// else{
+//     $sale_object->status = 0;
+// }
 
                     /*  $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
                       $productIDs = $this->rawSelect($productIDQuery);
@@ -1448,7 +1448,7 @@ class SalesController extends Controller {
             }
 
 
-            // return $res->success("sale updated ", $sale_object);
+// return $res->success("sale updated ", $sale_object);
 
             $dbTransaction->commit();
             return $res->success("sale updated ", $sales);
@@ -1515,9 +1515,9 @@ class SalesController extends Controller {
         $token = isset($json->token) ? $json->token : NULL;
         $dateCreated = isset($json->dateCreated) ? $json->dateCreated : NULL;
         $amount = isset($json->amount) ? $json->amount : NULL;
-       // $depositAmount = isset($json->depositAmount) ? $json->depositAmount : NULL;
+// $depositAmount = isset($json->depositAmount) ? $json->depositAmount : NULL;
         $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : NULL;
-        $status =  isset($json->status) ? $json->status : 0;
+        $status = isset($json->status) ? $json->status : 0;
 
         $paymentPlanID = 0;
 
@@ -1527,54 +1527,52 @@ class SalesController extends Controller {
             return $res->dataError("missing data", []);
         }
 
-        if(!$status){
-         if (!$dateCreated || !$amount || !$salesTypeID ) {
-            return $res->dataError("missing data", []);
+        if (!$status) {
+            if (!$dateCreated || !$amount || !$salesTypeID) {
+                return $res->dataError("missing data", []);
             }
 
-         $janReview=  $this->isDateBetweenDates($dateCreated,"2017-01-01 00:00:00","2017-02-28 23:59:59");
-         $marchReview = $this->isDateBetweenDates($dateCreated,"2017-03-01 00:00:00","2017-05-09 23:59:59");
+            $janReview = $this->isDateBetweenDates($dateCreated, "2017-01-01 00:00:00", "2017-02-28 23:59:59");
+            $marchReview = $this->isDateBetweenDates($dateCreated, "2017-03-01 00:00:00", "2017-05-09 23:59:59");
 
-        switch ($review) {
+            switch ($review) {
                 case $marchReview:
-                      switch ($salesTypeID) {
-                          case 1:
-                               $paymentPlanID=14;
-                              break;
-                          case 2:
-                              $paymentPlanID=16;
-                              break;
-                          case 3:
-                              $paymentPlanID=15;
-                              break;
-                          
-                          default:
-                              break;
-                      }
+                    switch ($salesTypeID) {
+                        case 1:
+                            $paymentPlanID = 14;
+                            break;
+                        case 2:
+                            $paymentPlanID = 16;
+                            break;
+                        case 3:
+                            $paymentPlanID = 15;
+                            break;
+
+                        default:
+                            break;
+                    }
                     break;
                 case $janReview:
-                   switch ($salesTypeID) {
-                          case 1:
-                               $paymentPlanID=14;
-                              break;
-                          case 2:
-                              $paymentPlanID=13;
-                              break;
-                          case 3:
-                              $paymentPlanID=15;
-                              break;
-                          
-                          default:
-                              break;
-                      }
+                    switch ($salesTypeID) {
+                        case 1:
+                            $paymentPlanID = 14;
+                            break;
+                        case 2:
+                            $paymentPlanID = 13;
+                            break;
+                        case 3:
+                            $paymentPlanID = 15;
+                            break;
+
+                        default:
+                            break;
+                    }
                     break;
-                
+
                 default:
-                    
+
                     break;
             }
-
-            
         }
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -1592,9 +1590,9 @@ class SalesController extends Controller {
             return $res->dataError("sale does not exist", $salesID);
         }
 
-    
 
-        //Incase serial number is provided
+
+//Incase serial number is provided
         if ($serialNumber && $productID) {
 
             $item = Item::findFirst(array("serialNumber=:serialNumber: ",
@@ -1654,11 +1652,11 @@ class SalesController extends Controller {
         if ($agentID) {
             $sale->userID = $agentID;
         }
-         if(!$status && $paymentPlanID > 0){
+        if (!$status && $paymentPlanID > 0) {
             $sale->amount = $amount;
             $sale->createdAt = $dateCreated;
             $sale->paymentPlanID = $paymentPlanID;
-         }
+        }
 
 
         $sale->updatedBy = $userID;
@@ -1718,6 +1716,183 @@ class SalesController extends Controller {
         }
 
         return $res->success("partner sale successfully updated ", $partnerSale);
+    }
+
+    public function crmCreateSale() { //{amount,createdAt,paymentPlanDeposit,paid,workMobile,fullName,nationalIdNumber,location,productID,salesTypeID,userID,contactsID}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+        $paymentPlanDeposit = isset($json->paymentPlanDeposit) ? $json->paymentPlanDeposit : 0;
+        $amount = isset($json->amount) ? $json->amount : 0;
+        $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : 0;
+        $contactsID = isset($json->contactsID) ? $json->contactsID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $createdAt = isset($json->createdAt) ? $json->createdAt : NULL;
+        $productID = isset($json->productID) ? $json->productID : NULL;
+
+        $location = isset($json->location) ? $json->location : NULL;
+        $workMobile = isset($json->workMobile) ? $json->workMobile : NULL;
+        $fullName = isset($json->fullName) ? $json->fullName : NULL;
+        $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
+        $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
+
+        $token = $json->token;
+        $frequencyID = $json->frequencyID;
+
+
+
+        if (!$token || !$paymentPlanDeposit || !$amount || !$salesTypeID || !$userID || !$createdAt || !$productID) {
+            return $res->dataError("Fields missing " . json_encode($json), []);
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        if (!$frequencyID) {
+            $frequencyID = 0;
+        }
+        try {
+
+
+            if (!$contactsID) {
+                if ($workMobile && $fullName && $location && $nationalIdNumber) { //createContact 
+                    $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction);
+                }
+            }
+            $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction);
+            $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
+
+            $sale = new Sales();
+            $sale->status = 0;
+            $sale->paymentPlanID = $paymentPlanID;
+            $sale->userID = $userID;
+            $sale->customerID = 0;
+            $sale->prospectsID = 0;
+            $sale->contactsID = $contactsID;
+            $sale->amount = $amount;
+            $sale->productID = $productID;
+            $sale->createdAt = $createdAt;
+
+            if ($sale->save() === false) {
+                $errors = array();
+                $messages = $sale->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+//return $res->dataError('sale create failed',$errors);
+                $dbTransaction->rollback('sale create failed' . json_encode($errors));
+            }
+
+            $dbTransaction->commit();
+
+            if ($serialNumber) {
+                $this->setCrmSaleItem($serialNumber, $sale->salesID);
+            }
+
+            $this->checkCustomerTransaction($contactsID);
+
+            return $res->success("Sale saved successfully, await payment ", $sale);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('sale create error', $message);
+        }
+    }
+
+    private function checkCustomerTransaction($contactsID) {
+        /* $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM customer_transaction ct JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID";
+         */
+        $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM contacts c JOIN transaction t ON c.workMobile=t.mobile OR c.nationalIdNumber=t.salesID WHERE c.contactsID=$contactsID";
+
+        $customerDepositAmount = $this->rawSelect($customerDepositAmountQuery);
+
+        $totalDeposit = $customerDepositAmount[0]['totalDeposit'];
+
+
+        if (!$totalDeposit || $totalDeposit <= 0) {
+            return false;
+        }
+        $customerSales = Sales::find(array("contactsID=:id: ",
+                    'bind' => array("id" => $contactsID)));
+
+        foreach ($customerSales as $sale) {
+            if ($sale->paid == $depositAmount) {
+                return false;
+            } elseif ($sale->paid == $sale->amount) {
+                $totalDeposit = $totalDeposit - $sale->paid;
+            } elseif ($sale->paid < $sale->amount) {
+                $saleBalance = $sale->amount - $sale->paid;
+                if ($saleBalance < $depositAmount) {
+                    $depositAmount = $depositAmount - $saleBalance;
+                    $sale->paid = $sale->paid + $depositAmount;
+                    $sale->status = 2;
+                } elseif ($saleBalance == $depositAmount) {
+// $amountToUpdate = $saleBalance - $depositAmount;
+                    $sale->paid = $sale->paid + $depositAmount;
+                    $sale->status = 2;
+                } elseif ($saleBalance > $depositAmount) {
+                    $sale->paid = $sale->paid + $depositAmount;
+                }
+
+                if ($sale->save() === false) {
+                    $errors = array();
+                    $messages = $sale->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                        $res->dataError('Sale update failed', $errors);
+                    }
+                }
+                return true;
+            }
+        }
+    }
+
+    private function setCrmSaleItem($serialNumber, $saleID) {
+        $itemQuery = "SELECT itemID FROM item WHERE serialNumber = '" . $serialNumber . "'";
+        $item = $this->rawSelect($itemQuery);
+        if (!$item) {
+            $res->dataError('crm create sale item failed, no such item exists', $errors);
+            return false;
+        }
+
+
+        $itemID = $item[0]['itemID'];
+
+        $saleItem = SalesItem::findFirst(array("saleID=:s_id: OR itemID=:i_id: ",
+                    'bind' => array("s_id" => $saleID, "i_id" => $itemID)));
+
+        if ($saleItem) {
+            $res->dataError('crm create sale item failed item or sale already mapped', $errors);
+            return false;
+        }
+        $saleItem = new SalesItem();
+        $saleItem->itemID = $itemID;
+        $saleItem->saleID = $saleID;
+        $saleItem->status = 0;
+        $saleItem->createdAt = date("Y-m-d H:i:s");
+        if ($saleItem->save() === false) {
+            $errors = array();
+            $messages = $saleItem->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+                $res->dataError('crm sale item mapping failed', $errors);
+            }
+        }
+        $res->success('crm sale item mapping success', true);
+
+        return true;
     }
 
 }
