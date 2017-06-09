@@ -22,7 +22,10 @@ class SalesController extends Controller {
         return $success;
     }
 
-    protected function isDateBetweenDates(DateTime $date, DateTime $startDate, DateTime $endDate) {
+    protected function isDateBetweenDates( $date,  $startDate, $endDate) {
+              $date = new DateTime($date);
+              $startDate = new DateTime($startDate);
+              $endDate = new DateTime($endDate);
              return $date > $startDate && $date < $endDate;
         }
 
