@@ -491,7 +491,6 @@ class UsersController extends Controller {
 
             $data = [
                 "username" => $user->username,
-                "username" => $user->username,
                 "status" => $user->status,
                 "createdAt" => $user->createdAt,
                 "userID" => $user->userID];

@@ -1677,8 +1677,6 @@ class SalesController extends Controller {
         return $res->success("sale successfully reconcilled ", $sale);
     }
 
-
-
     public function updatePartnerSale() {//partnerSaleItemID, contactsID,token
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -1721,7 +1719,5 @@ class SalesController extends Controller {
 
         return $res->success("partner sale successfully updated ", $partnerSale);
     }
-
-
 
 }

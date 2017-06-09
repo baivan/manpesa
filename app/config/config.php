@@ -81,22 +81,22 @@ if ($host == '192.168.1.5') {
     $logPath = array('location' => "../logs/envirofit/");
 } else {
     $connection = array(
-        'adapter' => 'mysql',
-        'host' => 'ke-pr-db-1',
-        'username' => 'fast_sms',
-        'password' => 'fast_sms',
-        'dbname' => 'envirofit',
-        'charset' => 'utf8'
 //        'adapter' => 'mysql',
-//        'host' => 'localhost',
-//        'username' => 'root',
-//        'password' => 'admin',
+//        'host' => 'ke-pr-db-1',
+//        'username' => 'fast_sms',
+//        'password' => 'fast_sms',
 //        'dbname' => 'envirofit',
 //        'charset' => 'utf8'
+        'adapter' => 'mysql',
+        'host' => 'localhost',
+        'username' => 'root',
+        'password' => 'admin',
+        'dbname' => 'envirofit',
+        'charset' => 'utf8'
     );
 
-    $logPath = array('location' => "/var/www/logs/envirofit/");
-//    $logPath = array('location' => "/var/log/envirofit/");
+//    $logPath = array('location' => "/var/www/logs/envirofit/");
+    $logPath = array('location' => "/var/log/envirofit/");
 }
 
 return new \Phalcon\Config([
