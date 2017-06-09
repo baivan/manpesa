@@ -1747,6 +1747,7 @@ class SalesController extends Controller {
         $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
 
          $token = $json->token;
+         $frequencyID = $json->frequencyID;
 
 
 
@@ -1759,6 +1760,10 @@ class SalesController extends Controller {
         if (!$tokenData) {
             return $res->dataError("Data compromised");
         }
+
+        if($frequencyID){
+            $frequencyID=0;
+        }
      try {
 
 
@@ -1767,7 +1772,7 @@ class SalesController extends Controller {
                         $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction);
                     }
                 }
-            $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, 0, $dbTransaction);
+            $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID,$frequencyID, $dbTransaction);
             $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
                 $sale = new Sales();
