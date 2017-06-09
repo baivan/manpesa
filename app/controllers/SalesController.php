@@ -22,6 +22,10 @@ class SalesController extends Controller {
         return $success;
     }
 
+    protected function isDateBetweenDates(DateTime $date, DateTime $startDate, DateTime $endDate) {
+             return $date > $startDate && $date < $endDate;
+        }
+
     public function create() { //{contactsID,amount,userID,salesTypeID,frequencyID,productID}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -1506,11 +1510,68 @@ class SalesController extends Controller {
         $serialNumber = isset($json->serialNumber) ? $json->serialNumber : NULL;
         $userID = isset($json->userID) ? $json->userID : NULL;
         $token = isset($json->token) ? $json->token : NULL;
+        $dateCreated = isset($json->dateCreated) ? $json->dateCreated : NULL;
+        $amount = isset($json->amount) ? $json->amount : NULL;
+       // $depositAmount = isset($json->depositAmount) ? $json->depositAmount : NULL;
+        $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : NULL;
+        $status =  isset($json->status) ? $json->status : 0;
+
+        $paymentPlanID = 0;
 
         $logger->log("Reconcilliation Request Data: " . json_encode($json));
 
         if (!$token || !$salesID || !$userID) {
             return $res->dataError("missing data", []);
+        }
+
+        if(!$status){
+         if (!$dateCreated || !$amount || !$salesTypeID ) {
+            return $res->dataError("missing data", []);
+            }
+
+         $janReview=  $this->isDateBetweenDates($dateCreated,"2017-01-01 00:00:00","2017-02-28 23:59:59");
+         $marchReview = $this->isDateBetweenDates($dateCreated,"2017-03-01 00:00:00","2017-05-09 23:59:59");
+
+        switch ($review) {
+                case $janReview:
+                      switch ($salesTypeID) {
+                          case 1:
+                               $paymentPlanID=14;
+                              break;
+                          case 2:
+                              $paymentPlanID=16;
+                              break;
+                          case 3:
+                              $paymentPlanID=15;
+                              break;
+                          
+                          default:
+                              break;
+                      }
+                    break;
+                case $marchReview:
+                   switch ($salesTypeID) {
+                          case 1:
+                               $paymentPlanID=14;
+                              break;
+                          case 2:
+                              $paymentPlanID=13;
+                              break;
+                          case 3:
+                              $paymentPlanID=15;
+                              break;
+                          
+                          default:
+                              break;
+                      }
+                    break;
+                
+                default:
+                    
+                    break;
+            }
+
+            
         }
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -1527,6 +1588,8 @@ class SalesController extends Controller {
         if (!$sale) {
             return $res->dataError("sale does not exist", $salesID);
         }
+
+    
 
         //Incase serial number is provided
         if ($serialNumber && $productID) {
@@ -1588,6 +1651,12 @@ class SalesController extends Controller {
         if ($agentID) {
             $sale->userID = $agentID;
         }
+         if(!$status && $paymentPlanID > 0){
+            $sale->amount = $amount;
+            $sale->dateCreated = $dateCreated;
+            $paymentPlanID = $paymentPlanID;
+         }
+
 
         $sale->updatedBy = $userID;
 
@@ -1604,6 +1673,8 @@ class SalesController extends Controller {
 
         return $res->success("sale successfully reconcilled ", $sale);
     }
+
+
 
     public function updatePartnerSale() {//partnerSaleItemID, contactsID,token
         $jwtManager = new JwtManager();
@@ -1647,5 +1718,7 @@ class SalesController extends Controller {
 
         return $res->success("partner sale successfully updated ", $partnerSale);
     }
+
+
 
 }
