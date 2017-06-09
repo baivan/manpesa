@@ -1536,7 +1536,7 @@ class SalesController extends Controller {
          $marchReview = $this->isDateBetweenDates($dateCreated,"2017-03-01 00:00:00","2017-05-09 23:59:59");
 
         switch ($review) {
-                case $janReview:
+                case $marchReview:
                       switch ($salesTypeID) {
                           case 1:
                                $paymentPlanID=14;
@@ -1552,7 +1552,7 @@ class SalesController extends Controller {
                               break;
                       }
                     break;
-                case $marchReview:
+                case $janReview:
                    switch ($salesTypeID) {
                           case 1:
                                $paymentPlanID=14;
