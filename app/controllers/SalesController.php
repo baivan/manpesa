@@ -1875,7 +1875,7 @@ class SalesController extends Controller {
                     'bind' => array("s_id" => $saleID, "i_id" => $itemID)));
 
         if ($saleItem) {
-            $res->dataError('crm create sale item failed item or sale already mapped', $errors);
+            $res->dataError('crm create sale item failed item or sale already mapped',false);
             return false;
         }
         $saleItem = new SalesItem();
