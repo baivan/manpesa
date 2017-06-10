@@ -1810,6 +1810,7 @@ class SalesController extends Controller {
     private function checkCustomerTransaction($contactsID) {
         /* $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM customer_transaction ct JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID";
          */
+          $res = new SystemResponses();
         $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM contacts c JOIN transaction t ON c.workMobile=t.mobile OR c.nationalIdNumber=t.salesID WHERE c.contactsID=$contactsID";
 
         $customerDepositAmount = $this->rawSelect($customerDepositAmountQuery);
@@ -1858,6 +1859,8 @@ class SalesController extends Controller {
     }
 
     private function setCrmSaleItem($serialNumber, $saleID) {
+          $res = new SystemResponses();
+
         $itemQuery = "SELECT itemID FROM item WHERE serialNumber = '" . $serialNumber . "'";
         $item = $this->rawSelect($itemQuery);
         if (!$item) {
