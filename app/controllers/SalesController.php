@@ -1746,7 +1746,7 @@ class SalesController extends Controller {
 
 
         if (!$token || !$paymentPlanDeposit || !$amount || !$salesTypeID || !$userID || !$createdAt || !$productID) {
-            return $res->dataError("Fields missing " . json_encode($json), []);
+            return $res->dataError("fields data missing ", []);
         }
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -1760,7 +1760,6 @@ class SalesController extends Controller {
         }
         try {
 
-
             if (!$contactsID) {
                 if ($workMobile && $fullName && $location && $nationalIdNumber) { //createContact 
                     $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction);
@@ -1773,12 +1772,13 @@ class SalesController extends Controller {
             $sale->status = 0;
             $sale->paymentPlanID = $paymentPlanID;
             $sale->userID = $userID;
-            $sale->customerID = 0;
-            $sale->prospectsID = 0;
+            $sale->customerID = $customerID;
+            $sale->prospectsID = NULL;
             $sale->contactsID = $contactsID;
             $sale->amount = $amount;
             $sale->productID = $productID;
             $sale->createdAt = $createdAt;
+            $sale->paid = 0;
 
             if ($sale->save() === false) {
                 $errors = array();
@@ -1824,22 +1824,22 @@ class SalesController extends Controller {
                     'bind' => array("id" => $contactsID)));
 
         foreach ($customerSales as $sale) {
-            if ($sale->paid == $depositAmount) {
+            if ($sale->paid == $totalDeposit) {
                 return false;
             } elseif ($sale->paid == $sale->amount) {
                 $totalDeposit = $totalDeposit - $sale->paid;
             } elseif ($sale->paid < $sale->amount) {
                 $saleBalance = $sale->amount - $sale->paid;
-                if ($saleBalance < $depositAmount) {
-                    $depositAmount = $depositAmount - $saleBalance;
-                    $sale->paid = $sale->paid + $depositAmount;
+                if ($saleBalance < $totalDeposit) {
+                    $totalDeposit = $totalDeposit - $saleBalance;
+                    $sale->paid = $sale->paid + $totalDeposit;
                     $sale->status = 2;
-                } elseif ($saleBalance == $depositAmount) {
+                } elseif ($saleBalance == $totalDeposit) {
 // $amountToUpdate = $saleBalance - $depositAmount;
-                    $sale->paid = $sale->paid + $depositAmount;
+                    $sale->paid = $sale->paid + $totalDeposit;
                     $sale->status = 2;
-                } elseif ($saleBalance > $depositAmount) {
-                    $sale->paid = $sale->paid + $depositAmount;
+                } elseif ($saleBalance > $totalDeposit) {
+                    $sale->paid = $sale->paid + $totalDeposit;
                 }
 
                 if ($sale->save() === false) {
