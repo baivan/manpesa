@@ -8,7 +8,14 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All contacts CRUD operations 
+*/
+
 class ContactsController extends Controller {
+    /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -18,13 +25,20 @@ class ContactsController extends Controller {
         return $success;
     }
 
+    /*
+     search for a specific contact based on contactname or mobile number or location
+     parameters: 
+     filter (search criteria),
+     userID (user requesting this service),
+     token (authentication token)
+    */
+    
     public function searchContacts() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $filter = $request->getQuery('filter');
-        $userID = $request->getQuery('userID');
 
         if (!$token) {
             return $res->dataError("Missing data ");
@@ -35,44 +49,7 @@ class ContactsController extends Controller {
             return $res->dataError("search Data compromised");
         }
 
-        $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber, c.nationalIdNumber,c.location, p.prospectsID,cu.customerID from contacts c LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID ";
-
-        /*  if($filter && $userID){
-          $searchQuery=$searchQuery." WHERE (p.userID=$userID OR cu.userID=$userID OR p.userID=0 OR cu.userID=0 ) AND (c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter') ";
-          }
-          elseif($filter && !$userID){
-          $searchQuery=$searchQuery." WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter'  ";
-          }
-          elseif(!$filter && $userID){
-          $searchQuery=$searchQuery." WHERE p.userID=$userID OR cu.userID=$userID OR p.userID=0 OR cu.userID=0 ";
-          } */
-        if ($filter) {
-            $searchQuery = $searchQuery . " WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter'  ";
-        }
-
-
-        $contacts = $this->rawSelect($searchQuery);
-
-        return $res->success("contacts ", $contacts);
-    }
-
-    public function searchCrmContacts() {
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $token = $request->getQuery('token');
-        $filter = $request->getQuery('filter');
-
-        if (!$token) {
-            return $res->dataError("Missing data ");
-        }
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-
-        if (!$tokenData) {
-            return $res->dataError("search Data compromised");
-        }
-
-        $searchQuery = "SELECT c.contactsID,c.fullName,p.prospectsID,cu.customerID,u.userID FROM contacts c "
+        $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber,c.nationalIdNumber,c.location,p.prospectsID,cu.customerID,u.userID FROM contacts c "
                 . "LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID "
                 . "LEFT JOIN users u ON c.contactsID=u.userID WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter' "
                 . "OR c.location REGEXP '$filter'";
@@ -85,6 +62,16 @@ class ContactsController extends Controller {
         return $res->success("contacts ", $contacts);
     }
 
+   /*
+    retrieve product contacts to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+
     public function getTableContacts() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -95,8 +82,6 @@ class ContactsController extends Controller {
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
-
-
 
         $countQuery = "SELECT count(co.contactsID) as totalCustomerProspects from contacts co LEFT JOIN customer cu on co.contactsID=cu.contactsID LEFT JOIN prospects p on co.contactsID = p.contactsID";
 
@@ -144,6 +129,12 @@ class ContactsController extends Controller {
 
         return $query;
     }
+
+    /*
+    create new contact 
+    paramters:
+    workMobile,nationalIdNumber,fullName,location
+    */
 
     public function createContact() {//($workMobile,$nationalIdNumber,$fullName,$location,
         $jwtManager = new JwtManager();
@@ -209,6 +200,10 @@ class ContactsController extends Controller {
             }
         }
     }
+
+    /*
+     clean contacts data from the old crm to make it meaningful
+    */
 
     public function reconcile() {
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';

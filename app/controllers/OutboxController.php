@@ -8,7 +8,16 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All outbox sms CRUD operations 
+*/
+
+
 class OutboxController extends Controller {
+
+     /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -17,6 +26,12 @@ class OutboxController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+    /*
+    create new sms outbox 
+    paramters:
+    message,contactsID,userID,status
+    */
 
     public function create() { //{message,contactsID,userID,status}
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -87,7 +102,6 @@ class OutboxController extends Controller {
                     $res->sendMessage($recipientObj, $message);
                 }
             }
-            //$res->sendMessage($workMobile[0]['workMobile'], $message);
             $dbTransaction->commit();
 
             return $res->success("outbox successfully created ", $outbox);
@@ -96,10 +110,16 @@ class OutboxController extends Controller {
             return $res->dataError('outbox create error', $message);
         }
     }
-
-    public function getTableOutbox() { //sort, order, page, limit,filter
-//        $logPathLocation = $this->config->logPath->location . 'error.log';
-//        $logger = new FileAdapter($logPathLocation);
+ /*
+    retrieve  outbox sms to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+    public function getTableOutbox() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -190,56 +210,11 @@ class OutboxController extends Controller {
         return $res->success("Messages ", $data);
     }
 
-    public function outbox() { //sort, order, page, limit,filter
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $token = $request->getQuery('token') ? $request->getQuery('token') : '';
-        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : '';
-        $order = $request->getQuery('order') ? $request->getQuery('order') : '';
-        $page = $request->getQuery('page') ? $request->getQuery('page') : '';
-        $limit = $request->getQuery('limit') ? $request->getQuery('limit') : '';
-        $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
-        $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
-        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
-//        //$userID = $request->getQuery('userID');
-//
-//
-        $countQuery = "SELECT count(outboxID) as totalOutBox ";
-//
-        $selectQuery = "SELECT outboxID";
-//
-        $baseQuery = " FROM outbox ";
-//
-        $condition = "";
-//
-//        if ($filter && $customerID) {
-//            $condition = " WHERE o.contactsID=$contactsID AND ";
-//        } elseif ($filter && !$customerID) {
-//            $condition = " WHERE  ";
-//        } elseif (!$filter && !$customerID) {
-//            $condition = "  ";
-//        }
 
-        $countQuery = $countQuery . $baseQuery . $condition;
-        $selectQuery = $selectQuery . $baseQuery . $condition;
+/*
+    util function to build all get queries based on passed parameters
+    */
 
-        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit, $filter);
-
-        if ($queryBuilder) {
-            $selectQuery = $selectQuery . " " . $queryBuilder;
-        }
-        //return $res->success($selectQuery);
-
-        $count = $this->rawSelect($countQuery);
-
-        $messages = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
-        $data["totalOutBox"] = $count[0]['totalOutBox'];
-        $data["Messages"] = $messages;
-
-        return $res->success("Messages ", $data);
-    }
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 

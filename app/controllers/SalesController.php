@@ -10,9 +10,6 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class SalesController extends Controller {
 
-    public function indexAction() {
-        
-    }
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -166,9 +163,6 @@ class SalesController extends Controller {
                 }
 
                 return 0;
-// $res->dataError('paymentPlan create failed',$errors);
-//$dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
-//return 0;
             }
             return $paymentPlan->paymentPlanID;
         }
@@ -179,7 +173,6 @@ class SalesController extends Controller {
         $customer = Customer::findFirst(array("contactsID=:id: ",
                     'bind' => array("id" => $contactsID)));
 
-//$res->dataError("select user $userID contact $contactsID");
         if ($customer) {
             return $customer->customerID;
         } else {
@@ -196,9 +189,7 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-//  $res->dataError('customer create failed',$errors);
                 $dbTransaction->rollback('customer create failed' . json_encode($errors));
-//return 0;
             }
 
             return $customer->customerID;
@@ -239,9 +230,8 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-// $res->dataError('contact create failed',$errors);
                 $dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
-// return 0;
+
             }
 
             $res->sendMessage($workMobile, "Dear " . $fullName . ", welcome to Envirofit. For any questions or comments call 0800722700 ");
@@ -291,12 +281,12 @@ class SalesController extends Controller {
         }
     }
 
-    public function createSale() {//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit,customerID}
+    public function createSale() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
-//$items = $json->items;
+
 
         $salesTypeID = $json->salesTypeID;
         $frequencyID = $json->frequencyID;
@@ -315,7 +305,7 @@ class SalesController extends Controller {
         $contactsID;
         $paymentPlanID;
 
-        if (!$token) {//|| !$salesTypeID || !$userID || !$amount || !$frequencyID){
+        if (!$token) {
             return $res->dataError("Token missing ");
         }
         if (!$salesTypeID) {
@@ -328,7 +318,6 @@ class SalesController extends Controller {
             return $res->dataError("amount missing ");
         }
         if (!$frequencyID) {
-//return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
         }
 

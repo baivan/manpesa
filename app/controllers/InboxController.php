@@ -7,7 +7,16 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All sms inbox CRUD operations 
+*/
+
 class InboxController extends Controller {
+
+
+    /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -17,14 +26,20 @@ class InboxController extends Controller {
         return $success;
     }
 
+ 
+     /*
+    create new sms inbox  and generate waranty ticket
+    usually called by infobip sms system when users send interact with envorfit's short code
+    paramters:
+    sender,text,receiver,when
+    */
     public function create() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
-        //$json = $request->getJsonRawBody();
+
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
-
 
         $MSISDN = $request->getQuery('sender');
         $message = $request->getQuery('text');
@@ -47,7 +62,6 @@ class InboxController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                //return $res->dataError('sale create failed',$errors);
                 $dbTransaction->rollback('inbox create failed' . json_encode($errors));
             }
 
@@ -93,7 +107,6 @@ class InboxController extends Controller {
                             $errors[] = $e;
                         }
                         $res->dataError('ticket create failed', $errors);
-                        //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
                     }
                 }
             }
@@ -107,75 +120,15 @@ class InboxController extends Controller {
         }
     }
 
-//For earlier warranty smses
-    public function reconcile() {
-
-        $res = new SystemResponses();
-
-        try {
-
-            $smses = Inbox::find(array("createdAt<=:createdAt:",
-                        'bind' => array("createdAt" => "2017-05-26 14:43:47")));
-
-            foreach ($smses as $sms) {
-                $MSISDN = $sms->MSISDN;
-                $message = $sms->message;
-
-                //Generate warranty ticket
-
-                if (preg_match('/warant/', strtolower($message)) || preg_match('/warrant/', strtolower($message))) {
-                    $contact = Contacts::findFirst(array("workMobile=:workMobile:",
-                                'bind' => array("workMobile" => $MSISDN)));
-                    $contactsID = NULL;
-                    $otherOwner = NULL;
-                    $ticketData = NULL;
-
-                    if ($contact) {
-                        $contactsID = $contact->contactsID;
-                        $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND status=0",
-                                    'bind' => array("contactsID" => $contactsID)));
-                    } else {
-                        $otherOwner = $MSISDN;
-                        $ticketData = Ticket::findFirst(array("otherOwner=:otherOwner: AND status=0",
-                                    'bind' => array("otherOwner" => $otherOwner)));
-                    }
-
-                    if (!$ticketData) {
-                        $ticket = new Ticket();
-                        $ticket->ticketTitle = "Warranty Activation";
-                        $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
-                        $ticket->contactsID = $contactsID;
-                        $ticket->otherOwner = $otherOwner;
-                        $ticket->assigneeID = NULL;
-                        $ticket->ticketCategoryID = 5; // Warranty SMS ticket
-                        $ticket->otherCategory = NULL;
-                        $ticket->priorityID = 1; //High priority
-                        $ticket->userID = NULL;
-                        $ticket->status = 0;
-                        $ticket->createdAt = date("Y-m-d H:i:s");
-
-                        if ($ticket->save() === false) {
-                            $errors = array();
-                            $messages = $ticket->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
-                            }
-                            $res->dataError('ticket create failed', $errors);
-                            //$dbTransaction->rollback('ticket create failed' . json_encode($errors));
-                        }
-                    }
-                }
-            }
-
-
-            return $res->success("warranty trigger successfully created ", []);
-        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
-            $message = $e->getMessage();
-            return $res->dataError('Inbox create error', $message);
-        }
-    }
+     /*
+    retrieve  inbox sms to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableInbox() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
@@ -210,17 +163,19 @@ class InboxController extends Controller {
         if ($queryBuilder) {
             $selectQuery = $selectQuery . " " . $queryBuilder;
         }
-//return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalInbox"] = $count[0]['totalInbox'];
         $data["Messages"] = $messages;
 
         return $res->success("Messages ", $data);
     }
+
+    /*
+    util function to build all get queries based on passed parameters
+    */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
         $query = "";

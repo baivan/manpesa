@@ -8,8 +8,16 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+Records calls made by customer care 
+*/
+
 class CallController extends Controller {
 
+
+    /*
+    raw query select function to work in any version of phalcon
+    */
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -18,7 +26,18 @@ class CallController extends Controller {
         return $success;
     }
 
-    public function create() { //{comment,contactsID, recipient,userID,status, callTypeID, callback}
+    /*
+    Create a call
+    parameters: token,status,callTypeID,contactsID,recipient
+    userID,comment,callback,
+    previousTool (what the customer was using previously),
+    promoterID,
+    customerComment,productExperience,
+    recommendation,referralScheme,agentBehaviour,deliveryRating,deliveryReason,
+    overalExperience
+    */
+
+    public function create() { 
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -160,6 +179,16 @@ class CallController extends Controller {
         }
     }
 
+    /**
+    *retrives all the calls made 
+    parameters: 
+    sort (tabled field to be used in order criteria)
+    order (either asc or desc)
+    page (current table page)
+    limit (maximum fields to be drawn)
+    filter (search key word)
+    */
+
     public function getTableCalls() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
@@ -264,6 +293,11 @@ class CallController extends Controller {
         return $res->success("calls", $data);
     }
 
+    /*
+     Get call types
+     should pass token
+    */
+
     public function dispositions() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -291,6 +325,11 @@ class CallController extends Controller {
         return $res->getSalesSuccess($dispositions);
     }
 
+    /*
+    retrieve ways cutstomers can know about envirofit
+    should pass tocken
+    */
+
     public function promoters() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -317,6 +356,14 @@ class CallController extends Controller {
 
         return $res->getSalesSuccess($promoters);
     }
+
+    /*
+     Record customer's promoter rating
+     parameters: 
+     token,productExperience,recommendation,referralScheme,
+     agentBehaviour,customerID,deliveryRating,deliveryReason,
+     overalExperience,userID
+    */
 
     public function createScores() {
         $jwtManager = new JwtManager();
@@ -470,6 +517,10 @@ class CallController extends Controller {
         }
     }
 
+   /*
+     get promoter scores 
+
+   */
     public function promoterScores() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -501,6 +552,10 @@ class CallController extends Controller {
 
         return $res->getSalesSuccess($promoterScores);
     }
+
+    /*
+    util function to build all get queries based on passed parameters
+    */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 

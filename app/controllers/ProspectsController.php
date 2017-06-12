@@ -8,7 +8,15 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All prospects CRUD operations 
+*/
+
 class ProspectsController extends Controller {
+
+     /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -18,7 +26,13 @@ class ProspectsController extends Controller {
         return $success;
     }
 
-    public function createProspect() {//
+      /*
+    create new prospect from an existing contact 
+    paramters:
+    userID,contactsID,token
+    */
+
+    public function createProspect() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -58,7 +72,12 @@ class ProspectsController extends Controller {
             return $res->dataError('Contacts create', $message);
         }
     }
-
+ /*
+    create new prospect passing all details
+    paramters:
+    userID,workMobile,nationalIdNumber,fullName,location,token
+    */
+    
     public function createContactProspect() {//{userID,workMobile,nationalIdNumber,fullName,location,token}
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -85,9 +104,7 @@ class ProspectsController extends Controller {
         }
 
         $workMobile = $res->formatMobileNumber($workMobile);
-//        if ($homeMobile) {
-//            $homeMobile = $res->formatMobileNumber($homeMobile);
-//        }
+
 
         $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                     'bind' => array("w_mobile" => $workMobile)));
@@ -157,6 +174,12 @@ class ProspectsController extends Controller {
         }
     }
 
+    /*
+    retrieve all prospects owned/created by a given user
+    parameters:
+    prospectID (optional),userID
+    */
+
     public function getAll() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -174,7 +197,6 @@ class ProspectsController extends Controller {
                 . "p.otherSource FROM prospects p INNER JOIN contacts c ON p.contactsID=c.contactsID "
                 . "LEFT JOIN prospect_source ps ON p.sourceID=ps.sourceID ";
 
-//        $prospectQuery = "SELECT * FROM prospects p JOIN contacts c on p.contactsID=c.contactsID ";
 
         if ($userID && !$prospectID) {
             $prospectQuery = $prospectQuery . " WHERE p.userID=$userID";
@@ -193,6 +215,16 @@ class ProspectsController extends Controller {
             return $res->success("prospects ", $prospects);
         }
     }
+
+     /*
+    retrieve  prospects to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableProspects() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -268,7 +300,6 @@ class ProspectsController extends Controller {
 
         $selectQuery .= $queryBuilder;
         
-//        $logger->log("Prospects Table Query Data: " . json_encode($selectQuery));
 
         $count = $this->rawSelect($countQuery);
 
@@ -294,8 +325,11 @@ class ProspectsController extends Controller {
         $prospectSources = $this->rawSelect($prospectSourceQuery);
 
         return $res->getSalesSuccess($prospectSources);
-//        return $res->success("prospectSources ", $prospectSources);
     }
+
+     /*
+    util function to build all get queries based on passed parameters
+    */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 

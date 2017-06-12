@@ -7,8 +7,16 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+
+/*
+Product category CRUD operations
+*/
+
 class CategoryController extends Controller {
 
+    /*
+    raw query select function to work in any version of phalcon
+    */
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -17,6 +25,12 @@ class CategoryController extends Controller {
         return $success;
     }
 
+    /*
+    create new category
+    parameters :
+    categoryName
+    token
+    */
     public function create() {//categoryName,token
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -58,6 +72,13 @@ class CategoryController extends Controller {
 
         return $res->success('Category created', $category);
     }
+
+    /*
+    update category
+    Parameters : 
+    categoryName
+    categoryID
+    */
 
     public function edit() { //{token, categoryName, categoryID}
         $jwtManager = new JwtManager();
@@ -103,6 +124,10 @@ class CategoryController extends Controller {
         return $res->success('Category edited successfully', $category);
     }
 
+    /*
+    retrieve all product categories
+    pass token
+    */
     public function getAll() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -130,7 +155,16 @@ class CategoryController extends Controller {
         return $res->getSalesSuccess($categories);
     }
 
-    public function getTableCategory() { //sort, order, page, limit,filter
+    /*
+    retrieve product categories to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+    public function getTableCategory() { 
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -153,17 +187,19 @@ class CategoryController extends Controller {
         if ($queryBuilder) {
             $selectQuery = $selectQuery . " " . $queryBuilder;
         }
-        //return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $categories = $this->rawSelect($selectQuery);
-        //users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalCategory"] = $count[0]['totalCategory'];
         $data["categories"] = $categories;
 
         return $res->success("Categories ", $data);
     }
+
+    /*
+    function to create query conditions
+    */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
         $query = "";

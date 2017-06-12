@@ -7,6 +7,11 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All Priority CRUD operations 
+*/
+
+
 class PriorityController extends Controller {
 
     protected function rawSelect($statement) {
@@ -16,6 +21,12 @@ class PriorityController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+     /*
+    create Priority
+    paramters:
+    priorityName,priorityDescription,token
+    */
 
     public function create() { //{priorityName,priorityDescription}
         $jwtManager = new JwtManager();
@@ -65,6 +76,14 @@ class PriorityController extends Controller {
             return $res->dataError('Priority create error', $message);
         }
     }
+
+   
+    /*
+    retrieve all items assigned to requesting user (constumed by mobile app user)
+    parameters:
+    priorityID (optional),token
+    token
+    */
 
     public function getAll() {
 

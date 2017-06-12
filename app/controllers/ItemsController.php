@@ -8,17 +8,26 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All sms items CRUD operations 
+*/
+
+
 class ItemsController extends Controller {
 
-    public function indexAction() {
-        
-    }
+    /*
+    item status
+    */
 
     protected $assigned = 0;
     protected $received = 1;
     protected $sold = 2;
     protected $returned = 3;
     protected $warranted = 5;
+
+    /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -27,6 +36,12 @@ class ItemsController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+      /*
+    create  item and assign it to a sales agent and send push notification to this sales agent
+    paramters:
+    productID,serialNumber,userID,status,token
+    */
 
     public function create() {//{productID,serialNumber,userID,token,status}
         $jwtManager = new JwtManager();
@@ -39,7 +54,7 @@ class ItemsController extends Controller {
         $token = $json->token;
         $serialNumber = $json->serialNumber;
         $productID = $json->productID;
-        $status = $this->assigned; //$json->status;
+        $status = $this->assigned; 
         $userID = $json->userID;
 
         if (!$token || !$serialNumber || !$productID || !$userID) {
@@ -79,7 +94,6 @@ class ItemsController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                // return $res->dataError('item create failed',$errors);
                 $dbTransaction->rollback("Item create failed " . json_encode($errors));
             }
             $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID:",
@@ -102,7 +116,6 @@ class ItemsController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-                // return $res->dataError('item create failed',$errors);
                 $dbTransaction->rollback("Assigning item failed, Item create failed " . json_encode($errors));
             }
 
@@ -126,6 +139,12 @@ class ItemsController extends Controller {
             return $res->dataError('Item create error', $message);
         }
     }
+
+     /*
+    update  item 
+    paramters:
+    productID,serialNumber,itemID,status,token
+    */
 
     public function update() {//{productID,serialNumber,token,itemID,status}
         $jwtManager = new JwtManager();
@@ -186,6 +205,12 @@ class ItemsController extends Controller {
             return $res->dataError('Item update error', $message);
         }
     }
+ /*
+    retrieve all items assigned to requesting user (constumed by mobile app user)
+    parameters:
+    itemID (optional),productID,status,action,userID
+    token
+    */
 
     public function getAllItems() {
         $jwtManager = new JwtManager();
@@ -197,9 +222,6 @@ class ItemsController extends Controller {
         $status = $request->getQuery('status');
         $action = $request->getQuery('action');
         $userID = $request->getQuery('userID');
-
-
-        //   $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt FROM `user_items` ui JOIN item i on ui.itemID=i.itemID WHERE i.status=0";//ui.userID=2 AND
 
         if (!$token) {
             return $res->dataError("Token Missing");
@@ -235,16 +257,19 @@ class ItemsController extends Controller {
         }
         $itemsQuery = $itemsQuery . $condition;
 
-
-
-        //return $res->success($itemsQuery);
-
-
         $items = $this->rawSelect($itemsQuery);
         return $res->success("Items fetch success", $items);
-
-        //return $res->getSalesSuccess($items);
     }
+
+     /*
+    retrieve  items to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableItems() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -328,7 +353,15 @@ class ItemsController extends Controller {
         $data["items"] = $items;
         return $res->success("product items", $data);
     }
-
+ /*
+    retrieve  sold items to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
     public function getTableSoldItems() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -407,7 +440,9 @@ class ItemsController extends Controller {
         $data["items"] = $items;
         return $res->success("product items", $data);
     }
-
+/*
+    util function to build all get queries based on passed parameters
+    */
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = "ORDER BY $sort $order";
@@ -424,6 +459,10 @@ class ItemsController extends Controller {
 
         return "$sortClause $limitQuery";
     }
+
+    /*
+     assing an item to a sales agent
+    */
 
     public function assignItem() {//{itemID,userID,token}
         $jwtManager = new JwtManager();
@@ -507,6 +546,14 @@ class ItemsController extends Controller {
         }
     }
 
+    /*
+    sales agent on the mobile app 
+    receive item assigned to them
+    parameters:
+    userID,itemID
+    token
+    */
+
     public function receiveItem() {//{userID,itemID,token}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -548,6 +595,13 @@ class ItemsController extends Controller {
             return $res->dataError('Item create error', $message);
         }
     }
+    /*
+    sales agent on the mobile app 
+    reject item assigned to them
+    parameters:
+    userID,itemID
+    token
+    */
 
     public function returnItem() {//{userID,itemID,token}
         $jwtManager = new JwtManager();
@@ -591,6 +645,13 @@ class ItemsController extends Controller {
             return $res->dataError('Item create error', $message);
         }
     }
+
+      /*
+   remove item from crm
+    parameters:
+    itemID,
+    token
+    */
 
     public function deleteItem() {//{itemID,token}
         $jwtManager = new JwtManager();
@@ -653,6 +714,15 @@ class ItemsController extends Controller {
         return true;
     }
 
+    /*
+    sales agent 
+    give an item to a customer 
+    checks for payment based on sales_type
+    issues this item to the customer
+    parameters:
+    salesID,ItemID,userID
+    */
+
     public function issueItem() {//{salesID,ItemID,userID}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -667,9 +737,7 @@ class ItemsController extends Controller {
         $itemID = $json->itemID;
         $userID = $json->userID;
         $token = $json->token;
-        //    $contactsID = $json->contactsID;
-
-
+       
 
         if (!$token || !$salesID || !$itemID || !$userID) {
             return $res->dataError("Missing data ");
@@ -755,6 +823,11 @@ class ItemsController extends Controller {
         }
     }
 
+   /*
+    activate an item warranty
+    parameters: 
+    serialNumber,userID,token
+   */
     public function activateWarranty() {//{serialNumber,userID,token}
         $jwtManager = new JwtManager();
         $request = new Request();
