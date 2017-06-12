@@ -6,8 +6,14 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT; 
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+
+/*
+All SmsTemplates  CRUD operations 
+*/
+
 class SmsTemplatesController extends Controller
-{
+{ 
+     
 	protected $customerSaleCreate = "customerSaleCreate";
 	protected $customerInitialPayment = "customerInitialPayment";
 	protected $agentOnCustomerPayment = "agentOnCustomerPayment";

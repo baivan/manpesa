@@ -7,10 +7,18 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All frequency CRUD operations 
+*/
+
+
 class FrequencyController extends Controller {
 
-    protected $dailyAmount = 35;
+    protected $dailyAmount = 35; //basic amount to be paid daily on any frequency
 
+    /*
+    Raw query select function to work in any version of phalcon
+    */
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -18,6 +26,12 @@ class FrequencyController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+     /*
+    create new frequency 
+    paramters:
+    numberOfDays,frequencyName,token
+    */
 
     public function create() {//{numberOfDays,frequencyName,token}
         $jwtManager = new JwtManager();
@@ -65,6 +79,14 @@ class FrequencyController extends Controller {
         return $res->success('Frequency created', $frequency);
     }
 
+
+    /*
+    update frequency 
+    paramters:
+    numberOfDays,frequencyName,frequencyID,
+    token 
+    */
+
     public function update() {//{numberOfDays,frequencyName,token,frequencyID}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -93,7 +115,6 @@ class FrequencyController extends Controller {
             return $res->dataError("frequency with similar name exists");
         }
 
-        //$frequency = new Frequency();
         if ($numberOfDays) {
             $frequency->numberOfDays = $numberOfDays;
         }
@@ -119,6 +140,13 @@ class FrequencyController extends Controller {
 
         return $res->success('Frequency updated', $frequency);
     }
+
+     /*
+    retrieve all activated frequencies 
+    parameters:
+    frequencyID (optional),
+    token
+    */
 
     public function getAll() {
         $jwtManager = new JwtManager();
@@ -148,11 +176,16 @@ class FrequencyController extends Controller {
         $data['frequencies'] = $frequencies;
         $data['dailyAmount'] = $dailyAmount;
 
-
-        //return $res->getSalesSuccess($frequencies);
         return $res->success("Prices ", $data);
     }
-    
+
+
+     /*
+    retrieve all  frequencies 
+    parameters:
+    frequencyID (optional),
+    token
+    */
     public function getCrmFrequency() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -176,16 +209,17 @@ class FrequencyController extends Controller {
         }
 
         $frequencies = $this->rawSelect($frequencyQuery);
-
-//        $data = array();
-//        $data['frequencies'] = $frequencies;
-//        $data['dailyAmount'] = $dailyAmount;
-
-
-        //return $res->getSalesSuccess($frequencies);
         return $res->success("frequencies ", $frequencies);
     }
-
+ /*
+    retrieve  frequencies to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
     public function getTableFrequency() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -209,17 +243,19 @@ class FrequencyController extends Controller {
         if ($queryBuilder) {
             $selectQuery = $selectQuery . " " . $queryBuilder;
         }
-        //return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $salesTypes = $this->rawSelect($selectQuery);
-        //users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalFrequency"] = $count[0]['totalFrequency'];
         $data["salesTypes"] = $salesTypes;
 
         return $res->success("frequencies", $data);
     }
+
+     /*
+    util function to build all get queries based on passed parameters
+    */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
         $query = "";

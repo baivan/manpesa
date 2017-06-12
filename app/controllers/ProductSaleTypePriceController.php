@@ -8,7 +8,15 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All  ProductSaleTypePrice CRUD operations 
+*/
+
 class ProductSaleTypePriceController extends Controller {
+
+    /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -17,6 +25,12 @@ class ProductSaleTypePriceController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+     /*
+    create ProductSaleTypePrice
+    paramters:
+    productID,salesTypeID,categoryID,price,deposit,token
+    */
 
     public function create() { //{productID,salesTypeID,categoryID,price,deposit}
         $jwtManager = new JwtManager();
@@ -69,6 +83,14 @@ class ProductSaleTypePriceController extends Controller {
 
         return $res->success("product price created successfully ", $productSaleTypePrice);
     }
+  
+
+    /*
+    update ProductSaleTypePrice
+    paramters:
+    productID,salesTypeID,categoryID,price,productSaleTypePriceID,deposit,token
+    */
+
 
     public function update() {//{productID,salesTypeID,categoryID,price,productSaleTypePriceID,$deposit}
         $jwtManager = new JwtManager();
@@ -159,6 +181,12 @@ class ProductSaleTypePriceController extends Controller {
         return $res->success("ProductSaleTypePrice updated successfully ", $productSaleTypePrice);
     }
 
+
+    /*
+    retrieve all ProductSaleTypePrice
+    parameters:
+    token
+    */
     public function getAll() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -187,6 +215,15 @@ class ProductSaleTypePriceController extends Controller {
         return $res->success("Prices ", $prices);
     }
 
+     /*
+    retrieve  ProductSaleTypePrices to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
     public function getTablePrices() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -209,9 +246,6 @@ class ProductSaleTypePriceController extends Controller {
         $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName, "
                 . "st.salesTypeName,ps.deposit ,ps.price, ct.fullName, ps.status, ps.createdAt  ";
         $condition = "";
-
-        //$countQuery = $countQuery.$baseQuery;
-        //$selectQuery = $selectQuery.$baseQuery;
 
 
         if ($productID && $filter) {
@@ -237,17 +271,19 @@ class ProductSaleTypePriceController extends Controller {
             $selectQuery = $selectQuery . $baseQuery . $condition;
             $countQuery = $countQuery . $baseQuery . $condition;
         }
-        //return $res->success($selectQuery);
-
+        
         $count = $this->rawSelect($countQuery);
 
         $prices = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalPrices"] = $count[0]['totalPrices'];
         $data["prices"] = $prices;
 
         return $res->getSalesSuccess($data);
     }
+
+    /*
+    util function to build all get queries based on passed parameters
+    */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
         $query = "";

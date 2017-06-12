@@ -8,7 +8,15 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All customer CRUD operations 
+*/
+
+
 class CustomerController extends Controller {
+    /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -17,6 +25,12 @@ class CustomerController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+    /*
+    create new customer 
+    paramters:
+    workMobile,nationalIdNumber,fullName,location
+    */
 
     public function create() {//($workMobile,$nationalIdNumber,$fullName,$location,
         $jwtManager = new JwtManager();
@@ -140,7 +154,11 @@ class CustomerController extends Controller {
         }
     }
 
-    public function update() { //token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,customerID,prospectsID
+
+
+
+    */
+    public function update() { //token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,customerID
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -286,7 +304,13 @@ class CustomerController extends Controller {
 
         return $res->success('contact edited successfully', $customer);
     }
-
+  
+  /*
+    remove a customer 
+    parameters:
+    customerID,token,
+    userID
+  */
     public function delete() {//customerID,prospectsID,token,userID
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -376,6 +400,11 @@ class CustomerController extends Controller {
         }
     }
 
+    /*
+    retrieve all customers owned/created by a given user
+    parameters:
+    customerID (optional),userID
+    */
     public function getAll() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -385,7 +414,7 @@ class CustomerController extends Controller {
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
         $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
 
-        if (!$token) {
+        if (!$token || !$userID) {
             return $res->dataError("Missing data ", []);
         }
 
@@ -441,7 +470,17 @@ class CustomerController extends Controller {
 
         return $res->success("customers", $customers);
     }
+  
 
+    /*
+    retrieve  customers to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
     public function getTableCustomers() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -519,7 +558,9 @@ class CustomerController extends Controller {
 
         return $res->success("customers", $data);
     }
-
+ /*
+    util function to build all get queries based on passed parameters
+    */
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = "ORDER BY $sort $order";

@@ -7,7 +7,14 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All  Products CRUD operations 
+*/
+
 class ProductsController extends Controller {
+     /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -16,6 +23,13 @@ class ProductsController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+   
+   /*
+    create Product
+    paramters:
+    productName,productImage,categoryID,description
+    */
+
 
     public function create() { //{productName,productImage,categoryID,description,token}
         $jwtManager = new JwtManager();
@@ -64,6 +78,13 @@ class ProductsController extends Controller {
 
         return $res->success("Product saved successfully", $product);
     }
+/*
+    update Product
+    paramters:
+    productID (required)
+    productName,productImage,categoryID,description
+    */
+
 
     public function edit() {//productName,productImage,categoryID,productID,description,token
         $jwtManager = new JwtManager();
@@ -122,8 +143,14 @@ class ProductsController extends Controller {
         return $res->success("Product edited successfully", $product);
     }
 
-    public function delete() {//productID,token
-    }
+    
+
+    /*
+    retrieve all products
+    parameters:
+    productID (optional)
+    token
+    */
 
     public function getAll() { //productID,token
         $jwtManager = new JwtManager();
@@ -151,6 +178,16 @@ class ProductsController extends Controller {
 
         return $res->success("Products ", $products);
     }
+
+    /*
+    retrieve  products to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableProducts() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
@@ -186,6 +223,9 @@ class ProductsController extends Controller {
         return $res->getSalesSuccess($data);
     }
 
+     /*
+    util function to build all get queries based on passed parameters
+    */
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
         $query = "";
 

@@ -6,9 +6,16 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT; 
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All SalesType CRUD operations 
+*/
+
 class SalesTypeController extends Controller
 {
-
+   
+    /*
+    Raw query select function to work in any version of phalcon
+    */
 	protected function rawSelect($statement)
        { 
           $connection = $this->di->getShared("db"); 
@@ -17,8 +24,13 @@ class SalesTypeController extends Controller
           $success = $success->fetchAll($success); 
           return $success;
        }
+      /*
+    create SalesType
+    paramters:
+    salesTypeName,salesTypeDeposit
+    */
 
-     public function create(){ //{salesTypeName,salesTypeDeposit}
+     public function create(){ 
      	$jwtManager = new JwtManager();
     	$request = new Request();
     	$res = new SystemResponses();
@@ -62,6 +74,13 @@ class SalesTypeController extends Controller
 	     return $res->success("Sales Type created successfully ",$salesType);
 
      }
+
+      /*
+    create SalesType
+    paramters:
+    salesTypeName,salesTypeDeposit,
+    salesTypeID (required)
+    */
      public function update(){//{salesTypeName,salesTypeDeposit,salesTypeID}
 
      	$jwtManager = new JwtManager();
@@ -115,7 +134,15 @@ class SalesTypeController extends Controller
 	     return $res->success("Sales Type updated successfully ",$salesType);
 
  	}
-    // public function delete(){}
+     
+
+     /*
+     retrieve all salesType
+     parameters:
+     token
+     salesTypeID (parameters)
+
+     */
      public function getAll(){
      	$jwtManager = new JwtManager();
     	$request = new Request();
@@ -144,7 +171,15 @@ class SalesTypeController extends Controller
 		return $res->success("Sales types",$salesType);
      }
      
-
+ /*
+    retrieve  salesType to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
      public function getTableSaleTypes(){ //sort, order, page, limit,filter
 			$jwtManager = new JwtManager();
 	    	$request = new Request();
@@ -168,12 +203,10 @@ class SalesTypeController extends Controller
 	        if($queryBuilder){
 	        	$selectQuery=$selectQuery." ".$queryBuilder;
 	        }
-	        //return $res->success($selectQuery);
 
 	        $count = $this->rawSelect($countQuery);
 
 			$salesTypes= $this->rawSelect($selectQuery);
-	//users["totalUsers"] = $count[0]['totalUsers'];
 			$data["totalSalesTypes"] = $count[0]['totalSalesTypes'];
 			$data["salesTypes"] = $salesTypes;
 
@@ -181,6 +214,10 @@ class SalesTypeController extends Controller
 
 
 	}
+
+	 /*
+    util function to build all get queries based on passed parameters
+    */
 
 	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
 		$query = "";

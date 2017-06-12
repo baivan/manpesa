@@ -7,7 +7,15 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All role CRUD operations 
+*/
+
 class RoleController extends Controller {
+
+     /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -16,6 +24,12 @@ class RoleController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+
+     /*
+    create new role
+    paramters:
+    roleName,roleDescription
+    */
 
     public function create() { //{roleName,roleDescription}
         $jwtManager = new JwtManager();
@@ -71,6 +85,16 @@ class RoleController extends Controller {
         }
     }
 
+    /*
+    update  role role
+    paramters:
+    roleID(required),
+    roleName (optional),
+    roleDescription (optional)
+
+    */
+
+
     public function update() {//{roleID,roleName,roleDescription}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -123,6 +147,14 @@ class RoleController extends Controller {
             return $res->dataError('user create error', $message);
         }
     }
+
+     /*
+    retrieve all roles
+    parameters:
+    roleID (optional),
+    token
+    */
+
 
     public function getAll() {
 
