@@ -156,7 +156,11 @@ class CustomerController extends Controller {
 
 
 
-
+     /*
+    create new customer 
+    paramters:
+    token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,
+    customerID (required)
     */
     public function update() { //token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,customerID
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';

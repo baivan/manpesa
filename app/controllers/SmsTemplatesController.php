@@ -13,7 +13,9 @@ All SmsTemplates  CRUD operations
 
 class SmsTemplatesController extends Controller
 { 
-     
+     /*
+     templates 
+     */
 	protected $customerSaleCreate = "customerSaleCreate";
 	protected $customerInitialPayment = "customerInitialPayment";
 	protected $agentOnCustomerPayment = "agentOnCustomerPayment";
@@ -26,6 +28,10 @@ class SmsTemplatesController extends Controller
 	protected $warrantyActivation = "warrantyActivation";
 	protected $airtimeFollowup = "airtimeFollowup";
 
+     /*
+    Raw query select function to work in any version of phalcon
+    */
+
     protected function rawSelect($statement)
        { 
           $connection = $this->di->getShared("db"); 
@@ -34,16 +40,21 @@ class SmsTemplatesController extends Controller
           $success = $success->fetchAll($success); 
           return $success;
        }
+  //retreive template from db given type
     private function smsTempate($templateType){
      	$smsTemplate = SmsTemplates::findFirst(array("templateType=:templateType:",
 	    					'bind'=>array("templateType"=>$customerSaleCreate)));
      	return $smsTemplate->temptate;
      }
 
+     //compose template message replacing parameters to customise the sms
      private function composeSMS($template,$templateData,$userData){
      	return str_replace($templateData, $userData, $template);
      }
 
+     /*
+     save message to outbox table
+     */
      private function logMessage($recipient,$message,$contactsID=0,$userID=0){
      		$outbox = new Outbox();
      		$outbox->message = $message;
@@ -68,7 +79,7 @@ class SmsTemplatesController extends Controller
 	          }
      }
      
-
+     /**/
      public function customerSaleCreateSMS($msisdn,$name,$product,$account,$amount,$contactsID=0,$userID=0){
      	    $res = new SystemResponses();
      		$template = $this->smsTempate($this->customerSaleCreate);
