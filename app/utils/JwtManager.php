@@ -7,7 +7,7 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 use \Firebase\JWT\JWT;
 
 /**
- * 
+ * generates/issues and validates tokens
  */
 class JwtManager {
 

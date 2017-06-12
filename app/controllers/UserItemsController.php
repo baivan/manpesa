@@ -6,18 +6,35 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All UserItems CRUD operations 
+*/
+
 
 class UserItemsController extends Controller
 {
-	protected function rawSelect($statement)
-		       { 
-		          $connection = $this->di->getShared("db"); 
-		          $success = $connection->query($statement);
-		          $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
-		          $success = $success->fetchAll($success); 
-		          return $success;
-		       }
+    /*
+    Raw query select function to work in any version of phalcon
+    */
+   protected function rawSelect($statement)
+       { 
+          $connection = $this->di->getShared("db"); 
+          $success = $connection->query($statement);
+          $success->setFetchMode(Phalcon\Db::FETCH_ASSOC); 
+          $success = $success->fetchAll($success); 
+          return $success;
+       }
 
+
+     /*
+    retrieve  UserItems to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableUserItems(){ //sort, order, page, limit,filter
 		$jwtManager = new JwtManager();
@@ -40,8 +57,6 @@ class UserItemsController extends Controller
         $condition=" ";
  
         if($productID && $userID && !$filter){
-        	//$countQuery=$countQuery.$basicQuery." WHERE i.productID = $productID AND ui.userID=$userID ";
-        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.productID=$productID AND ui.userID=$userID ";
         	$condition = " WHERE i.productID = $productID AND ui.userID=$userID ";
 
         }
@@ -49,29 +64,19 @@ class UserItemsController extends Controller
         	$condition = " WHERE i.productID = $productID AND ui.userID=$userID AND ";
         }
         elseif ($productID && !$userID && !$filter) {
-        	//$countQuery=$countQuery.$basicQuery." WHERE i.productID = $productID  ";
-        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.productID=$productID ";
         	$condition = " WHERE i.productID=$productID ";
         }
         elseif ($productID && !$userID && $filter) {
-        	//$countQuery=$countQuery.$basicQuery." WHERE i.productID = $productID  ";
-        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.productID=$productID ";
         	$condition = " WHERE i.productID=$productID AND ";
         }
         elseif (!$productID && $userID && !$filter) {
-        	//$countQuery=$countQuery.$basicQuery." WHERE i.userID = $userID  ";
-        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.userID=$userID ";
         	$condition = " WHERE ui.userID=$userID ";
         }
         elseif (!$productID && $userID && $filter) {
-        	//$countQuery=$countQuery.$basicQuery." WHERE i.userID = $userID  ";
-        	//$selectQuery=$selectQuery.$basicQuery." WHERE i.userID=$userID ";
         	$condition = " WHERE ui.userID=$userID AND ";
         }
         elseif(!$productID && !$userID && $filter){
         	 
-        	//$countQuery=$countQuery.$basicQuery." WHERE ";
-        	//$selectQuery=$selectQuery.$basicQuery." WHERE  ";
         	$condition = " WHERE ";
         }
         else{
@@ -86,19 +91,20 @@ class UserItemsController extends Controller
         if($queryBuilder){
         	$selectQuery=$selectQuery." ".$queryBuilder;
         }
-     // return $res->success($selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
 		$userItems= $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
 		$data["totalUserItems"] = $count[0]['totalUserItems'];
 		$data["userItems"] = $userItems;
  
 		return $res->success("User items ",$data);
-
-
 	}
+
+
+     /*
+    util function to build all get queries based on passed parameters
+    */
 
 	public function tableQueryBuilder($sort="",$order="",$page=0,$limit=10,$filter=""){
 		$query = "";

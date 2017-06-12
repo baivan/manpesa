@@ -79,7 +79,9 @@ class SmsTemplatesController extends Controller
 	          }
      }
      
-     /**/
+     /*
+     send welcome sms when new sale from customer
+     */
      public function customerSaleCreateSMS($msisdn,$name,$product,$account,$amount,$contactsID=0,$userID=0){
      	    $res = new SystemResponses();
      		$template = $this->smsTempate($this->customerSaleCreate);
@@ -92,6 +94,9 @@ class SmsTemplatesController extends Controller
 
      }
 
+     /*
+     send payment acknowledgement when new payment has been made
+     */
      public function customerInitialPaymentSMS($msisdn,$amount,$account,$contactsID=0,$userID=0){
      	   $res = new SystemResponses();
      		$template = $this->smsTempate($this->customerInitialPayment);
@@ -100,7 +105,11 @@ class SmsTemplatesController extends Controller
      		$smsToSend = $this->composeSMS($template,$templateData,$userData);
      		$this->logMessage($msisdn,$smsToSend,$contactsID,$userID);
      		$res->sendMessage($msisdn,$smsToSend);
-     }
+     }    
+
+     /*
+     notify agent when their customer has paid
+     */
 
      public function agentOnCustomerPaymentSMS($msisdn,$amount,$date,$contactsID=0,$userID=0){
 	     	$res = new SystemResponses();
@@ -113,6 +122,10 @@ class SmsTemplatesController extends Controller
 
      }
 
+     /*
+     send to customer on subsequent installment paymetn received 
+     */
+
      public function customerSubsequentInstallmentSMS($msisdn,$name,$amount,$balance,$contactsID=0,$userID=0){
      		$res = new SystemResponses();
      		$template = $this->smsTempate($this->customerSubsequentInstallment);
@@ -123,6 +136,9 @@ class SmsTemplatesController extends Controller
      		$res->sendMessage($msisdn,$smsToSend);
      }
 
+     /*
+     send to customer on last installment paymetn received
+     */
      public function customerLastInstallmentSMS($msisdn,$name,$amount,$account,$serial,$contactsID=0,$userID=0){
      	    $res = new SystemResponses();
      		$template = $this->smsTempate($this->customerLastInstallment);
@@ -134,6 +150,9 @@ class SmsTemplatesController extends Controller
 
      }
 
+     /*
+     remind customers who have not completed payment to make their subsequent installment
+     */
      public function customerPaymentReminderSMS($msisdn,$name,$product,$date,$contactsID=0,$userID=0){
      	    $res = new SystemResponses();
      		$template = $this->smsTempate($this->customerPaymentReminder);
@@ -143,7 +162,11 @@ class SmsTemplatesController extends Controller
      		$this->logMessage($msisdn,$smsToSend,$contactsID,$userID);
      		$res->sendMessage($msisdn,$smsToSend);
 
-     }
+     }    
+
+     /*
+     notify customers who have exceeded payment grace period
+     */
 
      public function delinquentCustomerSMS($msisdn,$name,$account,$amount,$pending,$contactsID=0,$userID=0){
      	   $res = new SystemResponses();
@@ -154,6 +177,10 @@ class SmsTemplatesController extends Controller
      	    $this->logMessage($msisdn,$smsToSend,$contactsID,$userID);
      		$res->sendMessage($msisdn,$smsToSend);
      }
+
+     /*
+     notify customers who have defaulted that they have been forwarded to debt collector
+     */
 
      public function defaultedCustomerSMS($msisdn,$name,$account,$balance,$contactsID=0,$userID=0){
 	     	  $res = new SystemResponses();
@@ -166,6 +193,9 @@ class SmsTemplatesController extends Controller
 
      }
 
+    /*
+    send warranty activation sms 
+    */
      public function warrantyActivationSMS($msisdn,$name,$contactsID=0,$userID=0){
      		  $res = new SystemResponses();
 	     	  $template = $this->smsTempate($this->warrantyActivation);

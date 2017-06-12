@@ -8,7 +8,17 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+
+/*
+All Ticket CRUD operations 
+*/
+
+
 class TicketController extends Controller {
+
+     /*
+    Raw query select function to work in any version of phalcon
+    */
 
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
@@ -17,9 +27,13 @@ class TicketController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
-
-    public function create() { //{ticketTitle,ticketDescription,contactsID, otherOwner,assigneeID,
-        //ticketCategoryID,otherTicketCategory,priorityID,status}
+/*
+    create Ticket 
+    paramters:
+    ticketTitle,ticketDescription,contactsID, otherOwner,assigneeID,
+        ticketCategoryID,otherTicketCategory,priorityID,status
+    */
+    public function create() { 
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -113,6 +127,12 @@ class TicketController extends Controller {
         }
     }
 
+/*
+    update Ticket 
+    paramters:
+    ticketID (required),
+    ticketUpdate,callback,userID,token
+    */
     public function update() { //ticketUpdate,callback,userID,ticketID,token
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -167,7 +187,14 @@ class TicketController extends Controller {
             return $res->dataError('Priority create error', $message);
         }
     }
-
+/*
+    assign Ticket 
+    paramters:
+    ticketID (required),
+    userID (required),
+    token (required),
+    */
+ 
     public function assign() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -218,7 +245,15 @@ class TicketController extends Controller {
         return $res->success("ticket assigned successfully", $ticket);
     }
 
-    public function close() {//productName,productImage,categoryID,productID,token
+
+    /*
+    close Ticket 
+    paramters:
+    ticketID (required),
+    token (required),
+    */
+
+    public function close() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -260,6 +295,16 @@ class TicketController extends Controller {
 
         return $res->success("Ticket closed successfully", $ticket);
     }
+
+  /*
+    retrieve  tickets to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableTickets() { //sort, order, page, limit,filter,status
         $logPathLocation = $this->config->logPath->location . 'error.log';
@@ -362,6 +407,16 @@ class TicketController extends Controller {
         return $res->success("Tickets ", $data);
     }
 
+  /*
+    retrieve  updated tickets to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+
     public function tableTicketUpdates() { //sort, order, page, limit,ticketID
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
@@ -441,6 +496,12 @@ class TicketController extends Controller {
         return $res->success("ticketUpdates ", $data);
     }
 
+     /*
+    retrieve all tickets 
+    parameters:
+    ticketID (optional)
+    */
+
     public function getAll() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -471,8 +532,10 @@ class TicketController extends Controller {
 
         return $res->success("ticket retrieved", $tickets);
     }
-
-    public function email() {//productName,productImage,categoryID,productID,token
+/*
+sends email notification on ticket create 
+*/
+    public function email() {
 //        $jwtManager = new JwtManager();
 //        $request = new Request();
         $res = new SystemResponses();
@@ -514,6 +577,10 @@ class TicketController extends Controller {
 //        return $res->success("Ticket closed successfully", $ticket);
     }
 
+     /*
+    util function to build all get queries based on passed parameters
+    */
+
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = "ORDER BY $sort $order";
@@ -527,18 +594,6 @@ class TicketController extends Controller {
 
         $ofset = (int) ($page - 1) * $limit;
         $limitQuery = "LIMIT $ofset, $limit";
-
-//        if ($sort && $order && $filter) {
-//            $query = "  co.fullName REGEXP '$filter' OR t.ticketTitle REGEXP '$filter' OR tc.ticketCategoryName REGEXP '$filter' ORDER by $sort $order LIMIT $ofset,$limit";
-//        } elseif ($sort && $order && !$filter) {
-//            $query = " ORDER by $sort $order LIMIT $ofset,$limit";
-//        } elseif ($sort && $order && !$filter) {
-//            $query = " ORDER by $sort $order  LIMIT $ofset,$limit";
-//        } elseif (!$sort && !$order) {
-//            $query = " LIMIT $ofset,$limit";
-//        } elseif (!$sort && !$order && $filter) {
-//            $query = "  co.fullName REGEXP '$filter' OR t.ticketTitle REGEXP '$filter' OR tc.ticketCategoryName REGEXP '$filter' LIMIT $ofset,$limit";
-//        }
 
         return "$sortClause $limitQuery";
     }

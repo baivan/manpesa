@@ -50,8 +50,8 @@ $user_route->post('resetpassword', 'resetPassword'); //
 //$user_route ->post('delete','removeUser'); //{token,userId}
 $user_route->post('summary', 'userSummary');
 $user_route->get('summary', 'userSummary');
-$user_route->get('agent', 'getAgents');
-$user_route->post('agent', 'getAgents');
+$user_route->get('agent', 'getUsers');
+$user_route->post('agent', 'getUsers');
 $user_route->get('all', 'getUsers');
 $user_route->get('crm/all', 'getTableUsers');
 $user_route->post('crm/all', 'getTableUsers');
@@ -206,10 +206,10 @@ $transaction_route->post('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
-$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
+//$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'dummyTransaction');
 $transaction_route->post('reconcilepayment', 'reconcilePayment'); //To reconcile unknown payments
-$transaction_route->get('reconcile', 'reconcileTransaction');
+//$transaction_route->get('reconcile', 'reconcileTransaction');
 $transaction_route->get('link', 'reconcile');
 
 $inbox_route = new MicroCollection();

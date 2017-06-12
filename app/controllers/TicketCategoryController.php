@@ -6,9 +6,15 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 
+/*
+All TicketCategory CRUD operations 
+*/
+
 class TicketCategoryController extends Controller
 {
-
+ /*
+    Raw query select function to work in any version of phalcon
+    */
    protected function rawSelect($statement)
 		       { 
 		          $connection = $this->di->getShared("db"); 
@@ -17,6 +23,12 @@ class TicketCategoryController extends Controller
 		          $success = $success->fetchAll($success); 
 		          return $success;
 		       }
+
+  /*
+    create new TicketCategory  
+    paramters:
+    ticketCategoryName,ticketCategoryDescription,token
+    */
 
    public function create(){ //{token,ticketCategoryName,ticketCategoryDescription}
 	    $jwtManager = new JwtManager();
@@ -69,7 +81,13 @@ class TicketCategoryController extends Controller
        }
   }
 
+/*
+   retrive all TicketCategory
+   parameters;
+   token
+   ticketCategoryID (optional)
 
+*/
 
    public function getAll(){
      	    

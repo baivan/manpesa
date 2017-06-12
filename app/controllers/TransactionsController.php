@@ -8,13 +8,24 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All Transactions CRUD operations 
+*/
+
 class TransactionsController extends Controller {
 
-    private $salePaid = 1;
-    private $installment = "installment";
+
+
+    private $salePaid = 1; //salepaid status
+
+    //sales types
+    private $installment = "installment"; 
     private $cash = "cash";
     private $paygo = "Pay As you Go";
 
+      /*
+    Raw query select function to work in any version of phalcon
+    */
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -23,109 +34,13 @@ class TransactionsController extends Controller {
         return $success;
     }
 
-    public function createTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-        $transactionManager = new TransactionManager();
-        $dbTransaction = $transactionManager->get();
+    
 
-        $mobile = $json->mobile;
-        $referenceNumber = $json->referenceNumber;
-        $fullName = $json->fullName;
-        $depositAmount = $json->amount;
-        $salesID = $json->account;
-        $token = $json->token;
-
-        if (!$token) {
-            return $res->dataError("Token missing ");
-        }
-        if (!$salesID) {
-            return $res->dataError("Account missing ");
-        }
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
-
-        try {
-            $transaction = new Transaction();
-            $transaction->mobile = $mobile;
-            $transaction->referenceNumber = $referenceNumber;
-            $transaction->fullName = $fullName;
-            $transaction->depositAmount = $depositAmount;
-            $nationalID->nationalID = 0;
-            $transaction->salesID = $salesID;
-            $transaction->createdAt = date("Y-m-d H:i:s");
-
-            if ($transaction->save() === false) {
-                $errors = array();
-                $messages = $transaction->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                //return $res->dataError('sale create failed',$errors);
-                $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-            }
-
-            $sale = Sales::findFirst(array("salesID=:id: ",
-                        'bind' => array("id" => $salesID)));
-
-            $saleQuery = "SELECT s.salesID FROM transaction t JOIN contacts c on t.salesID=c.nationalIdNumber or t.salesID=c.workMobile JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID where c.nationalIdNumber='%$salesID%' or c.workMobile='%$salesID%'";
-            if (!$sale) {
-                $mappedSale = $this->rawSelect($saleQuery);
-
-                $salesID = $mappedSale[0]['salesID'];
-                $sale = Sales::findFirst(array("salesID=:id: ",
-                            'bind' => array("id" => $salesID)));
-            }
-
-
-            if ($sale) {
-                $sale->status = $this->salePaid;
-                if ($sale->save() === false) {
-                    $errors = array();
-                    $messages = $sale->getMessages();
-                    foreach ($messages as $message) {
-                        $e["message"] = $message->getMessage();
-                        $e["field"] = $message->getField();
-                        $errors[] = $e;
-                    }
-                    //return $res->dataError('sale create failed',$errors);
-                    $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-                }
-
-                $userQuery = "SELECT userID as userId from sales WHERE salesID=" . $sale->salesID;
-
-
-                $userID = $this->rawSelect($userQuery);
-
-                $pushNotificationData = array();
-                $pushNotificationData['nationalID'] = $nationalID;
-                $pushNotificationData['mobile'] = $mobile;
-                $pushNotificationData['amount'] = $amount;
-                $pushNotificationData['saleAmount'] = $sale->amount;
-                $pushNotificationData['fullName'] = $fullName;
-
-
-
-                $res->sendPushNotification($pushNotificationData, "New payment", "There is a new payment from a sale you made", $userID[0]['userID']);
-            }
-
-            $res->sendMessage($mobile, "Dear " . $fullName . ", your payment has been received");
-            $dbTransaction->commit();
-
-            return $res->success("Transaction successfully done ", true);
-        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
-            $message = $e->getMessage();
-            return $res->dataError('Transaction create error', $message);
-        }
-    }
+   /*
+    create new transaction usually called by southwell payment gateway
+    paramters:
+    mobile,account,referenceNumber,amount,fullName,token
+    */
 
     public function create() { //{mobile,account,referenceNumber,amount,fullName,token}
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -306,6 +221,10 @@ class TransactionsController extends Controller {
         }
     }
 
+    /*
+    cron job reconcile a transaction with sales and contacts
+    */
+
     public function reconcile() {
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -416,6 +335,15 @@ class TransactionsController extends Controller {
             return $res->dataError('sale payments update error', $message);
         }
     }
+
+/*
+reconcile old transactions to match with customer
+parameters (all required):
+contactsID,
+transactionID,
+userID,
+token
+*/
 
     public function reconcilePayment() { //contactsID, transactionID, userID,token
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -582,184 +510,6 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function reconcileTransaction() { //{mobile,account,referenceNumber,amount,fullName,token}
-        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
-        $logger = new FileAdapter($logPathLocation);
-
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-        $transactionManager = new TransactionManager();
-        $dbTransaction = $transactionManager->get();
-
-        try {
-
-            $limit = 500;
-            $batchSize = 1;
-
-            $transactionsData = Transaction::find();
-            $transactionCount = $transactionsData->count();
-
-            if ($transactionCount <= $limit) {
-                $batchSize = 1;
-            } else {
-                $batchSize = (int) ($transactionCount / $limit) + 1;
-            }
-
-            for ($count = 0; $count < $batchSize; $count++) {
-
-                $page = $count + 1;
-//                $logger->log("Batch Number: " . $page);
-
-                $offset = (int) ($page - 1) * $limit;
-
-                $transactions = $this->rawSelect("SELECT * FROM transaction LIMIT $offset,$limit");
-
-                foreach ($transactions as $transaction) {
-                    $accounNumber = $transaction['salesID'];
-                    $mobile = $transaction['mobile'];
-                    $transactionID = $transaction['transactionID'];
-
-                    $customerTransaction = CustomerTransaction::findFirst(array("transactionID=:id: ",
-                                'bind' => array("id" => $transactionID)));
-
-                    if (!$customerTransaction) {
-
-                        $customerTransaction = new CustomerTransaction();
-                        $contact = NULL;
-
-                        $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
-                                . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
-                                . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
-                                . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
-                                . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
-                                . "fullName='$mobile'");
-
-                        if ($contactMapping) {
-                            $contact = $contactMapping;
-                            $contactsID = $contactMapping[0]['contactsID'];
-                            $customerTransaction->transactionID = $transactionID;
-                            $customerTransaction->contactsID = $contactsID;
-                            $customerTransaction->createdAt = date("Y-m-d H:i:s");
-
-                            $customer = Customer::findFirst(array("contactsID=:id: ",
-                                        'bind' => array("id" => $contactsID)));
-                            if ($customer) {
-                                $customerTransaction->customerID = $customer->customerID;
-                            }
-
-                            $prospect = Prospects::findFirst(array("contactsID=:id: ",
-                                        'bind' => array("id" => $contactsID)));
-                            if ($prospect) {
-                                $customerTransaction->prospectsID = $prospect->prospectsID;
-                            }
-                        }
-
-                        if ($contact) {
-                            $logger->log("Saving valid transaction: " . json_encode($transaction));
-
-                            if ($customerTransaction->save() === false) {
-                                $errors = array();
-                                $messages = $customerTransaction->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
-                                }
-                                $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                                $res->dataError('customer transaction create failed', $messages);
-                            }
-
-                            $transaction = Transaction::findFirst(array("transactionID=:id: ",
-                                        'bind' => array("id" => $transactionID)));
-
-                            if ($transaction) {
-                                $depositAmount = $transaction->depositAmount;
-                                //Find incomplete sales
-                                $depositAmount = floatval(str_replace(',', '', $depositAmount));
-
-                                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: AND amount>:amount: ",
-                                            'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
-                                foreach ($incompleteSales as $incompleteSale) {
-                                    $amount = floatval($incompleteSale->amount);
-                                    $paid = floatval($incompleteSale->paid);
-                                    $unpaid = $amount - $paid;
-
-                                    if ($depositAmount >= $unpaid) {
-                                        $pay = $paid + $unpaid;
-                                        $depositAmount = $depositAmount - $unpaid;
-                                        $incompleteSale->paid = $pay;
-                                        $incompleteSale->status = 1;
-                                    } else {
-                                        $pay = $paid + $depositAmount;
-                                        $incompleteSale->paid = $pay;
-                                        $incompleteSale->status = 0;
-                                        $depositAmount = 0;
-                                    }
-
-                                    if ($incompleteSale->save() === false) {
-                                        $errors = array();
-                                        $messages = $incompleteSale->getMessages();
-                                        foreach ($messages as $message) {
-                                            $e["message"] = $message->getMessage();
-                                            $e["field"] = $message->getField();
-                                            $errors[] = $e;
-                                        }
-                                        $logger->log("Error while saving sale data: " . json_encode($errors));
-
-                                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                                        $res->dataError('customer transaction create failed', $messages);
-                                        return $res->success("Payment received", TRUE);
-                                    }
-
-                                    $logger->log("Amount Remaining: " . json_encode($depositAmount));
-
-                                    if ($depositAmount == 0) {
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-
-                            $unknownPayment = TransactionUnknown::findFirst(array("transactionID=:id: ",
-                                        'bind' => array("id" => $transactionID)));
-
-                            if (!$unknownPayment) {
-                                $logger->log("Saving unknown payment: " . json_encode($transaction));
-
-                                $unknown = new TransactionUnknown();
-                                $unknown->transactionID = $transactionID;
-                                $unknown->createdAt = date("Y-m-d H:i:s");
-
-                                if ($unknown->save() === false) {
-                                    $errors = array();
-                                    $messages = $unknown->getMessages();
-                                    foreach ($messages as $message) {
-                                        $e["message"] = $message->getMessage();
-                                        $e["field"] = $message->getField();
-                                        $errors[] = $e;
-                                    }
-                                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                                    $res->dataError('customer transaction create failed', $messages);
-                                }
-                            } else {
-                                $logger->log("Unknown Payment already exists: " . json_encode($unknownPayment));
-                            }
-                        }
-                    } else {
-                        $logger->log("Valid Transaction already exists: " . json_encode($customerTransaction));
-                    }
-                }
-            }
-
-            $dbTransaction->commit();
-            return $res->success("Transaction successfully RECONCILED ", true);
-        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
-            $message = $e->getMessage();
-            return $res->dataError('Transaction create error', $message);
-        }
-    }
 
     public function checkPayment() {//{token,salesID}
         $jwtManager = new JwtManager();
@@ -804,6 +554,11 @@ class TransactionsController extends Controller {
         }
     }
 
+/*
+check if sale is paid. Called internally within the backend 
+params:
+salesID (required)
+*/
     public function checkSalePaid($salesID) {
         /* $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
          */
@@ -825,7 +580,15 @@ class TransactionsController extends Controller {
             return false;
         }
     }
-
+ /*
+    retrieve  transactions to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
     public function getTableTransactions() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -903,7 +666,6 @@ class TransactionsController extends Controller {
         $selectQuery .= $queryBuilder;
 
 
-        //  return $res->success($countQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
 
@@ -911,6 +673,16 @@ class TransactionsController extends Controller {
         $data["transactions"] = $items;
         return $res->success("Transactions get successfully ", $data);
     }
+
+     /*
+    retrieve  unknown/ unmatched transactions to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableUnknownPayments() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';

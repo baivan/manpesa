@@ -10,6 +10,10 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class UsersController extends Controller {
 
+    /*
+    Raw query select function to work in any version of phalcon
+    */
+
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -18,7 +22,14 @@ class UsersController extends Controller {
         return $success;
     }
 
-    public function create() { //workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,location,status
+    /*
+    register a new user from crm
+    paramters:
+    <Required>workMobile,userID,nationalIdNumber,fullName,locationID,roleID,token,location,status
+
+    <Optional >homeMobile,homeEmail,workEmail,passportNumber,
+    */
+    public function create() { 
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -106,7 +117,6 @@ class UsersController extends Controller {
                         $e["field"] = $message->getField();
                         $errors[] = $e;
                     }
-                    //return $res->dataError('contact create failed',$errors);
                     $dbTransaction->rollback("contact create failed " . json_encode($errors));
                 }
 
@@ -171,9 +181,14 @@ class UsersController extends Controller {
         }
     }
 
-    public function update() {
-        //updatedBy,userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,status
+  /*
+    update user
+    paramters:
+    updatedBy,userID,workMobile,homeMobile,homeEmail,workEmail,passportNumber,nationalIdNumber,fullName,locationID,roleID,token,status
+    */
 
+    public function update() {
+        
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
 
@@ -369,6 +384,12 @@ class UsersController extends Controller {
         }
     }
 
+/*
+userLogin
+params:
+username
+password
+*/
     public function login() {//usename, password
         $logPathLocation = $this->config->logPath->location . 'info.log';
         $logger = new FileAdapter($logPathLocation);
@@ -396,21 +417,12 @@ class UsersController extends Controller {
         $user = Users::findFirst(array("username=:username:",
                     'bind' => array("username" => $username)));
 
-//        $user = $this->rawSelect("SELECT u.userID, u.username, u.targetSale, "
-//                . "u.roleID, r.roleName, u.contactID, u.status FROM users u INNER JOIN role r ON "
-//                . "u.roleID=r.roleID WHERE u.username=$username");
-        //$logger->log("User Data: " . json_encode($user));
+
 
         if ($user) {
             if ($this->security->checkHash($password, $user->password)) {
                 $token = $jwtManager->issueToken($user);
-//                $roleId = $user->roleID;
-//                
-//                $contactsId = $user->contactID;
-//                $r_query = "SELECT * FROM role WHERE roleId=$roleId";
-                //  $c_query = "SELECT * FROM contacts WHERE contactsID=$contactsId ";
-//                $_role = $this->rawSelect($r_query);
-                //   $contact = $this->rawSelect($c_query);
+
 
                 $userData = $this->rawSelect("SELECT r.roleName, c.fullName FROM users u INNER JOIN role r ON "
                         . "u.roleID=r.roleID INNER JOIN contacts c ON u.contactID=c.contactsID WHERE u.username=$username");
@@ -439,6 +451,13 @@ class UsersController extends Controller {
 
         return $res->notFound("user doesn't exist ", $json);
     }
+
+/*
+user reset password and send password via sms
+params:
+username
+token
+*/
 
     public function resetPassword() { //{username, token}
         $jwtManager = new JwtManager();
@@ -503,6 +522,9 @@ class UsersController extends Controller {
         }
     }
 
+/*
+app get user summary 
+*/
     public function userSummary() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -550,79 +572,18 @@ class UsersController extends Controller {
             $data["targetSale"] = $overalSummary[0]['targetSale'];
         }
 
-        // $data["salesTypeSummary"]=$salesTypeSummary;
 
         return $res->success("userSummary", $data);
     }
 
-    public function getAgents() {
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $token = $request->getQuery('token');
-        $roleID = $request->getQuery('roleID') ? $request->getQuery('roleID') : '';
-        $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
-        $status = $request->getQuery('status') ? $request->getQuery('status') : 0;
-
-        if (!$token) {
-            return $res->dataError("Missing data ");
-        }
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
-
-        $agentQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile, co.workEmail,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
-
-        $whereArray = [
-            'u.roleID' => $roleID,
-            'u.status' => $status,
-            'filter' => $filter
-        ];
-
-        $whereQuery = "";
-
-        foreach ($whereArray as $key => $value) {
-            if ($key == 'filter') {
-                $searchColumns = ['co.workMobile', 'co.nationalIdNumber', 'co.fullName', 'co.location'];
-
-                $valueString = "";
-                foreach ($searchColumns as $searchColumn) {
-                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
-                }
-                $valueString = chop($valueString, " ||");
-                if ($valueString) {
-                    $valueString = "(" . $valueString;
-                    $valueString .= ") AND";
-                }
-                $whereQuery .= $valueString;
-            } else {
-                if ($key == 'u.status' && $value == 404) {
-                    $valueString = "" . $key . "=0" . " AND ";
-                } else if ($key == 'date') {
-                    if ($value[0] && $value[1]) {
-                        $valueString = " DATE(u.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
-                    }
-                } else {
-                    $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
-                }
-                $whereQuery .= $valueString;
-            }
-        }
-
-        if ($whereQuery) {
-            $whereQuery = chop($whereQuery, " AND");
-        }
-
-        $whereQuery = $whereQuery ? "WHERE u.roleID=2 || u.roleID=8 || $whereQuery " : "";
-        $agentQuery = $agentQuery . $whereQuery;
-
-        $salesAgents = $this->rawSelect($agentQuery);
-
-        return $res->getSalesSuccess($salesAgents);
-    }
+/*
+get all system users
+params:
+token
+roleID
+filter
+status
+*/
 
     public function getUsers() {
         $jwtManager = new JwtManager();
@@ -693,6 +654,16 @@ class UsersController extends Controller {
         return $res->success("users", $users);
     }
 
+
+  /*
+    retrieve  users to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
     public function getTableUsers() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
@@ -767,13 +738,10 @@ class UsersController extends Controller {
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
-        //return $res->success($selectQuery);
-//        $logger->log("Request Query For Users: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
         $users = $this->rawSelect($selectQuery);
-//users["totalUsers"] = $count[0]['totalUsers'];
         $data["totalUsers"] = $count[0]['totalUsers'];
         $data["users"] = $users;
 
@@ -795,6 +763,12 @@ class UsersController extends Controller {
         $limitQuery = "LIMIT $ofset, $limit";
         return "$sortClause $limitQuery";
     }
+
+    /*
+    update user status 
+    params:
+    userID,status,token
+    */
 
     public function changeUserStatus() {//{userID,status,token}
         $jwtManager = new JwtManager();
@@ -858,7 +832,6 @@ class UsersController extends Controller {
 
         $length = 4;
         $prefix = "0";
-        //$agentNumber = "";
 
         $numlength = strlen((string) $agentNumber);
 
@@ -870,6 +843,9 @@ class UsersController extends Controller {
 
         return $agentNumber;
     }
+
+    /*
+
 
     public function updateOldUsers() {
         $jwtManager = new JwtManager();
@@ -899,7 +875,6 @@ class UsersController extends Controller {
                             $e["field"] = $message->getField();
                             $errors[] = $e;
                         }
-                        // return $res->dataError('user update failed',$errors);
                         $dbTransaction->rollback("contact status update failed " . json_encode($errors));
                     }
                 }
@@ -912,5 +887,6 @@ class UsersController extends Controller {
             return $res->dataError('user status change error', $message);
         }
     }
+    */
 
 }

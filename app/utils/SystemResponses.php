@@ -8,19 +8,15 @@ use Phalcon\Mvc\Model\Query\Builder as Builder;
 use Phalcon\Mvc\Controller;
 
 /**
- * 
+ * All system communication with other systems 
  */
 class SystemResponses extends Controller {
 
-    public $url = "http://api.southwell.io/java360_api_v1/";
-    public $token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJpYXQiOjE0ODM5NTYwNDYsImFwcCI6ImphdmEzNjAiLCJvd25lciI6ImFub255bW91cyIsImFjdGlvbiI6Im9wZW5SZXF1ZXN0In0.eLHZjnFduufVspUz7E2QfTzKFfPqNWYBoENJbmIeZtA";
-
-    //private $logPathLocation = $this->config->logPath->location;
-
+    /*
+    get log file to use
+    */
 
     private function getLogFile($action = "") {
-
-        //define('APP_PATH', realpath(''));
 
         /**
          * Read the configuration
@@ -41,13 +37,6 @@ class SystemResponses extends Controller {
         }
     }
 
-    public function rawSelect($statement) {
-        $connection = $this->di->getShared("db");
-        $success = $connection->query($statement);
-        $success->setFetchMode(Phalcon\Db::FETCH_ASSOC);
-        $success = $success->fetchAll($success);
-        return $success;
-    }
 
     public function calculateTotalPages($total, $per_page) {
         $totalPages = (int) ($total / $per_page);
@@ -58,6 +47,8 @@ class SystemResponses extends Controller {
         return $totalPages;
     }
 
+
+    
     public function composePushLog($type, $description, $resolution) {//($data,$title,$body,$userID){
         $data = array();
         $data["origin"] = "Envirofit apis";
@@ -79,26 +70,17 @@ class SystemResponses extends Controller {
     }
 
     public function success($message, $data) {
-        $file = 'test'; //$this->config->senderIds->mediamax;
-
-
         $response = new Response();
         $response->setHeader("Content-Type", "application/json");
         $response->setHeader("Access-Control-Allow-Origin", "*");
         $response->setStatusCode(201, "SUCCESS");
-        /* $success = array();
-          $sucess["code"] = 201;
-          $success["success"]=$message;
-          $success["data"]=$data;
-          $response->setStatusCode(201, "SUCCESS"); */
         $success["success"] = $message;
         $success["data"] = $data;
         $success["code"] = 201;
 
         $response->setContent(json_encode($success));
         $logger = new FileAdapter($this->getLogFile('success'));
-        $logger->log($file . ' ty ' . $message . ' ' . json_encode($data));
-        //$this->composePushLog("success  " . $message, $data);
+        $logger->log($message . ' ' . json_encode($data));
 
         return $response;
     }
@@ -393,7 +375,7 @@ class SystemResponses extends Controller {
 
     public function sendPushNotification($data, $title, $body, $userID) {
 
-        $appName = "com.southwell.envirofitsalesapp"; //for test
+        $appName = "com.southwell.envirofitsalesapp"; 
         return $this->sendAndroidPushNotification($data, $title, $body, $userID, $appName);
     }
 
