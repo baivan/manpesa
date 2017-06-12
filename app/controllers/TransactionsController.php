@@ -316,114 +316,104 @@ class TransactionsController extends Controller {
 
         try {
 
-            $transactionsRequest = $res->rawSelect("SELECT COUNT(customerTransactionID) AS transactionCount FROM customer_transaction ");
-            $transactionCount = $transactionsRequest[0]['transactionCount'];
+
+
+//            $transactionsRequest = $res->rawSelect("SELECT COUNT(customerTransactionID) AS transactionCount FROM customer_transaction ");
+//            $transactionCount = $transactionsRequest[0]['transactionCount'];
 //            $logger->log("Transactions Count: " . json_encode($transactionCount));
 
-            if ($transactionCount <= $limit) {
+            $salesRequest = $res->rawSelect("SELECT COUNT(salesID) AS salesCount FROM sales ");
+            $salesCount = $salesRequest[0]['salesCount'];
+
+            if ($salesCount <= $limit) {
                 $batchSize = 1;
             } else {
-                $batchSize = (int) ($transactionCount / $limit) + 1;
+                $batchSize = (int) ($salesCount / $limit) + 1;
             }
 
             for ($count = 0; $count < $batchSize; $count++) {
                 $page = $count + 1;
                 $offset = (int) ($page - 1) * $limit;
-                $transactions = CustomerTransaction::find([
+                $sales = Sales::find([
                             "limit" => $limit,
                             "offset" => $offset
                 ]);
 
                 $logger->log("Batch NO: " . $page);
 
-                foreach ($transactions as $transaction) {
+                foreach ($sales as $sale) {
                     //$logger->log("Customer Transaction: " . json_encode($transaction));
-                    $contactsID = $transaction->contactsID;
-                    $transactionID = $transaction->transactionID;
+                    $contactsID = $sale->contactsID;
 
-                    $trans = Transaction::findFirst(array("transactionID=:id: ",
-                                'bind' => array("id" => $transactionID)));
+                    //Find all sales with the contactsID
 
-                    if ($trans) {
+                    $contactSales = Sales::find(array("contactsID=:id: AND amount>:amount:",
+                                'bind' => array("id" => $contactsID, "amount" => 0)));
 
-                        $depositAmount = $trans->depositAmount;
-                        //Find incomplete sales
-                        $depositAmount = floatval(str_replace(',', '', $depositAmount));
+                    //Find all transactions of the contactsID and sum them
 
-                        //$logger->log("Transaction exists: " . json_encode($depositAmount));
+                    $contactTransactions = $res->rawSelect("SELECT t.amount FROM customer_transaction ct "
+                            . "INNER JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID");
 
-                        $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: AND amount>:amount: ",
-                                    'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
+                    $contactTotalAmount = 0;
 
-                        foreach ($incompleteSales as $incompleteSale) {
-                            $amount = floatval($incompleteSale->amount);
-                            $paid = floatval($incompleteSale->paid);
-                            $unpaid = $amount - $paid;
-
-                            if ($depositAmount >= $unpaid) {
-                                $pay = $paid + $unpaid;
-                                $depositAmount = $depositAmount - $unpaid;
-                                $incompleteSale->paid = $pay;
-                                $incompleteSale->status = 2;
-                            } else {
-                                $pay = $paid + $depositAmount;
-                                $incompleteSale->paid = $pay;
-                                $incompleteSale->status = 1;
-                                $depositAmount = 0;
-                            }
-
-                            if ($incompleteSale->save() === false) {
-                                $errors = array();
-                                $messages = $incompleteSale->getMessages();
-                                foreach ($messages as $message) {
-                                    $e["message"] = $message->getMessage();
-                                    $e["field"] = $message->getField();
-                                    $errors[] = $e;
-                                }
-                                $logger->log("Error while saving sale data: " . json_encode($errors));
-
-                                //$dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                                $res->dataError('customer transaction create failed', $messages);
-                                //return $res->success("Payment received", TRUE);
-                            }
-
-                            $logger->log("Customer Sale: " . json_encode($incompleteSale));
-
-                            if ($depositAmount == 0) {
-                                break;
-                            }
-                        }
+                    foreach ($contactTransactions as $contactTransaction) {
+                        $amount = $contactTransaction['amount'];
+                        $depositAmount = floatval(str_replace(',', '', $amount));
+                        $contactTotalAmount += $depositAmount;
                     }
 
-                    /*                     * $customer = Customer::findFirst(array("contactsID=:id: ",
-                      'bind' => array("id" => $contactsID)));
-                      if ($customer) {
-                      $transaction->customerID = $customer->customerID;
-                      }
 
-                      $prospect = Prospects::findFirst(array("contactsID=:id: ",
-                      'bind' => array("id" => $contactsID)));
-                      if ($prospect) {
-                      $transaction->prospectsID = $prospect->prospectsID;
-                      }
+                    foreach ($contactSales as $sale) {
 
-                      if ($transaction->save() === false) {
-                      $errors = array();
-                      $messages = $transaction->getMessages();
-                      foreach ($messages as $message) {
-                      $e["message"] = $message->getMessage();
-                      $e["field"] = $message->getField();
-                      $errors[] = $e;
-                      }
-                      $logger->log("Transaction FAILED to update: ");
-                      }
+                        $amount = floatval($sale->amount);
+                        $paid = floatval($sale->paid);
+                        $unpaid = $amount - $paid;
 
-                      $logger->log("Transaction SUCCESSFULLY UPDATED: "); */
+                        if ($contactTotalAmount > $paid) {
+                            $contactTotalAmount = $contactTotalAmount - $paid;
+
+                            if ($contactTotalAmount >= $unpaid) {
+                                $pay = $paid + $unpaid;
+                                $contactTotalAmount = $contactTotalAmount - $unpaid;
+                                $sale->paid = $pay;
+                                $sale->status = 2;
+                            } else {
+                                $pay = $paid + $contactTotalAmount;
+                                $sale->paid = $pay;
+                                $sale->status = 1;
+                                $contactTotalAmount = 0;
+                            }
+                        } else {
+                            $contactTotalAmount = 0;
+                        }
+
+                        if ($sale->save() === false) {
+                            $errors = array();
+                            $messages = $sale->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
+                            }
+                            $logger->log("Error while saving sale data: " . json_encode($errors));
+
+                            //$dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                            $res->dataError('customer transaction create failed', $messages);
+                            //return $res->success("Payment received", TRUE);
+                        }
+
+                        $logger->log("Customer Sale: " . json_encode($sale));
+
+                        if ($contactTotalAmount == 0) {
+                            break;
+                        }
+                    }
                 }
             }
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
-            return $res->dataError('transaction update error', $message);
+            return $res->dataError('sale payments update error', $message);
         }
     }
 
