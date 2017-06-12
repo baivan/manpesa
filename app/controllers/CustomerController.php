@@ -418,7 +418,7 @@ class CustomerController extends Controller {
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
         $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
 
-        if (!$token || !$userID) {
+        if (!$token) {
             return $res->dataError("Missing data ", []);
         }
 

@@ -271,13 +271,13 @@ class TransactionsController extends Controller {
 
                     //Find all transactions of the contactsID and sum them
 
-                    $contactTransactions = $res->rawSelect("SELECT t.amount FROM customer_transaction ct "
+                    $contactTransactions = $res->rawSelect("SELECT t.depositAmount FROM customer_transaction ct "
                             . "INNER JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID");
 
                     $contactTotalAmount = 0;
 
                     foreach ($contactTransactions as $contactTransaction) {
-                        $amount = $contactTransaction['amount'];
+                        $amount = $contactTransaction['depositAmount'];
                         $depositAmount = floatval(str_replace(',', '', $amount));
                         $contactTotalAmount += $depositAmount;
                     }
