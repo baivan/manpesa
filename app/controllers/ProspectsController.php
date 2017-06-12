@@ -310,6 +310,9 @@ class ProspectsController extends Controller {
         return $res->success("Prospects ", $data);
     }
 
+   /*
+   get all  prospect sources
+   */
     public function getSources() {
         $jwtManager = new JwtManager();
         $request = new Request();

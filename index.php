@@ -91,7 +91,6 @@ $prospect_route->get('crm/source', 'getSources');
 $sale_route = new MicroCollection();
 $sale_route->setPrefix('/sale/');
 $sale_route->setHandler(new SalesController());
-//$sale_route ->post('create','createSale');//{salesTypeID,frequencyID,itemID,prospectID,nationalIdNumber,fullName,location,workMobile,userID,paymentPlanDeposit}
 $sale_route->post('create', 'create');
 $sale_route->post('crm/create', 'crmCreateSale');
 $sale_route->post('all', 'getSales');
@@ -109,9 +108,6 @@ $sale_route->get('crm/monitor', 'monitorSales');
 $sale_route->post('delete', 'delete');
 $sale_route->post('crm/updatepartnersale', 'updatePartnerSale');
 $sale_route->get('crm/match', 'matchContacts');
-
-
-//crmCreateSale
 //$sale_route->post('updateOldSales', 'updateOldSales');
 
 $category_route = new MicroCollection();

@@ -8,9 +8,15 @@ use \Firebase\JWT\JWT;
 use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
+/*
+All sales CRUD operations 
+*/
+
 class SalesController extends Controller {
 
-
+     /*
+    Raw query select function to work in any version of phalcon
+    */
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -19,6 +25,9 @@ class SalesController extends Controller {
         return $success;
     }
 
+     /*
+      checks if date is between two dates
+    */
     protected function isDateBetweenDates($date, $startDate, $endDate) {
         $date = new DateTime($date);
         $startDate = new DateTime($startDate);
@@ -26,7 +35,15 @@ class SalesController extends Controller {
         return $date > $startDate && $date < $endDate;
     }
 
-    public function create() { //{contactsID,amount,userID,salesTypeID,frequencyID,productID}
+     /*
+    create new sale
+    accepts contactsID/prospect if contact/prospect already saved
+    also accepts customer details and will created the customer before making sale
+    Then communicated to customer via sms with payment details
+    paramters:
+     see create sale parameters inside create function
+    */
+    public function create() { 
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -34,6 +51,7 @@ class SalesController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
 
+        //create sale parameters
         $paymentPlanDeposit = isset($json->paymentPlanDeposit) ? $json->paymentPlanDeposit : 0;
         $salesTypeID = isset($json->salesTypeID) ? $json->salesTypeID : 0;
         $frequencyID = isset($json->frequencyID) ? $json->frequencyID : 0;
@@ -49,7 +67,7 @@ class SalesController extends Controller {
 
         $token = $json->token;
 
-
+       
 
         if (!$token) {
             return $res->dataError("Token missing " . json_encode($json), []);
@@ -64,13 +82,11 @@ class SalesController extends Controller {
             return $res->dataError("amount missing ", []);
         }
         if (!$frequencyID) {
-//return $res->dataError("frequencyID missing ");
             $frequencyID = 0;
         }
         if (!$productID) {
             return $res->dataError("product missing ", []);
         }
-
 
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -82,7 +98,7 @@ class SalesController extends Controller {
 
         try {
 
-            if (!$contactsID) {
+            if (!$contactsID) { 
                 if ($workMobile && $fullName && $location && $nationalIdNumber) { //createContact 
                     $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction);
                 }
@@ -117,7 +133,6 @@ class SalesController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-//return $res->dataError('sale create failed',$errors);
                 $dbTransaction->rollback('sale create failed' . json_encode($errors));
             }
 
@@ -135,6 +150,10 @@ class SalesController extends Controller {
             return $res->dataError('sale create error', $message);
         }
     }
+
+    /*
+    creates a sale payment plan based on deposit, sale type and frequency choosen
+    */
 
     public function createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction, $repaymentPeriodID = 0) {
         $res = new SystemResponses();
@@ -167,7 +186,9 @@ class SalesController extends Controller {
             return $paymentPlan->paymentPlanID;
         }
     }
-
+    /*
+    adds customer incase they were not created or prospectID was passed 
+    */
     public function createCustomer($userID, $contactsID, $dbTransaction, $locationID = 0) {
         $res = new SystemResponses();
         $customer = Customer::findFirst(array("contactsID=:id: ",
@@ -196,6 +217,9 @@ class SalesController extends Controller {
         }
     }
 
+     /*
+    adds contacts iincase no contacat exists 
+    */
     public function createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction, $homeMobile = null, $homeEmail = null, $workEmail = null, $passportNumber = 0, $locationID = 0) {
         $res = new SystemResponses();
         $workMobile = $res->formatMobileNumber($workMobile);
@@ -239,6 +263,11 @@ class SalesController extends Controller {
         }
     }
 
+    /*
+     creates an association between an item and a sale
+     incase customer has already paid
+    */
+
     public function mapItemToSale($saleID, $itemID) {
         $res = new SystemResponses();
         $saleItem = SalesItem::findFirst(array("itemID=:i_id: ",
@@ -268,6 +297,9 @@ class SalesController extends Controller {
         }
     }
 
+    /*
+    updates an item to sold status
+    */
     public function updateItemToSold($itemID) {
         $res = new SystemResponses();
         $item = Item::findFirst(array("itemID=:id: ",
@@ -281,131 +313,12 @@ class SalesController extends Controller {
         }
     }
 
-    public function createSale() {
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-
-
-        $salesTypeID = $json->salesTypeID;
-        $frequencyID = $json->frequencyID;
-        $itemID = $json->itemID;
-        $userID = $json->userID;
-        $prospectID = $json->prospectID;
-        $customerID = $json->customerID;
-        $token = $json->token;
-        $location = $json->location;
-        $workMobile = $json->workMobile;
-        $fullName = $json->fullName;
-        $nationalIdNumber = $json->nationalIdNumber;
-        $paymentPlanDeposit = $json->paymentPlanDeposit;
-        $amount = $json->amount;
-
-        $contactsID;
-        $paymentPlanID;
-
-        if (!$token) {
-            return $res->dataError("Token missing ");
-        }
-        if (!$salesTypeID) {
-            return $res->dataError("salesTypeID missing ");
-        }
-        if (!$userID) {
-            return $res->dataError("userID missing ");
-        }
-        if (!$amount) {
-            return $res->dataError("amount missing ");
-        }
-        if (!$frequencyID) {
-            $frequencyID = 0;
-        }
-
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
-
-
-        if ($prospectID || $prospectID > 0) {
-            $prospect = Prospects::findFirst(array("prospectsID=:id: ",
-                        'bind' => array("id" => $prospectID)));
-            if ($prospect) {
-                $contactsID = $prospect->contactsID;
-            } else {
-                return $res->dataError("Prospect not found");
-            }
-        } elseif ($customerID || $customerID > 0) { //added create sale of an existing customer
-            $customer = Customer::findFirst(array("customerID=:id: ",
-                        'bind' => array("id" => $customerID)));
-        } elseif ($workMobile && $nationalIdNumber && $fullName && $location) {
-            $workMobile = $res->formatMobileNumber($workMobile);
-            $contactsID = $this->createContact($workMobile, $nationalIdNumber, $fullName, $location);
-
-            if (!$contactsID || $contactsID <= 0) {
-                return $res->dataError("Contacts create error");
-            }
-        } else {
-            return $res->dataError("Prospect not found");
-        }
-
-//then we create customer if customerId not provided
-        if (!$customerID || $customerID <= 0) {
-            $customerID = $this->createCustomer($userID, $contactsID);
-        }
-
-
-        if (!$customerID || $customerID <= 0) {
-            return $res->dataError("Customer not found");
-        }
-
-//after creating customer and contacts above we create payment plan
-        $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID);
-
-        if (!$paymentPlanID || $paymentPlanID <= 0) {
-            return $res->dataError("Payment Plan not found");
-        }
-
-
-//now we can create a sale
-        $sale = new Sales();
-        $sale->status = 0;
-        $sale->paymentPlanID = $paymentPlanID;
-        $sale->userID = $userID;
-        $sale->customerID = $customerID;
-        $sale->amount = $amount;
-        $sale->createdAt = date("Y-m-d H:i:s");
-
-        if ($sale->save() === false) {
-            $errors = array();
-            $messages = $sale->getMessages();
-            foreach ($messages as $message) {
-                $e["message"] = $message->getMessage();
-                $e["field"] = $message->getField();
-                $errors[] = $e;
-            }
-            return $res->dataError('sale create failed', $errors);
-        }
-
-        /* send message to customer */
-        $MSISDN = $this->getCustomerMobileNumber($customerID);
-        $res->sendMessage($workMobile, "Your sale has been placed successfully");
-
-        $saleStatus = $this->mapItemToSale($sale->saleID, $itemID);
-
-//now we map this sale to item mapItemToSale($saleID,$itemID)
-        if (!$saleStatus || $saleStatus <= 0) {
-            return $res->dataError("Item not mapped to sale, please contact system admin $itemID");
-        }
-//set item as sold
-        if (!$this->updateItemToSold($itemID)) {
-            return $res->dataError('Item not marked as sold, please contact system admin', $sale);
-        }
-
-        return $res->success("Sale successfully done ", $sale);
-    }
+   /*
+   remove a sale
+   parameter:
+   saleID
+   token
+   */
 
     public function delete() {//salesID
         $jwtManager = new JwtManager();
@@ -444,147 +357,25 @@ class SalesController extends Controller {
         return $res->success("sale successfully deleted ", $sale);
     }
 
+    /*
+    retrive customer details
+    parameters: customerID
+    */
     public function getCustomerDetails($customerID) {
         $customerquery = "SELECT cs.workMobile ,cs.fullName from contacts cs left join customer co on cs.contactsID=co.contactsID WHERE co.customerID=$customerID";
 
         $customer = $this->rawSelect($customerquery);
         return $customer[0];
     }
+   
+   /*
+   get sales made by a specific user
+   parameters:
+   userID (required)
+   customerID (optional)
+   token
 
-    public function createCustomerSale() {//{paymentPlanID,amount,userID,workMobile,nationalIdNumber,fullName,location,token,items[]}
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-
-        $paymentPlanID = $json->paymentPlanID;
-        $userID = $json->userID;
-        $status = $json->status;
-        $amount = $json->amount;
-        $items = $json->items;
-        $token = $json->token;
-        $location = $json->location;
-        $workMobile = $json->workMobile;
-        $fullName = $json->fullName;
-        $nationalIdNumber = $json->nationalIdNumber;
-        $customerID = 0;
-
-        if (!$token || !$paymentPlanID || !$userID || !$amount) {
-            return $res->dataError("Missing data ");
-        }
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
-
-
-        if (!$status) {
-            $status = 0;
-        }
-
-        $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
-                    'bind' => array("w_mobile" => $workMobile)));
-        if ($contact) {
-            $customer = Customer::findFirst(array("contactsID=:id: ",
-                        'bind' => array("id" => $contact->contactsID)));
-            if ($customer) {
-                $res->dataError("Customer exists");
-                $customerID = $customer->customerID;
-            }
-        } else {
-            $contact = new Contacts();
-            $contact->workEmail = "null";
-            $contact->workMobile = $workMobile;
-            $contact->fullName = $fullName;
-            $contact->location = $location;
-            $contact->createdAt = date("Y-m-d H:i:s");
-            if ($nationalIdNumber) {
-                $contact->nationalIdNumber = $nationalIdNumber;
-            } else {
-                $contact->nationalIdNumber = "null";
-            }
-
-            if ($contact->save() === false) {
-                $errors = array();
-                $messages = $contact->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                $res->dataError('contact create failed', $errors);
-            }
-
-            $customer = new Customer();
-            $customer->status = 0;
-            $customer->locationID = 0;
-            $customer->userID = $userID;
-            $customer->contactsID = $contact->contactsID;
-            $customer->createdAt = date("Y-m-d H:i:s");
-            if ($customer->save() === false) {
-                $errors = array();
-                $messages = $customer->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                return $res->dataError('customer create failed', $errors);
-            }
-            $customerID = $customer->customerID;
-        }
-
-//  create sale
-        $sale = new Sales();
-        $sale->status = 0;
-        $sale->paymentPlanID = $paymentPlanID;
-        $sale->userID = $userID;
-        $sale->customerID = $customerID;
-        $sale->amount = $amount;
-        $sale->createdAt = date("Y-m-d H:i:s");
-
-        if ($sale->save() === false) {
-            $errors = array();
-            $messages = $sale->getMessages();
-            foreach ($messages as $message) {
-                $e["message"] = $message->getMessage();
-                $e["field"] = $message->getField();
-                $errors[] = $e;
-            }
-            $res->dataError('sale create failed', $errors);
-        }
-
-
-
-//mapp items to this sale
-        foreach ($items as $itemID) {
-            $saleItem = SalesItem::findFirst("itemID=$itemID");
-            if ($saleItem) {
-                $res->dataError("Item already sold");
-            } else {
-                $saleItem = new SalesItem();
-                $saleItem->itemID = $itemID;
-                $saleItem->saleID = $sale->salesID;
-                $saleItem->status = 0;
-                $saleItem->createdAt = date("Y-m-d H:i:s");
-                if ($saleItem->save() === false) {
-                    $errors = array();
-                    $messages = $saleItem->getMessages();
-                    foreach ($messages as $message) {
-                        $e["message"] = $message->getMessage();
-                        $e["field"] = $message->getField();
-                        $errors[] = $e;
-                    }
-                    return $res->dataError('saleItem create failed', $errors);
-                }
-            }
-        }
-
-
-        return $res->success("Sale created successfully ", $sale);
-    }
+   */
 
     public function getSales() {//{userID,customerID,token}
         $jwtManager = new JwtManager();
@@ -597,7 +388,7 @@ class SalesController extends Controller {
         $saleQuery = " SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
 
-        if (!$token) {
+        if (!$token || !$userID) {
             return $res->dataError("Missing data ");
         }
 
@@ -615,15 +406,21 @@ class SalesController extends Controller {
         } elseif ($userID > 0 && $customerID <= 0) {
             $saleQuery = $saleQuery . " WHERE s.userID=$userID";
         }
-        /* else{
-          $saleQuery ="SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productName, ca.categoryName FROM sales s JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p on i.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
-          } */
-
+       
         $sales = $this->rawSelect($saleQuery);
 
 
         return $res->getSalesSuccess($sales);
     }
+  /*
+    retrieve  sales to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTableSales() { //sort, order, page, limit,filter,userID
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -645,12 +442,7 @@ class SalesController extends Controller {
         $endDate = $request->getQuery('end');
 
         $countQuery = "SELECT count(DISTINCT s.salesID) as totalSales ";
-//        $defaultQuery = "from sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f on pp.frequencyID=f.frequencyID LEFT JOIN product_sale_type_price psp on s.productID=psp.productID left JOIN product p on s.productID=p.productID  LEFT JOIN users u on s.userID=u.userID LEFT join contacts c on u.contactID=c.contactsID left JOIN customer cu on s.customerID=cu.customerID left JOIN contacts c1 on cu.contactsID=c1.contactsID WHERE s.status > 0; ";
-//        $selectQuery = "SELECT s.salesID, s.paymentPlanID, pp.paymentPlanDeposit, "
-//                . "pp.salesTypeID, st.salesTypeName, psp.price,pp.frequencyID,"
-//                . "f.numberOfDays, f.frequencyName, s.userID,c.fullName AS agentName,"
-//                . "c.workMobile AS agentNumber,s.customerID, c1.fullName AS customerName, "
-//                . "c1.workMobile AS customerNumber, c1.nationalIdNumber, s.productID, p.productName, s.createdAt ";
+
 
         $selectQuery = "SELECT s.salesID, s.paymentPlanID,pp.paymentPlanDeposit AS planDepositAmount,"
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
@@ -658,13 +450,7 @@ class SalesController extends Controller {
                 . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.paid, s.status, s.createdAt ";
 
-        /*  $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
-          . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
-          . "ON pp.frequencyID=f.frequencyID LEFT JOIN customer cu on s.customerID=cu.customerID "
-          . "LEFT JOIN contacts c on cu.contactsID=c.contactsID LEFT JOIN product p "
-          . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
-          . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
-         */
+     
         $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
                 . "LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f "
                 . "ON pp.frequencyID=f.frequencyID "
@@ -680,8 +466,6 @@ class SalesController extends Controller {
             's.userID' => $userID,
             'date' => [$startDate, $endDate]
         ];
-
-//        $logger->log("Sales Request Data: " . json_encode($whereArray));
 
         $whereQuery = "";
 
@@ -720,8 +504,6 @@ class SalesController extends Controller {
         if ($whereQuery) {
             $whereQuery = chop($whereQuery, " AND");
         }
-
-//$whereQuery = $whereQuery ? "AND $whereQuery " : "";
         $whereQuery = $whereQuery ? " WHERE (s.status=1 || s.status=2) AND $whereQuery " : " WHERE (s.status=1 || s.status=2) ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
@@ -731,8 +513,6 @@ class SalesController extends Controller {
         $selectQuery .= $queryBuilder;
 
         $logger->log("Sales Request Query: " . $selectQuery);
-//$return 
-//return $res->success("Sales ", $selectQuery);
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
@@ -742,9 +522,7 @@ class SalesController extends Controller {
 
         foreach ($sales as $sale) {
             $items = $this->getSaleItems($sale['salesID']);
-//$transactions = $this->getSalesTransactions($sale['nationalIdNumber'], $sale['customerNumber']);
             $sale['items'] = $items;
-//$sale['transactions'] = $transactions; //return $res->success("salesID",$items);
             array_push($displaySales, $sale);
         }
 //
@@ -754,6 +532,16 @@ class SalesController extends Controller {
 
         return $res->success("Sales ", $data);
     }
+
+     /*
+    retrieve pending and old crm sales to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
 
     public function getTablePendingSales() { //sort, order, page, limit,filter,userID
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -796,7 +584,6 @@ class SalesController extends Controller {
             'date' => [$startDate, $endDate]
         ];
 
-//        $logger->log("Sales Request Data: " . json_encode($whereArray));
 
         $whereQuery = "";
 
@@ -836,7 +623,6 @@ class SalesController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-//$whereQuery = $whereQuery ? "AND $whereQuery " : "";
         $whereQuery = $whereQuery ? " WHERE s.status=0 AND $whereQuery " : " WHERE s.status=0 ";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
@@ -865,8 +651,16 @@ class SalesController extends Controller {
 
         return $res->success("pending sales ", $data);
     }
-
-    public function getTablePartnerSales() { //sort, order, page, limit,filter,userID
+ /*
+    retrieve partner sales to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+    public function getTablePartnerSales() { 
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
         $request = new Request();
@@ -890,13 +684,7 @@ class SalesController extends Controller {
                 . "p.productName,psi.salesPartner,psi.customerID,psi.contactsID,"
                 . "c.workMobile,c.nationalIdNumber,c.fullName,c.location,psi.createdAt ";
 
-//        $defaultQuery = "FROM partner_sale_item psi INNER JOIN item i on psi.itemID=i.itemID "
-//                . "LEFT JOIN product p ON i.productID=p.productID INNER JOIN customer cust "
-//                . "ON psi.customerID=cust.customerID INNER JOIN contacts c ON cust.contactsID=c.contactsID ";
-//
-//        $selectQuery = "SELECT psi.partnerSaleItemID, psi.itemID,i.serialNumber, "
-//                . "i.productID, p.productName, i.status, psi.customerID, c.workMobile, "
-//                . "c.nationalIdNumber, c.fullName, c.location, psi.salesPartner AS partnerName,psi.createdAt ";
+
 
         $whereArray = [
             'filter' => $filter,
@@ -961,6 +749,9 @@ class SalesController extends Controller {
         return $res->success("Sales ", $data);
     }
 
+ /*
+    util function to build all get queries based on passed parameters
+    */
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
         $sortClause = "ORDER BY $sort $order";
@@ -977,6 +768,10 @@ class SalesController extends Controller {
 
         return "$sortClause $limitQuery";
     }
+
+    /*
+    get a sale summary representaion on crm dashboard
+    */
 
     public function dashBoardSummary() {
         $jwtManager = new JwtManager();
@@ -1026,46 +821,23 @@ class SalesController extends Controller {
         return $res->success("Summary data ", $summaryData);
     }
 
-    public function getCRMSaleItems() {//{salesID,token}
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $token = $request->getQuery('token');
-        $salesID = $request->getQuery('salesID');
-
-        /* $selectQuery = "select i.serialNumber, p.productName, c.categoryName "
-          . "from sales_item si left join item i on si.itemID=i.itemID left join product p on i.productID=p.productID "
-          . "left join category c on p.categoryID=c.categoryID";
-         */
-        $selectQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus,s.productID,p.productName FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID left join product p  on s.productID=p.productID ";
-
-
-        if (!$token) {
-            return $res->dataError("Missing data ");
-        }
-
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
-
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
-        }
-
-
-        if ($salesID) {
-            $selectQuery = $selectQuery . " WHERE si.saleID = $salesID";
-        }
-
-        $saleItems = $this->rawSelect($selectQuery);
-
-
-        return $res->success("saleItems", $saleItems);
-    }
-
+   /*
+   retrive items of a given sale
+   parameters
+   salesID (required)
+   */
     public function getSaleItems($salesID) {
         $selectQuery = "select i.serialNumber, p.productName, c.categoryName from sales_item si join item i on si.itemID=i.itemID join product p on i.productID=p.productID join category c on p.categoryID=c.categoryID where saleID = $salesID";
         $items = $this->rawSelect($selectQuery);
         return $items;
     }
+
+    /*
+    get all transactions associated by a given sale
+    nationalIdNumber (customer national Id number)
+    w_mobile (customer work mobile)
+
+    */
 
     public function getSalesTransactions($nationalIdNumber, $w_mobile) {
         $selectQuery = "select * from transaction t where t.salesID>0 and (t.salesID='$nationalIdNumber' or t.salesID='$w_mobile') ";
@@ -1073,6 +845,12 @@ class SalesController extends Controller {
         return $transactions;
     }
 
+    /*
+    get sales reports 
+    parameters:
+    token
+    */
+   
     public function saleSummary() {
         $logPathLocation = $this->config->logPath->location . 'error.log';
         $logger = new FileAdapter($logPathLocation);
@@ -1081,8 +859,6 @@ class SalesController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
-//        $transactionManager = new TransactionManager();
-//        $dbTransaction = $transactionManager->get();
         $token = $request->getQuery('token');
 
         if (!$token) {
@@ -1122,7 +898,10 @@ class SalesController extends Controller {
 
         return $res->success("sale stats", $salesData);
     }
-
+    
+    /*
+     monitors sales to trigger welcome call and delinquency tickets
+    */
     public function monitorSales() {
         $logPathLocation = $this->config->logPath->location . 'apicalls_log.log';
         $logger = new FileAdapter($logPathLocation);
@@ -1314,6 +1093,9 @@ class SalesController extends Controller {
           return $res->success("response", $batchSize); */
     }
 
+/*
+//  function to update any sale made before 10th May 2017
+
     public function updateOldSales() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -1321,7 +1103,7 @@ class SalesController extends Controller {
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
-        /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;" */
+        /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;"  end comment
         try {
 
             /* $salesQuery = " select * from sales where createdAt<>'0000-00-00 00:00:00' ";
@@ -1357,7 +1139,7 @@ class SalesController extends Controller {
 
               }
 
-              } */
+              }  end comment
 
             $salesQuery = "select * from sales ";
             $sales = $this->rawSelect($salesQuery);
@@ -1432,7 +1214,7 @@ class SalesController extends Controller {
                       $dbTransaction->rollback("sale create failed " . json_encode($errors));
                       }
 
-                      } */
+                      } end comment
                 }
             }
 
@@ -1446,7 +1228,11 @@ class SalesController extends Controller {
             return $res->dataError('sale update error', $message);
         }
     }
+*/
 
+    /*
+    reconcile all partner sales from the old system
+    */
     public function reconcilePartnerSales() {
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -1486,6 +1272,9 @@ class SalesController extends Controller {
         }
     }
 
+/*
+ reconcile agent sales made in the old crm
+*/
     public function reconcileSales() { //salesID,contactsID,productID,serialNumber,salesTypeID,frequencyID,status,userID,token,agentID
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -1664,6 +1453,13 @@ class SalesController extends Controller {
         return $res->success("sale successfully reconcilled ", $sale);
     }
 
+/*
+function to update partner sales
+parameters
+partnerSaleItemID,
+contactsID
+token
+*/
     public function updatePartnerSale() {//partnerSaleItemID, contactsID,token
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -1707,6 +1503,11 @@ class SalesController extends Controller {
         return $res->success("partner sale successfully updated ", $partnerSale);
     }
 
+/*
+add sales that were not captured in the old crm
+parameters:
+amount,createdAt,paymentPlanDeposit,paid,workMobile,fullName,nationalIdNumber,location,productID,salesTypeID,userID,contactsID
+*/
     public function crmCreateSale() { //{amount,createdAt,paymentPlanDeposit,paid,workMobile,fullName,nationalIdNumber,location,productID,salesTypeID,userID,contactsID}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -1796,6 +1597,10 @@ class SalesController extends Controller {
         }
     }
 
+/*
+check if customer has ever transacted and update their sales
+Consumed by crmCreateSale
+*/
     private function checkCustomerTransaction($contactsID) {
         /* $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM customer_transaction ct JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID";
          */
@@ -1847,6 +1652,11 @@ class SalesController extends Controller {
         }
     }
 
+    /*
+    map item to sale created in crmCreateSale
+    constumed by crmCreateSale
+    */
+
     private function setCrmSaleItem($serialNumber, $saleID) {
         $res = new SystemResponses();
 
@@ -1887,6 +1697,9 @@ class SalesController extends Controller {
         return true;
     }
 
+/*
+create new customers for contacts from old system who had made sales
+*/
     public function matchContacts() {
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
