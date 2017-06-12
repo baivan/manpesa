@@ -108,6 +108,7 @@ $sale_route->get('statistic', 'saleSummary');
 $sale_route->get('crm/monitor', 'monitorSales');
 $sale_route->post('delete', 'delete');
 $sale_route->post('crm/updatepartnersale', 'updatePartnerSale');
+$sale_route->get('crm/match', 'matchContacts');
 
 
 //crmCreateSale

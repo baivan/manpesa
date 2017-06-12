@@ -1799,7 +1799,7 @@ class SalesController extends Controller {
     private function checkCustomerTransaction($contactsID) {
         /* $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM customer_transaction ct JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID";
          */
-          $res = new SystemResponses();
+        $res = new SystemResponses();
         $customerDepositAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit FROM contacts c JOIN transaction t ON c.workMobile=t.mobile OR c.nationalIdNumber=t.salesID WHERE c.contactsID=$contactsID";
 
         $customerDepositAmount = $this->rawSelect($customerDepositAmountQuery);
@@ -1848,7 +1848,7 @@ class SalesController extends Controller {
     }
 
     private function setCrmSaleItem($serialNumber, $saleID) {
-          $res = new SystemResponses();
+        $res = new SystemResponses();
 
         $itemQuery = "SELECT itemID FROM item WHERE serialNumber = '" . $serialNumber . "'";
         $item = $this->rawSelect($itemQuery);
@@ -1864,7 +1864,7 @@ class SalesController extends Controller {
                     'bind' => array("s_id" => $saleID, "i_id" => $itemID)));
 
         if ($saleItem) {
-            $res->dataError('crm create sale item failed item or sale already mapped',false);
+            $res->dataError('crm create sale item failed item or sale already mapped', false);
             return false;
         }
         $saleItem = new SalesItem();
@@ -1885,6 +1885,96 @@ class SalesController extends Controller {
         $res->success('crm sale item mapping success', true);
 
         return true;
+    }
+
+    public function matchContacts() {
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+        $res = new SystemResponses();
+
+        $limit = 500;
+        $batchSize = 1;
+
+        try {
+
+            $salesCountRequest = $res->rawSelect("SELECT COUNT(salesID) AS salesCount FROM sales WHERE customerID=0 AND prospectsID IS NULL AND status=0 ");
+            $salesCount = $salesCountRequest[0]['salesCount'];
+//            $logger->log("Transactions Count: " . json_encode($transactionCount));
+
+            if ($salesCount <= $limit) {
+                $batchSize = 1;
+            } else {
+                $batchSize = (int) ($salesCount / $limit) + 1;
+            }
+
+            for ($count = 0; $count < $batchSize; $count++) {
+                $page = $count + 1;
+                $offset = (int) ($page - 1) * $limit;
+                $sales = Sales::find([
+                            "customerID=:id: AND status=:status: AND prospectsID IS NULL",
+                            "bind" => array(
+                                "id" => 0,
+                                "status" => 0
+                            ),
+                            "limit" => $limit,
+                            "offset" => $offset
+                ]);
+                //$sales = $res->rawSelect("SELECT salesID, contactsID FROM sales WHERE customerID=0 AND prospectsID IS NULL AND status=0 LIMIT $offset, $limit");
+
+                $logger->log("Batch NO: " . $page);
+
+                foreach ($sales as $sale) {
+                    //$logger->log("Customer Transaction: " . json_encode($transaction));
+                    $contactsID = $sale->contactsID;
+                    $salesID = $sale->salesID;
+
+                    $customer = Customer::findFirst(array("contactsID=:id: ",
+                                'bind' => array("id" => $contactsID)));
+
+                    if (!$customer) {
+                        $customer = new Customer();
+                        $customer->contactsID = $contactsID;
+                        $customer->locationID = 0;
+                        $customer->userID = 54;
+                        $customer->createdAt = date("Y-m-d H:i:s");
+                        $customer->status = 1;
+
+                        if ($customer->save() === false) {
+                            $errors = array();
+                            $messages = $sale->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
+                            }
+
+                            $logger->log("Failed to save NEW customer: " . json_encode($errors));
+                        }
+                    }
+
+                    if ($customer) {
+                        $customerID = $customer->customerID;
+                        $sale->customerID = $customerID;
+                        if ($sale->save() === false) {
+                            $errors = array();
+                            $messages = $sale->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
+                            }
+//return $res->dataError('sale create failed',$errors);
+                            return $res->dataError('sale customer failed to match', $errors);
+                        }
+                        $logger->log("Sale customerID updated: " . json_encode($sale));
+                    }
+                }
+            }
+            //return $res->success('contacts successfully matched', count($sales));
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('transaction update error', $message);
+        }
     }
 
 }
