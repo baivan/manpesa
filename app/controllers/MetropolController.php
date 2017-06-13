@@ -209,14 +209,14 @@ class MetropolController extends Controller
 
            		 }
            		 else{
-           		 	return $res->success("Contact not verified ", $contact); 
+           		 	return $res->success("Contact not verified ", false); 
            		 }
 
             }
 
             $dbTransaction->commit();
 
-            return $res->success("Contact successfuly verified ", $contact); 
+            return $res->success("Contact successfuly verified ", true); 
 
         }
         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
