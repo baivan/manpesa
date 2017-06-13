@@ -36,12 +36,12 @@ class SalesController extends Controller {
     }
 
      /*
-    create new sale
-    accepts contactsID/prospect if contact/prospect already saved
-    also accepts customer details and will created the customer before making sale
-    Then communicated to customer via sms with payment details
-    paramters:
-     see create sale parameters inside create function
+        create new sale
+        accepts contactsID/prospect if contact/prospect already saved
+        also accepts customer details and will created the customer before making sale
+        Then communicated to customer via sms with payment details
+        paramters:
+         see create sale parameters inside create function
     */
     public function create() { 
         $jwtManager = new JwtManager();
@@ -218,7 +218,8 @@ class SalesController extends Controller {
     }
 
      /*
-    adds contacts iincase no contacat exists 
+    adds contacts incase no contacat exists 
+    also consumed by metropol controller
     */
     public function createContact($workMobile, $nationalIdNumber, $fullName, $location, $dbTransaction, $homeMobile = null, $homeEmail = null, $workEmail = null, $passportNumber = 0, $locationID = 0) {
         $res = new SystemResponses();

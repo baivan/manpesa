@@ -36,7 +36,7 @@ class Contacts extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
-     * @Column(type="string", length=100, nullable=false)
+     * @Column(type="string", length=100, nullable=true)
      */
     public $workEmail;
 
@@ -74,13 +74,55 @@ class Contacts extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $locationID;
-    
-        /**
+
+    /**
      *
      * @var integer
      * @Column(type="integer", length=3, nullable=false)
      */
-    public $status;
+    public $idVerified;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=15, nullable=true)
+     */
+    public $dateOfBeing;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=10, nullable=true)
+     */
+    public $gender;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=20, nullable=true)
+     */
+    public $employment;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=50, nullable=true)
+     */
+    public $physicalAddress;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=50, nullable=true)
+     */
+    public $postalAddress;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=20, nullable=true)
+     */
+    public $metropolCutomerPhone;
 
     /**
      *
@@ -95,6 +137,13 @@ class Contacts extends \Phalcon\Mvc\Model
      * @Column(type="string", nullable=false)
      */
     public $updatedAt;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=3, nullable=false)
+     */
+    public $status;
 
     /**
      * Returns table name mapped in the model.
