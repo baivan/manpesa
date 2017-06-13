@@ -266,6 +266,13 @@ $ticket_route->get('crm/updates', 'tableTicketUpdates');
 $ticket_route->get('crm/email', 'email');
 
 
+$metropol_route = new MicroCollection();
+$metropol_route->setPrefix('/metropol/');
+$metropol_route->setHandler(new MetropolController());
+$metropol_route->post('rate', 'creditRate');
+$metropol_route->post('identity/verify','identityVerification');
+
+
 $app->mount($user_route);
 $app->mount($item_route);
 $app->mount($prospect_route);
@@ -286,6 +293,8 @@ $app->mount($outbox_route);
 $app->mount($ticket_category_route);
 $app->mount($priority_route);
 $app->mount($call_route);
+$app->mount($metropol_route);
+
 
 try {
     // Handle the request

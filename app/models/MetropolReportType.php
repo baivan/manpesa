@@ -1,6 +1,6 @@
 <?php
 
-class ContactCreditScore extends \Phalcon\Mvc\Model
+class MetropolReportType extends \Phalcon\Mvc\Model
 {
 
     /**
@@ -10,28 +10,35 @@ class ContactCreditScore extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $contactCreditScoreID;
+    public $metropolReportTypeID;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $contactsID;
+    public $reportType;
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @var string
+     * @Column(type="string", length=150, nullable=false)
      */
-    public $userID;
+    public $reportName;
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @var string
+     * @Column(type="string", length=300, nullable=false)
      */
-    public $score;
+    public $reportDescription;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=100, nullable=false)
+     */
+    public $endpoint;
 
     /**
      *
@@ -54,14 +61,14 @@ class ContactCreditScore extends \Phalcon\Mvc\Model
      */
     public function getSource()
     {
-        return 'contact_credit_score';
+        return 'metropol_report_type';
     }
 
     /**
      * Allows to query a set of records that match the specified conditions
      *
      * @param mixed $parameters
-     * @return ContactCreditScore[]
+     * @return MetropolReportType[]
      */
     public static function find($parameters = null)
     {
@@ -72,7 +79,7 @@ class ContactCreditScore extends \Phalcon\Mvc\Model
      * Allows to query the first record that match the specified conditions
      *
      * @param mixed $parameters
-     * @return ContactCreditScore
+     * @return MetropolReportType
      */
     public static function findFirst($parameters = null)
     {

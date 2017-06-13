@@ -31,10 +31,25 @@ class SystemResponses extends Controller {
             case 'error':
                 return $logPathLocation . 'error_logs.log';
                 break;
+            case 'metropol':
+                return $logPathLocation . 'metropol_logs.log';
+                break;
+             case 'metropol_error':
+                return $logPathLocation . 'metropol_error_logs.log';
+                break;
             default:
                 return $logPathLocation . 'apicalls_logs.log';
                 break;
         }
+    }
+
+    public function metropolResponseLogs($requestType,$response){
+        $logger = new FileAdapter($this->getLogFile('metropol'));
+        $logger->log($requestType . ' ' . json_encode($response));
+    }
+    public function metropolResponseErrorLogs($requestType,$response){
+        $logger = new FileAdapter($this->getLogFile('metropol_error'));
+        $logger->log($requestType . ' ' . json_encode($response));
     }
 
 
