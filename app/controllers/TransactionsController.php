@@ -241,7 +241,7 @@ class TransactionsController extends Controller {
 //            $transactionCount = $transactionsRequest[0]['transactionCount'];
 //            $logger->log("Transactions Count: " . json_encode($transactionCount));
 
-            $salesRequest = $res->rawSelect("SELECT COUNT(salesID) AS salesCount FROM sales ");
+            $salesRequest = $this->rawSelect("SELECT COUNT(salesID) AS salesCount FROM sales ");
             $salesCount = $salesRequest[0]['salesCount'];
 
             if ($salesCount <= $limit) {
