@@ -54,7 +54,7 @@ class MetropolController extends Controller
             return $res->dataError("Token missing " . json_encode($json), []);
         }
 
-        if(!$contactsID || (!$nationalIdNumber && !$location && !$workMobile && !$fullName)){
+        if(!$contactsID && (!$nationalIdNumber || !$location || !$workMobile || !$fullName)){
         	return $res->dataError("Customer missing " . json_encode($json), []);
         }
 
