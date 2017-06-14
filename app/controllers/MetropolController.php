@@ -85,7 +85,7 @@ class MetropolController extends Controller
 	            	$contactCreditScore = new ContactCreditScore();
 	            	$contactCreditScore ->contactsID = $contactsID;
 	            	$contactCreditScore ->userID = $userID;
-	            	$contactCreditScore ->score = isset($score) ? $score:0 ;
+	            	$contactCreditScore ->score = isset($score) ? 0 :$score;
 	            	$contactCreditScore ->createdAt = date("Y-m-d H:i:s");
 
 	            	if ($contactCreditScore->save() === false) {
