@@ -81,7 +81,7 @@ class MetropolController extends Controller
             	 $response = $this->consumerRate($nationalIdNumber);
 
 	            if($response){
-	            	$score = $response->credit_score;
+	            	$score = $response['credit_score'];
 	            	$contactCreditScore = new ContactCreditScore();
 	            	$contactCreditScore ->contactsID = $contactsID;
 	            	$contactCreditScore ->userID = $userID;
