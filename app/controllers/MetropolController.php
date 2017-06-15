@@ -17,11 +17,11 @@ class MetropolController extends Controller
 {
     
     private $publicKey="uhFjiyoxRfwbJthxuSqzznhjrugUye";
-	private $privateKey="rsaxnhnEfttbYejqxhTbpwjMxArndsdsxwqmsxbdraivxrzephhbirjutfwc";
-	private $metropolRoot = "https://api.metropol.co.ke:22225/v2_1";
+	  private $privateKey="rsaxnhnEfttbYejqxhTbpwjMxArndsdsxwqmsxbdraivxrzephhbirjutfwc";
+	  private $metropolRoot = "https://api.metropol.co.ke:22225/v2_1";
 
-	private $consumerRateRType = 3;
-	private $identityScrubNumber = 6;
+	  private $consumerRateRType = 3;
+	  private $identityScrubNumber = 6;
 
 	/*
 	credit rate api
