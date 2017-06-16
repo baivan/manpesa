@@ -272,6 +272,11 @@ $metropol_route->setHandler(new MetropolController());
 $metropol_route->post('rate', 'creditRate');
 $metropol_route->post('identity/verify','identityVerification');
 
+$reconcile_route = new MicroCollection();
+$reconcile_route->setPrefix('/reconcile/');
+$reconcile_route->setHandler(new ReconcileController());
+$reconcile_route->get('redo', 'redoReconciledTransactions');
+
 
 $app->mount($user_route);
 $app->mount($item_route);
@@ -294,6 +299,7 @@ $app->mount($ticket_category_route);
 $app->mount($priority_route);
 $app->mount($call_route);
 $app->mount($metropol_route);
+//$app->mount($reconcile_route);
 
 
 try {

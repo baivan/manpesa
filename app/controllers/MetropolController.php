@@ -17,11 +17,11 @@ class MetropolController extends Controller
 {
     
     private $publicKey="uhFjiyoxRfwbJthxuSqzznhjrugUye";
-	private $privateKey="rsaxnhnEfttbYejqxhTbpwjMxArndsdsxwqmsxbdraivxrzephhbirjutfwc";
-	private $metropolRoot = "https://api.metropol.co.ke:22225/v2_1";
+	  private $privateKey="rsaxnhnEfttbYejqxhTbpwjMxArndsdsxwqmsxbdraivxrzephhbirjutfwc";
+	  private $metropolRoot = "https://api.metropol.co.ke:22225/v2_1";
 
-	private $consumerRateRType = 3;
-	private $identityScrubNumber = 6;
+	  private $consumerRateRType = 3;
+	  private $identityScrubNumber = 6;
 
 	/*
 	credit rate api
@@ -54,7 +54,7 @@ class MetropolController extends Controller
             return $res->dataError("Token missing " . json_encode($json), []);
         }
 
-        if(!$contactsID || (!$nationalIdNumber && !$location && !$workMobile && !$fullName)){
+        if(!$contactsID && (!$nationalIdNumber || !$location || !$workMobile || !$fullName)){
         	return $res->dataError("Customer missing " . json_encode($json), []);
         }
 
@@ -81,11 +81,11 @@ class MetropolController extends Controller
             	 $response = $this->consumerRate($nationalIdNumber);
 
 	            if($response){
-	            	$score = $response->credit_score;
+	            	$score = $response['credit_score'];
 	            	$contactCreditScore = new ContactCreditScore();
 	            	$contactCreditScore ->contactsID = $contactsID;
 	            	$contactCreditScore ->userID = $userID;
-	            	$contactCreditScore ->score = isset($score) ? $score:0 ;
+	            	$contactCreditScore ->score = isset($score) ? $score :0;
 	            	$contactCreditScore ->createdAt = date("Y-m-d H:i:s");
 
 	            	if ($contactCreditScore->save() === false) {

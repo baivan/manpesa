@@ -530,7 +530,6 @@ app get user summary
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
-        // $salesTypeID = $request->getQuery('salesTypeID');
         $userID = $request->getQuery('userID');
 
         if (!$token || !$userID) {
@@ -543,18 +542,27 @@ app get user summary
             return $res->dataError("Data compromised");
         }
 
-        $overalQuery = "SELECT SUM(amount) as amount, u.targetSale FROM `sales` s join users u on s.userID=u.userID WHERE s.userID=$userID";
+       // $overalQuery = "SELECT SUM(amount) as amount, u.targetSale FROM `sales` s join users u on s.userID=u.userID WHERE s.userID=$userID";
+        $targetSaleQuery = "SELECT SUM(pp.price) as amount  from user_items ui join item i on ui.itemID = i.itemID JOIN product_sale_type_price pp on i.productID=pp.productID join sales_type st on pp.salesTypeID=st.salesTypeID where ui.userID=$userID and st.salesTypeName='cash' and i.status <=1";
+        $totalSalesQuery = "SELECT SUM(pp.price) as amount  from user_items ui join item i on ui.itemID = i.itemID JOIN product_sale_type_price pp on i.productID=pp.productID join sales_type st on pp.salesTypeID=st.salesTypeID where ui.userID=$userID and st.salesTypeName='cash' and (i.status =2 or i.status =5)";
+
+        $perSaleTypeQuery = "SELECT SUM(s.paid) as paid,SUM(s.amount) as totalAmount,st.salesTypeName from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st ON pp.salesTypeID=st.salesTypeID where paid > 0 and userID = $userID  GROUP BY st.salesTypeID";
+
+
         $saleTypesQuery = "SELECT * FROM sales_type";
         $saleTypes = $this->rawSelect($saleTypesQuery);
-        $overalSummary = $this->rawSelect($overalQuery);
+        $targetSale = $this->rawSelect($targetSaleQuery);
+        $totalSales = $this->rawSelect($totalSalesQuery);
+        $saleTypesTotal = $this->rawSelect($perSaleTypeQuery);
+        
 
-        $salesTypeSummary = array();
+     
 
         foreach ($saleTypes as $saleType) {
             $salesTypeID = $saleType['salesTypeID'];
             $saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID AND s.userID=$userID";
             $typeData = $this->rawSelect($saleTypeQuery);
-            //array_push($salesTypeSummary,$typeData[0]);
+            
             $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
 
             if (is_null($typeData[0]['amount'])) {
@@ -564,12 +572,24 @@ app get user summary
             }
         }
 
-        $data["totalSales"] = $overalSummary[0]['amount'];
+       $data = array('targetSale' => isset($targetSale[0]["amount"])?$targetSale[0]["amount"]:0,
+        'totalSales' => isset($totalSales[0]["amount"])?$totalSales[0]["amount"]:0,
+        'saleTypesTotal' => $saleTypesTotal);
 
-        if (is_null($overalSummary[0]['targetSale'])) {
-            $data["targetSale"] = 0;
-        } else {
-            $data["targetSale"] = $overalSummary[0]['targetSale'];
+       //after everyone has updated put off this
+
+       foreach ($saleTypes as $saleType) {
+            $salesTypeID = $saleType['salesTypeID'];
+            $saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID AND s.userID=$userID";
+            $typeData = $this->rawSelect($saleTypeQuery);
+            
+            $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
+
+            if (is_null($typeData[0]['amount'])) {
+                $data[$typeData[0]['salesTypeName']] = 0;
+            } else {
+                $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
+            }
         }
 
 

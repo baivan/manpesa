@@ -97,7 +97,7 @@ class TicketController extends Controller {
 
             $ticketID = $ticket->ticketID;
 
-            $ticketData = $res->rawSelect("SELECT t.ticketTitle, t.ticketDescription, "
+            $ticketData = $this->rawSelect("SELECT t.ticketTitle, t.ticketDescription, "
                     . "t.userID,c.fullName AS triggerName,t.contactsID, c1.fullName AS owner, "
                     . "t.otherOwner,t.assigneeID, c2.fullName AS assigneeName, c2.workMobile, c2.workEmail, t.ticketCategoryID,"
                     . "cat.ticketCategoryName, t.otherCategory, t.priorityID,p.priorityName FROM ticket t "
