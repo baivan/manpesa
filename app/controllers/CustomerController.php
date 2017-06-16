@@ -500,9 +500,9 @@ class CustomerController extends Controller {
 
         $countQuery = "SELECT count(c.customerID) as totalCustomers ";
 
-        $baseQuery = " FROM customer  c join contacts co on c.contactsID=co.contactsID ";
+        $baseQuery = " FROM customer  c join contacts co on c.contactsID=co.contactsID LEFT JOIN contact_credit_score cs on c.contactsID=cs.contactsID ";
 
-        $selectQuery = "SELECT c.customerID,co.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.workEmail,co.location, c.createdAt  ";
+        $selectQuery = "SELECT c.customerID,co.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.workEmail,co.location, c.createdAt,cs.score as crbCheckStatus ";
 
 
         $whereArray = [
@@ -553,6 +553,7 @@ class CustomerController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
 
         $selectQuery .= $queryBuilder;
+       // return $res->success("customers", $selectQuery);
 
         $count = $this->rawSelect($countQuery);
 
