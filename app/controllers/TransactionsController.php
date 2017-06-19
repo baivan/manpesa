@@ -9,23 +9,21 @@ use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
 use Phalcon\Logger\Adapter\File as FileAdapter;
 
 /*
-All Transactions CRUD operations 
-*/
+  All Transactions CRUD operations
+ */
 
 class TransactionsController extends Controller {
 
-
-
     private $salePaid = 1; //salepaid status
-
     //sales types
-    private $installment = "installment"; 
+    private $installment = "installment";
     private $cash = "cash";
     private $paygo = "Pay As you Go";
 
-      /*
-    Raw query select function to work in any version of phalcon
-    */
+    /*
+      Raw query select function to work in any version of phalcon
+     */
+
     protected function rawSelect($statement) {
         $connection = $this->di->getShared("db");
         $success = $connection->query($statement);
@@ -34,13 +32,11 @@ class TransactionsController extends Controller {
         return $success;
     }
 
-    
-
-   /*
-    create new transaction usually called by southwell payment gateway
-    paramters:
-    mobile,account,referenceNumber,amount,fullName,token
-    */
+    /*
+      create new transaction usually called by southwell payment gateway
+      paramters:
+      mobile,account,referenceNumber,amount,fullName,token
+     */
 
     public function create() { //{mobile,account,referenceNumber,amount,fullName,token}
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -222,8 +218,8 @@ class TransactionsController extends Controller {
     }
 
     /*
-    cron job reconcile a transaction with sales and contacts
-    */
+      cron job reconcile a transaction with sales and contacts
+     */
 
     public function reconcile() {
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -244,6 +240,8 @@ class TransactionsController extends Controller {
             $salesRequest = $this->rawSelect("SELECT COUNT(salesID) AS salesCount FROM sales ");
             $salesCount = $salesRequest[0]['salesCount'];
 
+//            return $res->success('reconcilliation finished', []);
+
             if ($salesCount <= $limit) {
                 $batchSize = 1;
             } else {
@@ -261,89 +259,101 @@ class TransactionsController extends Controller {
                 $logger->log("Batch NO: " . $page);
 
                 foreach ($sales as $sale) {
-                    //$logger->log("Customer Transaction: " . json_encode($transaction));
+
                     $contactsID = $sale->contactsID;
 
-                    //Find all sales with the contactsID
+                    if ($contactsID) {
+                        //Find all sales with the contactsID
 
-                    $contactSales = Sales::find(array("contactsID=:id: AND amount>:amount:",
-                                'bind' => array("id" => $contactsID, "amount" => 0)));
-
-                    //Find all transactions of the contactsID and sum them
-
-                    $contactTransactions = $res->rawSelect("SELECT t.depositAmount FROM customer_transaction ct "
-                            . "INNER JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID");
-
-                    $contactTotalAmount = 0;
-
-                    foreach ($contactTransactions as $contactTransaction) {
-                        $amount = $contactTransaction['depositAmount'];
-                        $depositAmount = floatval(str_replace(',', '', $amount));
-                        $contactTotalAmount += $depositAmount;
-                    }
+                        $contactSales = Sales::find(array("contactsID=:id: AND amount>:amount:",
+                                    'bind' => array("id" => $contactsID, "amount" => 0)));
 
 
-                    foreach ($contactSales as $sale) {
+                        //Find all transactions of the contactsID and sum them
 
-                        $amount = floatval($sale->amount);
-                        $paid = floatval($sale->paid);
-                        $unpaid = $amount - $paid;
+                        $contactTransactions = $this->rawSelect("SELECT t.depositAmount FROM customer_transaction ct "
+                                . "INNER JOIN transaction t ON ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID");
 
-                        if ($contactTotalAmount > $paid) {
-                            $contactTotalAmount = $contactTotalAmount - $paid;
+                        $logger->log("Sale Contact Transactions:  " . json_encode($contactTransactions));
 
-                            if ($contactTotalAmount >= $unpaid) {
-                                $pay = $paid + $unpaid;
-                                $contactTotalAmount = $contactTotalAmount - $unpaid;
-                                $sale->paid = $pay;
-                                $sale->status = 2;
+                        $contactTotalAmount = 0;
+
+                        foreach ($contactTransactions as $contactTransaction) {
+                            $amount = $contactTransaction['depositAmount'];
+                            $depositAmount = floatval(str_replace(',', '', $amount));
+                            $contactTotalAmount += $depositAmount;
+                        }
+
+                        $logger->log("Contact Total deposit Amount:  " . json_encode($contactTotalAmount));
+
+
+                        foreach ($contactSales as $sale) {
+
+                            $amount = floatval($sale->amount);
+                            $paid = floatval($sale->paid);
+                            $unpaid = $amount - $paid;
+
+                            if ($contactTotalAmount > $paid) {
+                                $contactTotalAmount = $contactTotalAmount - $paid;
+
+                                if ($contactTotalAmount >= $unpaid) {
+                                    $pay = $paid + $unpaid;
+                                    $contactTotalAmount = $contactTotalAmount - $unpaid;
+                                    $sale->paid = $pay;
+                                    $sale->status = 2;
+                                } else {
+                                    $pay = $paid + $contactTotalAmount;
+                                    $sale->paid = $pay;
+                                    $sale->status = 1;
+                                    $contactTotalAmount = 0;
+                                }
                             } else {
-                                $pay = $paid + $contactTotalAmount;
-                                $sale->paid = $pay;
-                                $sale->status = 1;
                                 $contactTotalAmount = 0;
                             }
-                        } else {
-                            $contactTotalAmount = 0;
-                        }
 
-                        if ($sale->save() === false) {
-                            $errors = array();
-                            $messages = $sale->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
+                            if ($sale->save() === false) {
+                                $errors = array();
+                                $messages = $sale->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $logger->log("Error while saving sale data: " . json_encode($errors));
+
+                                //$dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                                $res->dataError('customer transaction create failed', $messages);
+                                //return $res->success("Payment received", TRUE);
                             }
-                            $logger->log("Error while saving sale data: " . json_encode($errors));
 
-                            //$dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                            $res->dataError('customer transaction create failed', $messages);
-                            //return $res->success("Payment received", TRUE);
+                            $logger->log("Customer Sale UPDATED: " . json_encode($sale));
+
+                            if ($contactTotalAmount == 0) {
+                                break;
+                            }
                         }
-
-                        $logger->log("Customer Sale: " . json_encode($sale));
-
-                        if ($contactTotalAmount == 0) {
-                            break;
-                        }
+                    } else {
+                        $logger->log("Sale does NOT have contactsID:  " . json_encode($sale));
                     }
+
+                    $logger->log("========================== COMPLETE ========================");
                 }
             }
+            return $res->success('reconcilliation finished', []);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('sale payments update error', $message);
         }
     }
 
-/*
-reconcile old transactions to match with customer
-parameters (all required):
-contactsID,
-transactionID,
-userID,
-token
-*/
+    /*
+      reconcile old transactions to match with customer
+      parameters (all required):
+      contactsID,
+      transactionID,
+      userID,
+      token
+     */
 
     public function reconcilePayment() { //contactsID, transactionID, userID,token
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -510,7 +520,6 @@ token
         }
     }
 
-
     public function checkPayment() {//{token,salesID}
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -554,11 +563,12 @@ token
         }
     }
 
-/*
-check if sale is paid. Called internally within the backend 
-params:
-salesID (required)
-*/
+    /*
+      check if sale is paid. Called internally within the backend
+      params:
+      salesID (required)
+     */
+
     public function checkSalePaid($salesID) {
         /* $transactionQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from transaction t join contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber join customer cu on c.contactsID=cu.contactsID join sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID left join item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0";
          */
@@ -580,15 +590,17 @@ salesID (required)
             return false;
         }
     }
- /*
-    retrieve  transactions to be tabulated on crm
-    parameters:
-    sort (field to be used in order condition),
-    order (either asc or desc),
-    page (current table page),
-    limit (total number of items to be retrieved),
-    filter (to be used on where statement)
-    */
+
+    /*
+      retrieve  transactions to be tabulated on crm
+      parameters:
+      sort (field to be used in order condition),
+      order (either asc or desc),
+      page (current table page),
+      limit (total number of items to be retrieved),
+      filter (to be used on where statement)
+     */
+
     public function getTableTransactions() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -674,15 +686,15 @@ salesID (required)
         return $res->success("Transactions get successfully ", $data);
     }
 
-     /*
-    retrieve  unknown/ unmatched transactions to be tabulated on crm
-    parameters:
-    sort (field to be used in order condition),
-    order (either asc or desc),
-    page (current table page),
-    limit (total number of items to be retrieved),
-    filter (to be used on where statement)
-    */
+    /*
+      retrieve  unknown/ unmatched transactions to be tabulated on crm
+      parameters:
+      sort (field to be used in order condition),
+      order (either asc or desc),
+      page (current table page),
+      limit (total number of items to be retrieved),
+      filter (to be used on where statement)
+     */
 
     public function getTableUnknownPayments() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
@@ -784,5 +796,4 @@ salesID (required)
         return "$sortClause $limitQuery";
     }
 
-    
 }
