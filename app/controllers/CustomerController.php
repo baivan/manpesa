@@ -50,6 +50,8 @@ class CustomerController extends Controller {
         $salePartner = $json->salePartner;
         $userID = $json->userID;
 
+       // $res->dataError("USer data ".json_encode($json));
+
         if (!$token || !$workMobile || !$fullName || !$serialNumber || !$salePartner || !$userID) {
             return $res->dataError("Missing data ");
         }
@@ -60,6 +62,7 @@ class CustomerController extends Controller {
 
             $contact = Contacts::findFirst(array("workMobile=:w_mobile: ",
                         'bind' => array("w_mobile" => $workMobile)));
+             $contactsID = $contact->contactsID;
 
             if (!$contact) {
 
@@ -79,85 +82,97 @@ class CustomerController extends Controller {
                         $e["field"] = $message->getField();
                         $errors[] = $e;
                     }
-                    $dbTransaction->rollback("Contacts create" . json_encode($errors));
-                    return $res->dataError('sale create error', $message);
+                    $dbTransaction->rollback("Contacts create error" . json_encode($errors));
+                    return $res->dataError('Contacts create error', $message);
                 }
 
                 $res->sendMessage($workMobile, "Dear " . $fullName . ", welcome to Envirofit. For any questions or comments call 0800722700 ");
+                $contactsID = $contact->contactsID;
+
             }
 
-            $contactsID = $contact->contactsID;
-
-            $customer = $this->createCustomer($userID, $contactsID);
+            $customer = $this->createCustomer($userID, $contactsID,$dbTransaction);
 
             if (!$customer) {
-                $dbTransaction->rollback("Contacts create");
+                $dbTransaction->rollback("Customer create error");
                 return $res->dataError('sale create error', 'Nothing');
             }
 
-            $customerID = $customer->customerID;
-
-            $item = Item::findFirst(array("serialNumber=:serialNumber: ",
+                $customerID = $customer->customerID;
+                
+           
+                $item = Item::findFirst(array("serialNumber=:serialNumber: ",
                         'bind' => array("serialNumber" => $serialNumber)));
 
-            if (!$item) {
-                $item = new Item();
-                $item->productID = $productID;
-                $item->serialNumber = $serialNumber;
-                $item->status = 2;
-                $item->createdAt = date("Y-m-d H:i:s");
-            }
+                if (!$item) {
+                    $item = new Item();
+                    $item->productID = $productID;
+                    $item->serialNumber = $serialNumber;
+                    $item->status = 2;
+                    $item->createdAt = date("Y-m-d H:i:s");
 
-            if ($item->save() === false) {
-                $errors = array();
-                $messages = $item->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
+                    if ($item->save() === false) {
+                        $errors = array();
+                        $messages = $item->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $dbTransaction->rollback("Partner item create error" . json_encode($errors));
+                        return $res->dataError('sale create error', $message);
+                    }
                 }
-                $dbTransaction->rollback("Contacts create" . json_encode($errors));
-                return $res->dataError('sale create error', $message);
-            }
 
-            $partnerSale = PartnerSaleItem::findFirst(array("itemID=:itemID: ",
-                        'bind' => array("itemID" => $item->itemID)));
+                
+                $partnerSaleItem = PartnerSaleItem::findFirst(array("itemID=:itemID: ",
+                            'bind' => array("itemID" => $item->itemID)));
 
-            if ($partnerSale) {
-                return $res->success("sale already exists ", $item);
-            } else {
-                $partnerSale = new PartnerSaleItem();
-                $partnerSale->itemID = $item->itemID;
-                $partnerSale->customerID = $customerID;
-                $partnerSale->salesPartner = $salePartner;
-                $partnerSale->createdAt = date("Y-m-d H:i:s");
-            }
+                if ($partnerSaleItem) {
+                    return $res->success("Sale already exists ", $item);
+                } 
 
-            if ($partnerSale->save() === false) {
-                $errors = array();
-                $messages = $item->getMessages();
-                foreach ($messages as $message) {
-                    $e["message"] = $message->getMessage();
-                    $e["field"] = $message->getField();
-                    $errors[] = $e;
-                }
-                $dbTransaction->rollback("Contacts create" . json_encode($errors));
-                return $res->dataError('sale create error', $message);
-            }
+                    $partnerSaleItem = new PartnerSaleItem();
+                    $partnerSaleItem->customerID = $customerID;
+                    $partnerSaleItem->contactsID = $customer->contactsID;
+                    $partnerSaleItem->salesPartner = $salePartner;
+                    $partnerSaleItem->createdAt = date("Y-m-d H:i:s");
 
+                      if($item){
+                        $partnerSaleItem->itemID = $item->itemID;
+                        $partnerSaleItem->serialNumber = $serialNumber;
+                      }
+                      else{
+                        $partnerSaleItem->itemID = 0;
+                         $partnerSaleItem->serialNumber = "n/a";
+                      }
+                    
+
+                    if ($partnerSaleItem->save() === false) {
+                        $errors = array();
+                        $messages = $partnerSaleItem->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $dbTransaction->rollback("Partner create error" . json_encode($errors));
+                       
+                    }
+            
             $dbTransaction->commit();
 
             return $res->success("Success ", $item);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
-            return $res->dataError('Contacts create', $message);
+            return $res->dataError('Contacts create error '.$message, $message);
         }
     }
 
 
 
      /*
-    create new customer 
+    update new customer 
     paramters:
     token, userID, fullName, workMobile,workEmail, nationalIdNumber,location,
     customerID (required)
@@ -374,12 +389,14 @@ class CustomerController extends Controller {
         return $res->success("customer/prospect successfully deleted ", $customer);
     }
 
-    public function createCustomer($userID, $contactsID, $locationID = 0) {
+    public function createCustomer($userID, $contactsID, $dbTransaction, $locationID = 0) {
+
 
         $customer = Customer::findFirst(array("contactsID=:id: ",
                     'bind' => array("id" => $contactsID)));
+        $res = new SystemResponses();
 
-        //$res->dataError("select user $userID contact $contactsID");
+        $res->dataError("select user $userID contact $contactsID");
         if ($customer) {
             return $customer;
         } else {
@@ -396,10 +413,10 @@ class CustomerController extends Controller {
                     $e["field"] = $message->getField();
                     $errors[] = $e;
                 }
-
+                $dbTransaction->rollback("Partner sale transaction create error",$errors);
                 return NULL;
             }
-
+             $res->dataError("select user $userID contact $contactsID json ".json_encode($customer));
             return $customer;
         }
     }
