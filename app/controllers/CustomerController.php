@@ -136,6 +136,7 @@ class CustomerController extends Controller {
                     $partnerSaleItem->customerID = $customerID;
                     $partnerSaleItem->contactsID = $customer->contactsID;
                     $partnerSaleItem->salesPartner = $salePartner;
+                    $partnerSaleItem->productID = $productID;
                     $partnerSaleItem->createdAt = date("Y-m-d H:i:s");
 
                       if($item){
