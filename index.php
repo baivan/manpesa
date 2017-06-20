@@ -276,7 +276,7 @@ $reconcile_route = new MicroCollection();
 $reconcile_route->setPrefix('/reconcile/');
 $reconcile_route->setHandler(new ReconcileController());
 $reconcile_route->get('redo', 'redoReconciledTransactions');
-$reconcile_route->get('march','reconcileMarchSales');
+$reconcile_route->get('march','reconcileMonthlySales');
 
 
 $app->mount($user_route);
