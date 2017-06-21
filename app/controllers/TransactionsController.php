@@ -90,18 +90,18 @@ class TransactionsController extends Controller {
                 }
                 $res->dataError('sale create failed', $errors);
                 $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-                return $res->success("Payment received", TRUE);
+                //return $res->success("Payment received", TRUE);
             }
 
             //Determine customer
 
             $transactionID = $transaction->transactionID;
-
+/* 
             $customerTransaction = new CustomerTransaction();
             $contact = NULL;
             $contactsID = NULL;
 
-            $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
+           $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
                     . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
                     . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
                     . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
@@ -115,8 +115,18 @@ class TransactionsController extends Controller {
                 $customerTransaction->contactsID = $contactsID;
                 $customerTransaction->createdAt = date("Y-m-d H:i:s");
             }
+            */
+            
 
-            if ($contact) {
+            $contactsID = $this->mapTransactionContact($accounNumber,$mobile);
+          //  return $res->success("payment received ", $contactsID);
+          //  $customerTransaction = new CustomerTransaction();
+            if ($contactsID) {
+                 $customerTransaction = new CustomerTransaction();
+                 $customerTransaction->transactionID = $transactionID;
+                 $customerTransaction->contactsID = $contactsID;
+                 $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
                 $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
 
                 $customer = Customer::findFirst(array("contactsID=:id: ",
@@ -141,14 +151,18 @@ class TransactionsController extends Controller {
                     }
                     $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
                     $res->dataError('customer transaction create failed', $messages);
-                    return $res->success("Payment received", TRUE);
+                   // return $res->success("Payment received", TRUE);
                 }
 
                 //Find incomplete sales
                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
-
-                $incompleteSales = Sales::find(array("contactsID=:id: AND status=:status: AND amount>:amount: ",
+                if($depositAmount > 0){
+                    $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                }
+                /*
+                $incompleteSales = Sales::find(array("contactsID=:id: AND status>=:status: AND amount>=:amount: ",
                             'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
+
                 foreach ($incompleteSales as $incompleteSale) {
                     $amount = floatval($incompleteSale->amount);
                     $paid = floatval($incompleteSale->paid);
@@ -187,6 +201,7 @@ class TransactionsController extends Controller {
                         break;
                     }
                 }
+                */
             } else {
                 $unknown = new TransactionUnknown();
                 $unknown->transactionID = $transactionID;
@@ -204,7 +219,6 @@ class TransactionsController extends Controller {
                     }
                     $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
                     $res->dataError('customer transaction create failed', $messages);
-                    return $res->success("Payment received", TRUE);
                 }
             }
 
@@ -215,6 +229,96 @@ class TransactionsController extends Controller {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
         }
+    }
+
+    /*
+    map customer to mobile number or id
+    */
+    private function mapTransactionContact($nationalID,$mobileNumber){
+        $matchBothQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber=$nationalID and workMobile=$mobileNumber";
+        $matchNationalIDQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber=$nationalID ";
+        $matchMobileQuery = "SELECT contactsID FROM contacts WHERE workMobile=$mobileNumber ";
+
+        $contact = $this->rawSelect($matchBothQuery);
+        if($contact){
+            return $contact[0]['contactsID'];
+        }
+
+        $contact = $this->rawSelect($matchNationalIDQuery);
+        if($contact){
+            return $contact[0]['contactsID'];
+        }
+        $contact = $this->rawSelect($matchMobileQuery);
+        if($contact){
+            return $contact[0]['contactsID'];
+        }
+
+        return false;
+
+    }
+
+    /*distibute payment to incomplete sales*/
+    private function distributePaymentToSale($contactsID,$depositAmount){
+        $res = new SystemResponses();
+         $allUserSalesQuery="SELECT * FROM sales WHERE contactsID=$contactsID and status>=0 ";
+
+         $userSales = $this->rawSelect($allUserSalesQuery);
+         $depositAmount = $depositAmount;
+
+         foreach ($userSales as $sale) {
+             $salesID= $sale['salesID'];
+             $paidAmount = $sale['paid'];
+
+             $saleAmount = empty($sale['amount']) ? 4950 : $sale['amount'];
+
+             $res->dataError('Update sale paid', $saleAmount);
+
+             $o_sale = Sales::findFirst("salesID = $salesID");
+             $o_sale->amount = $saleAmount;
+
+             if($paidAmount>=$saleAmount){
+                if($o_sale->status <= 1){
+                    $o_sale->status=2;
+                }
+                
+             }
+             else if($depositAmount <=0){
+                break;
+             }
+             else{
+                 $balance = $saleAmount - $paidAmount;
+                 if($balance == $depositAmount){
+                    $o_sale->paid = $o_sale->paid + $balance;
+                    $o_sale->status =2;
+                    $depositAmount = $depositAmount - $balance;
+                 }
+                 else if($balance > $depositAmount){
+                    $o_sale->paid = $o_sale->paid + $depositAmount;
+                    $o_sale->status =1;
+                    $depositAmount = $depositAmount - $depositAmount;
+                 }
+                 else if($balance < $depositAmount){
+                    $depositAmount = $depositAmount - $balance;
+                    $o_sale->paid = $o_sale->paid + $balance;
+                    $o_sale->status =2;
+                 }
+             }
+
+             if ($o_sale->save() === false) {
+                        $errors = array();
+                        $messages = $o_sale->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                 $dbTransaction->rollback('failed to reconcile payment' . json_encode($errors));
+                 $res->dataError('Update sale paid', $messages);
+            }
+
+         }
+
+         return true;
     }
 
     /*
@@ -795,5 +899,7 @@ class TransactionsController extends Controller {
 
         return "$sortClause $limitQuery";
     }
+
+
 
 }
