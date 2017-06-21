@@ -118,6 +118,62 @@ class ReconcileController extends Controller
 
     }
 
+    public function reconcileSaleWithContactTransaction(){
+           $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
+
+            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE date(s.createdAt) >= '2017-04-01' AND date(s.createdAt) <= '2017-04-30' AND paid <=0 AND s.status<=0 group by s.salesID";
+
+            $febSales = $this->rawSelect($salesFebQuery);
+
+             try{
+                foreach ($febSales as $febSale) {
+                    $contactsID = $febSale['contactsID'];
+                    $userDepositAmount = $febSale['m_amount'];
+                    $salesID = $febSale['salesID'];
+                    $userSalesQuery = "SELECT * FROM sales WHERE salesID=$salesID AND status >=0";
+                    $userSales = $this->rawSelect($userSalesQuery);
+                    foreach ($userSales as $userSale) {
+                        $saleID = $userSale['salesID'];
+                        $sale = Sales::findFirst("salesID=$saleID");
+                        if($userDepositAmount >= 1800){
+                            $sale->status = 1;
+                            $sale->paid = 1800;
+                            $userDepositAmount = $userDepositAmount - 1800;
+                        }
+                        elseif ($userDepositAmount >0 && $userDepositAmount <1800) {
+                            $sale->status = 1;
+                            $sale->paid = $userDepositAmount;
+                        }
+
+                        if ($sale->save() === false) {
+                                $errors = array();
+                                $messages = $sale->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("april sales  update failed " . json_encode($errors));
+                            }
+                    }
+
+                }
+
+                 $dbTransaction->commit();
+                return $res->success("march sales   updated successfully", $sales);
+                
+
+             } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('april sales   change error', $message);
+        }
+    }
+
 
 
 }

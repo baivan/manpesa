@@ -277,6 +277,7 @@ $reconcile_route->setPrefix('/reconcile/');
 $reconcile_route->setHandler(new ReconcileController());
 $reconcile_route->get('redo', 'redoReconciledTransactions');
 $reconcile_route->get('march','reconcileMonthlySales');
+$reconcile_route->get('april','reconcileSaleWithContactTransaction');
 
 
 $app->mount($user_route);
