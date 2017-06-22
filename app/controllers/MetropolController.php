@@ -108,15 +108,15 @@ class MetropolController extends Controller
 
             $userWorth = array();
 
-            if($score <= 400  && $score > 0){
+            if($score <= 600  && $score > 0){
             	$userWorth["award"] = false;
-            	$userWorth["rated"] = true;
+            	$userWorth["rated"] = false; //has been rated but we send false since rate is below so app cannot sell to them
             }
             elseif ($score==0) {
-            	$userWorth["award"] = true;
+            	$userWorth["award"] = false;
             	$userWorth["rated"] = false;
             }
-            elseif ($score > 400) {
+            elseif ($score > 600) {
             	$userWorth["award"] = true;
             	$userWorth["rated"] = true;
             }
