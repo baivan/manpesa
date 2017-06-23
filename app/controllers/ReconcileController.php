@@ -22,6 +22,43 @@ class ReconcileController extends Controller
         return $success;
     }
 
+   private function checkSequence($account){
+       if(strcasecmp($account,"0")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"1")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"12")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"123")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"1234")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"12345")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"123456")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"1234567")==0){
+          return true;
+       }
+
+       elseif(strcasecmp($account,"12345678")==0){
+          return true;
+       }
+       elseif(strcasecmp($account,"123456789")==0){
+          return true;
+       }
+       else{
+        return false;
+       }
+   }
+
    public function redoReconciledTransactions() {
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -52,6 +89,7 @@ class ReconcileController extends Controller
                         }
                         $dbTransaction->rollback("customerTransaction status update failed " . json_encode($errors));
                     }
+
                 }
             }
 
@@ -61,6 +99,65 @@ class ReconcileController extends Controller
             $message = $e->getMessage();
             return $res->dataError('customerTransaction status change error', $message);
         }
+    }
+
+    public function reconcileAgentSales(){
+            $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
+        //get all agents
+        $agentsQuery = "Select * from users u join contacts c on u.contactID=c.contactsID";
+        $agents = $this->rawSelect($agentsQuery);
+
+        try{
+
+            foreach ($agents as $agent) {
+                $contactsID = $agent['contactsID'];
+                $nationalIdNumber = $agent['nationalIdNumber'];
+
+                //get transactions mapped to this agent 
+                $agentTransactionsQuery = "SELECT * from customer_transaction ct join transaction t on ct.transactionID=t.transactionID where "
+                                            ." ct.contactsID=$contactsID";
+                $agentTransactions = $this->rawSelect($agentTransactionsQuery);
+
+                foreach ($agentTransactions as $agentTransaction) {
+                    $paymentAccount = $agentTransaction['salesID'];
+                    $customerTransactionID = $agentTransaction['customerTransactionID'];
+
+                    $contact = Contacts::findFirst("nationalIdNumber = $paymentAccount");
+
+                    if(!$contact || $paymentAccount==0 || $this->checkSequence($paymentAccount)){
+                        continue;
+                    }
+                    elseif($contact->contactsID == $contactsID){
+                        continue;
+                    }
+                    else {
+                        $newCustomerTransaction = CustomerTransaction::findFirst("customerTransactionID=$customerTransactionID");
+                        $newCustomerTransaction->contactsID = $contact->contactsID;
+                         if ($newCustomerTransaction->save() === false) {
+                                $errors = array();
+                                $messages = $newCustomerTransaction->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("agent transactions  update failed " . json_encode($errors));
+                            }
+                    }
+                }
+            }
+              $dbTransaction->commit();
+            return $res->success("customerTransaction status updated successfully", $agents);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('agent transactions change error', $message);
+        }
+
     }
 
     public function reconcileMonthlySales(){
