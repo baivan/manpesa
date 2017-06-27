@@ -168,7 +168,7 @@ class ReconcileController extends Controller
             $transactionManager = new TransactionManager();
             $dbTransaction = $transactionManager->get();
 
-            $selectQuery = "SELECT s.salesID,c.contactsID,c.fullName,t.fullName,s.amount,SUM(replace(t.depositAmount,',','')) as deposit from sales s join contacts c on s.contactsID=c.contactsID join customer_transaction ct on c.contactsID=ct.contactsID join transaction t on ct.transactionID=t.transactionID where date(s.createdAt) >= '2017-04-01' and date(s.createdAt) <= '2017-04-30' and s.paid >0 and s.status <=0 group by s.salesID";
+            $selectQuery = "SELECT s.salesID,c.contactsID,c.fullName,t.fullName,s.amount,SUM(replace(t.depositAmount,',','')) as deposit from sales s join contacts c on s.contactsID=c.contactsID join customer_transaction ct on c.contactsID=ct.contactsID join transaction t on ct.transactionID=t.transactionID where date(s.createdAt) >= '2017-02-01' and date(s.createdAt) <= '2017-02-28' and s.paid >0 and s.status <=0 group by s.salesID";
             $sales = $this->rawSelect($selectQuery);
 
 
@@ -223,7 +223,7 @@ class ReconcileController extends Controller
             $transactionManager = new TransactionManager();
             $dbTransaction = $transactionManager->get();
 
-            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE date(s.createdAt) >= '2017-04-01' AND date(s.createdAt) <= '2017-04-30' AND paid <=0 AND s.status<=0 group by s.salesID";
+            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE date(s.createdAt) >= '2017-02-01' AND date(s.createdAt) <= '2017-02-28' AND paid <=0 AND s.status<=0 group by s.salesID";
 
             $febSales = $this->rawSelect($salesFebQuery);
 

@@ -32,7 +32,7 @@ class ProductSaleTypePriceController extends Controller {
     productID,salesTypeID,categoryID,price,deposit,token
     */
 
-    public function create() { //{productID,salesTypeID,categoryID,price,deposit}
+    public function create() { //{productID,salesTypeID,categoryID,price,deposit,discount,startDate,endDate}
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();

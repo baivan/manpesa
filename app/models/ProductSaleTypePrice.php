@@ -1,6 +1,7 @@
 <?php
 
-class ProductSaleTypePrice extends \Phalcon\Mvc\Model {
+class ProductSaleTypePrice extends \Phalcon\Mvc\Model
+{
 
     /**
      *
@@ -48,17 +49,24 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model {
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=3, nullable=false)
+     * @var string
+     * @Column(type="string", length=10, nullable=false)
      */
-    public $status;
+    public $discount;
 
     /**
      *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
+     * @var string
+     * @Column(type="string", nullable=true)
      */
-    public $userID;
+    public $startDate;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", nullable=true)
+     */
+    public $endDate;
 
     /**
      *
@@ -75,11 +83,26 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model {
     public $updatedAt;
 
     /**
+     *
+     * @var integer
+     * @Column(type="integer", length=3, nullable=false)
+     */
+    public $status;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $userID;
+
+    /**
      * Returns table name mapped in the model.
      *
      * @return string
      */
-    public function getSource() {
+    public function getSource()
+    {
         return 'product_sale_type_price';
     }
 
@@ -89,7 +112,8 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model {
      * @param mixed $parameters
      * @return ProductSaleTypePrice[]
      */
-    public static function find($parameters = null) {
+    public static function find($parameters = null)
+    {
         return parent::find($parameters);
     }
 
@@ -99,7 +123,8 @@ class ProductSaleTypePrice extends \Phalcon\Mvc\Model {
      * @param mixed $parameters
      * @return ProductSaleTypePrice
      */
-    public static function findFirst($parameters = null) {
+    public static function findFirst($parameters = null)
+    {
         return parent::findFirst($parameters);
     }
 
