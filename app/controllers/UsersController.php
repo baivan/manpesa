@@ -51,6 +51,8 @@ class UsersController extends Controller {
         $agentNumber = isset($json->agentNumber) ? $json->agentNumber : NULL;
         $token = $json->token;
 
+        $contactsID;
+
 
         if (!$token || !$workMobile || !$fullName) {
             return $res->dataError("Missing data ");
@@ -84,6 +86,7 @@ class UsersController extends Controller {
                 if ($user) {
                     return $res->success("user already exists ", $user);
                 }
+                $contactsID = $contact->contactsID;
             } else {
                 $contact = new Contacts();
                 $contact->workEmail = $workEmail;
@@ -108,7 +111,6 @@ class UsersController extends Controller {
                     $contact->location = $location;
                 }
 
-
                 if ($contact->save() === false) {
                     $errors = array();
                     $messages = $contact->getMessages();
@@ -119,6 +121,8 @@ class UsersController extends Controller {
                     }
                     $dbTransaction->rollback("contact create failed " . json_encode($errors));
                 }
+                $contactsID = $contact->contactsID;
+            }
 
                 $code = rand(9999, 99999);
 
@@ -134,11 +138,10 @@ class UsersController extends Controller {
                     $agentNumber = 'N/A';
                 }
 
-
                 $user = new Users();
                 $user->username = $workMobile;
                 $user->locationID = $locationID;
-                $user->contactID = $contact->contactsID;
+                $user->contactID = $contactsID;
                 $user->roleID = $roleID;
                 $user->status = $status;
                 $user->code = $code;
@@ -174,7 +177,7 @@ class UsersController extends Controller {
                     "userID" => $user->userID];
 
                 return $res->success("user created successfully ", $data);
-            }
+            
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('user create error', $message);
