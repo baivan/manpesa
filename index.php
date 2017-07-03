@@ -124,8 +124,8 @@ $category_route->get('crm/all', 'getTableCategory');
 $product_route = new MicroCollection();
 $product_route->setPrefix('/product/');
 $product_route->setHandler(new ProductsController());
-$product_route->post('create', 'create');
-$product_route->post('update', 'update');
+$product_route->post('create', 'create'); //
+$product_route->post('edit', 'edit');
 $product_route->post('all', 'getAll');
 $product_route->get('all', 'getAll'); //getTableProducts
 $product_route->post('crm/all', 'getTableProducts');
@@ -272,6 +272,21 @@ $metropol_route->setHandler(new MetropolController());
 $metropol_route->post('rate', 'creditRate');
 $metropol_route->post('identity/verify','identityVerification');
 
+$condition_route = new MicroCollection();
+$condition_route->setPrefix('/discountCondition/');
+$condition_route->setHandler(new DiscountConditionController());
+$condition_route->post('create', 'create');
+$condition_route->post('edit', 'edit');
+$condition_route->post('all', 'getAll');
+$condition_route->get('all', 'getAll');
+
+$condition_route = new MicroCollection();
+$condition_route->setPrefix('/discount/');
+$condition_route->setHandler(new DiscountController());
+$condition_route->post('create', 'create');
+$condition_route->post('edit', 'edit');
+$condition_route->get('crm/all', 'getTableDiscount');
+
 $reconcile_route = new MicroCollection();
 $reconcile_route->setPrefix('/reconcile/');
 $reconcile_route->setHandler(new ReconcileController());
@@ -302,6 +317,7 @@ $app->mount($ticket_category_route);
 $app->mount($priority_route);
 $app->mount($call_route);
 $app->mount($metropol_route);
+$app->mount($condition_route);
 $app->mount($reconcile_route);
 
 

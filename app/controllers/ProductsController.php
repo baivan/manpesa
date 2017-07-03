@@ -31,15 +31,18 @@ class ProductsController extends Controller {
     */
 
 
-    public function create() { //{productName,productImage,categoryID,description,token}
+    public function create() { //{productName,productImage,categoryID,description,dependentProductID,token}
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
         $json = $request->getJsonRawBody();
         $productName = $json->productName;
         $productImage = $json->productImage;
-        $description = $join->description;
+        $description = $json->description;
         $categoryID = $json->categoryID;
+        $dependentProductID = $json->dependentProductID;
         $token = $json->token;
 
         if (!$token || !$categoryID || !$productName) {
@@ -57,48 +60,97 @@ class ProductsController extends Controller {
             return $res->dataError("Product with similar name exists");
         }
 
+        try{
+            $product = new Product();
+            $product->productName = $productName;
+            $product->productImage = $productImage;
+            $product->categoryID = $categoryID;
+            $product->description = $description;
+            $product->createdAt = date("Y-m-d H:i:s");
 
-        $product = new Product();
-        $product->productName = $productName;
-        $product->productImage = $productImage;
-        $product->categoryID = $categoryID;
-        $product->description = $description;
-        $product->createdAt = date("Y-m-d H:i:s");
+            if ($product->save() === false) {
+                $errors = array();
+                $messages = $product->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                 $dbTransaction->rollback('product create failed', $errors);
+            }
 
-        if ($product->save() === false) {
+            if($dependentProductID && is_numeric($dependentProductID)){
+                $this->addComplementProduct($product->productID,$dependentProductID,$dbTransaction);
+            }
+        
+            $dbTransaction->commit();
+            return $res->success("Product saved successfully", $product);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('Product create error', $message);
+        }
+        
+    }
+
+
+    /*
+    save product dependent
+    parameters: mainProductID,complementaryProductID
+    */
+    private function addComplementProduct($mainProductID,$complementaryProductID,$dbTransaction){
+
+        $complementProduct = ComplementProduct::findFirst(array("mainProductID=:m_id: and complementaryProductID=:c_id: ",
+                    'bind' => array("m_id" => $mainProductID,"c_id"=>$complementaryProductID)));
+
+        if($complementProduct){
+            return true;
+        }
+
+        $complementProduct = new ComplementProduct();
+        $complementProduct->mainProductID = $mainProductID;
+        $complementProduct->complementaryProductID = $complementaryProductID;
+        $complementProduct->createdAt = date("Y-m-d H:i:s");
+
+        if ($complementProduct->save() === false) {
             $errors = array();
-            $messages = $product->getMessages();
+            $messages = $complementProduct->getMessages();
             foreach ($messages as $message) {
                 $e["message"] = $message->getMessage();
                 $e["field"] = $message->getField();
                 $errors[] = $e;
             }
-            return $res->dataError('product create failed', $errors);
+             $dbTransaction->rollback('Complement Product create failed', $errors);
+             return false;
         }
-
-        return $res->success("Product saved successfully", $product);
+            
+        return true;
+    
     }
+
 /*
     update Product
     paramters:
     productID (required)
     productName,productImage,categoryID,description
     */
-
-
-    public function edit() {//productName,productImage,categoryID,productID,description,token
+    public function edit() {//productName,productImage,categoryID,productID,dependentProductID,description,token
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
         $productName = $json->productName;
         $productID = $json->productID;
         $productImage = $json->productImage;
         $categoryID = $json->categoryID;
         $description = $join->description;
+        $dependentProductID = $join->dependentProductID;
         $token = $json->token;
 
-        if (!$token || !$workMobile || !$fullName) {
+      
+
+        if (!$token || !$productID ) {
             return $res->dataError("Missing data ");
         }
 
@@ -128,19 +180,30 @@ class ProductsController extends Controller {
         }
 
 
-
-        if ($product->save() === false) {
-            $errors = array();
-            $messages = $product->getMessages();
-            foreach ($messages as $message) {
-                $e["message"] = $message->getMessage();
-                $e["field"] = $message->getField();
-                $errors[] = $e;
+        try{
+            if ($product->save() === false) {
+                $errors = array();
+                $messages = $product->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                //return $res->dataError('product edit failed', $errors);
+                $dbTransaction->rollback('product edit failed', $errors);
             }
-            return $res->dataError('product edit failed', $errors);
+            if($dependentProductID && is_numeric($dependentProductID)){
+                $this->addComplementProduct($product->productID,$dependentProductID,$dbTransaction);
+            }
+
+            $dbTransaction->commit();
+            return $res->success("Product edited successfully", $product);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('Product edited error', $message);
         }
 
-        return $res->success("Product edited successfully", $product);
+            
     }
 
     
@@ -159,7 +222,7 @@ class ProductsController extends Controller {
         $token = $request->getQuery('token');
         $productID = $request->getQuery('productID');
 
-        $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt,  c.categoryID,c.categoryName FROM product p JOIN category c ON p.categoryID = c.categoryID";
+        $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt,  c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.mainProductID left JOIN product p1 on cp.complementaryProductID = p1.productID";
         if (!$token) {
             return $res->dataError("Missing data ");
         }
@@ -171,7 +234,7 @@ class ProductsController extends Controller {
 
 
         if ($productID) {
-            $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt, c.categoryID,c.categoryName FROM product p JOIN category c ON p.categoryID = c.categoryID WHERE p.productID=$productID";
+            $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt,  c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.mainProductID left JOIN product p1 on cp.complementaryProductID = p1.productIDWHERE p.productID=$productID";
         }
 
         $products = $this->rawSelect($productQuery);

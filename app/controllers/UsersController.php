@@ -627,7 +627,7 @@ status
             return $res->dataError("Data compromised");
         }
 
-        $usersQuery = "SELECT u.userID, u.roleID, co.fullName, co.workMobile, co.workEmail,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
+        $usersQuery = "SELECT u.userID, u.roleID,UPPER(u.agentNumber) as agentNumber , co.fullName, co.workMobile, co.workEmail,co.nationalIdNumber, co.location from users u join contacts co on u.contactID=co.contactsID ";
 
         $whereArray = [
             'u.roleID' => $roleID,

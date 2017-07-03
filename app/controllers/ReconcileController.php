@@ -223,7 +223,7 @@ class ReconcileController extends Controller
             $transactionManager = new TransactionManager();
             $dbTransaction = $transactionManager->get();
 
-            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE date(s.createdAt) >= '2017-03-01' AND date(s.createdAt) <= '2017-03-31' AND paid <=0 AND s.status<=0 group by s.salesID";
+            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE s.status=0 group by s.salesID";
 
             $febSales = $this->rawSelect($salesFebQuery);
 
