@@ -107,6 +107,8 @@ class SalesController extends Controller {
             $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction);
             $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
+            $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit);
+
             $prospectsID = NULL;
             $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contactsID)));
@@ -115,7 +117,7 @@ class SalesController extends Controller {
             }
 
             $sale = new Sales();
-            $sale->status = 0;
+            $sale->status = $status?$status:0;
             $sale->paymentPlanID = $paymentPlanID;
             $sale->userID = $userID;
             $sale->customerID = $customerID;
@@ -980,256 +982,9 @@ class SalesController extends Controller {
 
             $logger->log("Ticket for callback successfully created" . json_encode($ticket));
         }
-
-        /*
-          $openSales = Sales::find([
-          "status = :status:",
-          "bind" => [
-          "status" => 0
-          ]
-          ]);
-
-          $openSaleCount = count($openSales);
-
-          if ($openSaleCount <= $limit) {
-          $batchSize = 1;
-          } else {
-          $batchSize = (int) ($openSaleCount / $limit) + 1;
-          }
-
-          $tiers = DelinquencyTier::find();
-          foreach ($tiers as $tier) {
-          $tier->tierCount = 0;
-          $tier->save();
-          }
-
-          for ($count = 0; $count < $batchSize; $count++) {
-          $page = $count + 1;
-
-          $offset = (int) ($page - 1) * $limit;
-
-          $sales = $res->rawSelect("SELECT s.salesID,s.paymentPlanID,pp.paymentPlanDeposit,
-          pp.salesTypeID,st.salesTypeName,pp.frequencyID,f.frequencyName,f.numberOfDays,s.amount, s.createdAt
-          FROM sales s INNER JOIN payment_plan pp ON s.paymentPlanID=pp.paymentPlanID
-          INNER JOIN sales_type st ON pp.salesTypeID=st.salesTypeID LEFT JOIN frequency f
-          ON pp.frequencyID=f.frequencyID WHERE s.status<=0 LIMIT $offset,$limit");
-
-          foreach ($sales as $sale) {
-          $elapse = date_diff(new DateTime(), new DateTime($sale['createdAt']), TRUE);
-          $numDays = (int) $elapse->days;
-          $customerTier = 0;
-
-          if ($numDays == 3) {
-          //Welcome Call Ticket and update tier count
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 0)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          } else if ($numDays > 3 && $numDays <= 5) {
-          $customerTier = 1;
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 1)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          //UPDATE delinquency_tier SET tierCount=tierCount+2 WHERE tierName=6
-          //First Delinquent Tier: generate ticket and update tierCount
-          } else if ($numDays > 5 && $numDays <= 10) {
-          $customerTier = 2;
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 2)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          //Second Delinquent Tier: generate ticket and update tierCount
-          } else if ($numDays > 10 && $numDays <= 20) {
-          $customerTier = 3;
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 3)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          //Third Delinquent Tier: generate ticket and update tierCount
-          } else if ($numDays > 20 && $numDays <= 40) {
-          $customerTier = 4;
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 4)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          //Fourth Delinquent Tier: generate ticket and update tierCount
-          } else if ($numDays > 40 && $numDays <= 45) {
-          $customerTier = 5;
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 5)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          //Fifth Delinquent Tier: generate ticket and update tierCount
-          } else if ($numDays > 45 && $numDays <= 89) {
-          $customerTier = 6;
-          $tier = DelinquencyTier::findFirst(array("tierName=:tierName: ",
-          'bind' => array("tierName" => 6)));
-          if ($tier) {
-          $tier->tierCount = $tier->tierCount + 1;
-          $tier->save();
-          }
-          //Sixth Delinquent Tier: generate ticket and update tierCount
-          } else if ($numDays == 90) {
-          $customerTier = 7;
-          //Default Customer
-          }
-
-          $logger->log("Days Since Commencement " . $numDays . " Customer Tier: " . $customerTier);
-          }
-          }
-
-          return $res->success("response", $batchSize); */
     }
 
-/*
-//  function to update any sale made before 10th May 2017
 
-    public function updateOldSales() {
-        $jwtManager = new JwtManager();
-        $request = new Request();
-        $res = new SystemResponses();
-        $json = $request->getJsonRawBody();
-        $transactionManager = new TransactionManager();
-        $dbTransaction = $transactionManager->get();
-        /* $query = "select s.salesID,s.customerID,c.homeMobile,c.nationalIdNumber,c.fullName,t.transactionID,t.fullName,t.salesID from sales s  JOIN contacts c on s.customerID=c.contactsID  JOIN transaction t on t.salesID=c.nationalIdNumber or t.salesID=c.homeMobile  where s.createdAt='0000-00-00 00:00:00' and s.customerID > 0 and t.salesID > 0 group by s.salesID;"  end comment
-        try {
-
-            /* $salesQuery = " select * from sales where createdAt<>'0000-00-00 00:00:00' ";
-
-              $sales = $this->rawSelect($salesQuery);
-              foreach ($sales as $sale) {
-              $customerID = $sale["customerID"];
-              $saleID = $sale["salesID"];
-              $customerQuery = "select * from customer where customerID=$customerID";
-
-              $customers = $this->rawSelect($customerQuery);
-
-
-              foreach ($customers as $customer) {
-              $contactsID = $customer['contactsID'];
-
-              $sale_object = Sales::findFirst(array("salesID=:id: ",
-              'bind' => array("id" => $saleID)));
-
-              $sale_object->contactsID=$contactsID;
-
-
-              if ($sale_object->save() === false) {
-              $errors = array();
-              $messages = $sale_object->getMessages();
-              foreach ($messages as $message) {
-              $e["message"] = $message->getMessage();
-              $e["field"] = $message->getField();
-              $errors[] = $e;
-              }
-              $dbTransaction->rollback("sale create failed " . json_encode($errors));
-              }
-
-              }
-
-              }  end comment
-
-            $salesQuery = "select * from sales ";
-            $sales = $this->rawSelect($salesQuery);
-            foreach ($sales as $sale) {
-                $saleID = $sale["salesID"];
-
-                $contactsID = $sale["contactsID"];
-                $saleID = $sale["salesID"];
-                $contactsQuery = "select * from contacts where contactsID=$contactsID";
-                $contacts = $this->rawSelect($contactsQuery);
-                foreach ($contacts as $contact) {
-                    $workMobile = $contact["workMobile"];
-                    $idNumber = $contact["nationalIdNumber"];
-                    $transactionQuery = "select replace(depositAmount,',','') as depositAmount from transaction where salesID='$workMobile' OR salesID='$idNumber' ";
-                    $transactions = $this->rawSelect($transactionQuery);
-                    $paidAmount = 0;
-
-                    foreach ($transactions as $transaction) {
-                        $amount = $transaction['depositAmount'];
-                        $paidAmount = $paidAmount + $amount;
-//  return $res->success("sale updated ".$amount." ".$paidAmount, $workMobile);
-                    }
-
-
-                    $sale_object = Sales::findFirst(array("salesID=:id: ",
-                                'bind' => array("id" => $saleID)));
-
-                    if ($sale_object && $paidAmount > 0) {
-                        $sale_object->status = 1;
-
-                        if ($sale_object->save() === false) {
-                            $errors = array();
-                            $messages = $sale_object->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
-                            }
-                            $dbTransaction->rollback("sale create failed " . json_encode($errors));
-                        }
-                    }
-
-
-// if ($paidAmount > 0) {
-//     $sale_object->status = 1;
-//     // return $res->success("sale updated ".$paidAmount, $sale_object);
-// } 
-// else{
-//     $sale_object->status = 0;
-// }
-
-                    /*  $productIDQuery ="select i.productID from sales_item si join item i on si.itemID=i.itemID where si.saleID=$saleID";
-                      $productIDs = $this->rawSelect($productIDQuery);
-                      foreach ($productIDs as $id) {
-                      $productID = $id['productID'];
-
-                      $sale_object = Sales::findFirst(array("salesID=:id: ",
-                      'bind' => array("id" => $saleID)));
-                      if($sale_object && $productID > 0){
-                      $sale_object->productID = $productID;
-
-
-
-                      if ($sale_object->save() === false) {
-                      $errors = array();
-                      $messages = $sale_object->getMessages();
-                      foreach ($messages as $message) {
-                      $e["message"] = $message->getMessage();
-                      $e["field"] = $message->getField();
-                      $errors[] = $e;
-                      }
-                      $dbTransaction->rollback("sale create failed " . json_encode($errors));
-                      }
-
-                      } end comment
-                }
-            }
-
-
-// return $res->success("sale updated ", $sale_object);
-
-            $dbTransaction->commit();
-            return $res->success("sale updated ", $sales);
-        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
-            $message = $e->getMessage();
-            return $res->dataError('sale update error', $message);
-        }
-    }
-*/
 
     /*
     reconcile all partner sales from the old system
@@ -1789,6 +1544,94 @@ create new customers for contacts from old system who had made sales
             $message = $e->getMessage();
             return $res->dataError('transaction update error', $message);
         }
+    }
+
+
+    /*
+    incase customer had deposited money before sale was made we 
+    use this function to map the transaction to this customer
+
+    */
+
+    private function getCustomerBalance($contactsID,$saleAmount,$saleDeposit){
+        $res= new SystemResponses();
+        $matchedTransactionsQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit from customer_transaction ct JOIN transaction t on ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID ";
+        $customerSalesQuery = "SELECT * FROM sales WHERE status>=0 and contactsID=$contactsID ORDER BY salesID ASC";
+
+
+        $depositAmounts=$this->rawSelect($matchedTransactionsQuery);
+        $sales = $this->rawSelect($customerSalesQuery);
+        $totalDeposit =$depositAmounts[0]['totalDeposit'];
+
+        $res->dataError("Sale update new sale  failed to match ".$totalDeposit." te ".json_encode($sales));
+
+        foreach ($sales as $sale) {
+            $status = $sale['status'];
+            $amount = $sale['amount'];
+            $salesID = $sale['salesID'];
+            $paid = $sale['paid'];
+
+            $balance = $amount - $paid;
+            $excess = $totalDeposit - $balance;
+            $o_sale = Sales::findFirst(array("salesID=:id: ",
+                        'bind' => array("id" => $salesID)));
+            if($totalDeposit > 0){
+                if($status == 2){
+                     if($totalDeposit >= $balance && $paid <=0){
+                        $o_sale->paid = $paid+$balance;
+                        $o_sale->status=2;
+                        // $totalDeposit = $totalDeposit-$balance;
+                         $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                    }
+                  
+                    $totalDeposit = $totalDeposit - $amount;
+                    $res->dataError("status 2 $excess > 0 totalDeposit ", $totalDeposit);
+                }
+               elseif($status == 1 || $status == 0){//&& $paid >0 && $amount != $paid){
+                    if($totalDeposit >= $balance){
+                        $o_sale->paid = $paid+$balance;
+                        $o_sale->status=2;
+                        $totalDeposit = $totalDeposit-$balance;
+                         $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                    }
+                    elseif($totalDeposit < $balance){
+                        $o_sale->paid = $paid+$totalDeposit;
+                        $o_sale->status = 1;
+                        $totalDeposit = 0;
+                        $res->dataError("$totalDeposit < $balance ", $totalDeposit);
+                    }
+                }
+
+                if ($o_sale->save() === false) {
+                        $errors = array();
+                        $messages = $o_sale->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                     $res->dataError('Sale update new sale  failed to match', $errors);
+               }
+            }
+            
+        }
+
+        if($totalDeposit == 0){
+            return 0;
+        }
+        elseif($totalDeposit >= $saleAmount){
+            return 2;
+        }
+        elseif($totalDeposit >= $saleDeposit ){
+            return 1;
+        }
+        elseif($totalDeposit > 0){
+            return 1;
+        }
+        else{
+            return 0;
+        }
+
     }
 
 }
