@@ -130,7 +130,7 @@ class DiscountConditionController extends Controller
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
-        if(!$toke){
+        if(!$token){
         	return $res->dataError("Missing data "); 
         }
    	  $selectQuery = "SELECT discountConditionID,conditionDescription,conditionName FROM discount_condition ";

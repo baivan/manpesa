@@ -11,7 +11,20 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 class DiscountController extends Controller
 {
 
-    public function create() //{saleTypeID,productID,agents,rightHandOperand,discountConditionID,leftHandOperand,discountAmount,startDate,endDate,status,token
+     /*
+    Raw query select function to work in any version of phalcon
+    */
+
+    protected function rawSelect($statement) {
+        $connection = $this->di->getShared("db");
+        $success = $connection->query($statement);
+        $success->setFetchMode(Phalcon\Db::FETCH_ASSOC);
+        $success = $success->fetchAll($success);
+        return $success;
+    }
+
+
+    public function create() //{saleTypeID,productID,agents,discountTypeID,discountConditionID,discountMargin,discountAmount,startDate,endDate,status,token
     {
     	$jwtManager = new JwtManager();
         $request = new Request();
@@ -22,17 +35,19 @@ class DiscountController extends Controller
         $token = $json->token;
         $saleTypeID = $json->saleTypeID;
         $productID = $json->productID; 
+        $userID = $json->userID;
         $agents = $json->agents?$json->agents:'all';
-        $rightHandOperand = $json->rightHandOperand?$json->rightHandOperand:'0';
+        $discountTypeID = $json->discountTypeID?$json->discountTypeID:'0';
         $discountConditionID = $json->discountConditionID?$json->discountConditionID:'0'; 
-        $leftHandOperand = $json->leftHandOperand?$json->leftHandOperand:'0';
+        $discountMargin = $json->discountMargin?$json->discountMargin:'0';
         $discountAmount = $json->discountAmount;
         $startDate = $json->startDate; 
         $endDate = $json->endDate;
         $status = $json->status?$json->status:'0'; 
 
-       if(!$token || !$saleTypeID ||!$productID || !$agents || !$discountAmount || !$startDate || !$endDate ){
-        	return $res->dataError("Missing data "); 
+
+       if(!$token || !$userID ||!$discountTypeID || !$saleTypeID ||!$productID || !$discountAmount || !$startDate || !$endDate ){
+        	return $res->dataError("Missing data ",false); 
         }
 
        /* $discount = Discount::findFirst(array("saleTypeID=:s_id: and productID = :p_id: and agents = :agents: ",
@@ -42,13 +57,15 @@ class DiscountController extends Controller
         $discount->saleTypeID = $saleTypeID;
         $discount->productID = $productID;
         $discount->agents = $agents;
-        $discount->rightHandOperand =$rightHandOperand;
+        $discount->userID = $userID;
+        $discount->discountTypeID =$discountTypeID;
         $discount->discountConditionID = $discountConditionID;
-        $discount->leftHandOperand = $leftHandOperand;
+        $discount->discountMargin = $discountMargin;
         $discount->discountAmount = $discountAmount;
         $discount->startDate = $startDate;
         $discount->endDate = $endDate;
         $discount->status = $status;
+        $discount->createdAt = date("Y-m-d H:i:s");
 
         try{
 
@@ -97,24 +114,17 @@ class DiscountController extends Controller
 
         $countQuery = "SELECT count(d.discountID) as totalDiscounts ";
 
-        $defaultQuery = "FROM discount d join sales_type st on d.saleTypeID=st.salesTypeID JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID";
+        $defaultQuery = "FROM discount d join sales_type st on d.saleTypeID=st.salesTypeID JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID join discount_types dt on d.discountTypeID=dt.discountTypeID WHERE productID=$productID ";
 
-        $selectQuery = "SELECT d.discountID,st.salesTypeName,d.agents,d.rightHandOperand,d.discountConditionID,dc.conditionName,dc.conditionDescription,d.leftHandOperand,d.discountAmount,d.startDate,d.endDate,d.status,d.createdAt ";
-
-                /*
-SELECT d.discountID,st.salesTypeName,d.agents,d.rightHandOperand,d.discountConditionID,dc.conditionName,dc.conditionDescription,d.leftHandOperand,d.leftHandOperand,d.discountAmount,d.startDate,d.endDate,d.status,d.createdAt from discount d join sales_type st on d.saleTypeID=st.salesTypeID JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID
-                */
-
-
+        $selectQuery = "SELECT d.discountID,st.salesTypeName,d.agents,d.discountMargin,d.discountConditionID,dc.conditionName,dc.conditionDescription,d.discountAmount,d.startDate,d.endDate,d.status,dt.discountTypeName,d.createdAt,CONCAT(dt.discountTypeName,' is ',dc.conditionName,' ',d.discountMargin) as d_condition ";
 
         $whereArray = [
             'filter' => $filter,
-            'd.productID' => $productID,
             'd.saleTypeID' =>$saleTypeID,
             'date' => [$startDate, $endDate]
         ];
 
-        $logger->log("Dsicounts Request Data: " . json_encode($whereArray));
+        $logger->log("Discounts Request Data: " . json_encode($whereArray));
 
         $whereQuery = "";
 
@@ -188,6 +198,97 @@ SELECT d.discountID,st.salesTypeName,d.agents,d.rightHandOperand,d.discountCondi
         return "$sortClause $limitQuery";
     }
 
+
+     /*
+    update discount
+    paramters:
+    discountID
+    */
+
+
+    public function actionDiscount() {//{discountID,status,userID}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $token = $json->token;
+        $discountID = isset($json->discountID) ? $json->discountID : NULL;
+        $status = isset($json->status) ? $json->status : 0;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        
+
+        if (!$token || !$discountID || !$userID) {
+            return $res->dataError("Missing data ");
+        }
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        $discount = Discount::findFirst(array("discountID=:id:",
+                    'bind' => array("id" => $discountID)));
+
+        if (!$discount) {
+            return $res->dataError("Discounts does not exist");
+        }
+
+        $discount->userID = $userID;
+        $discount->status = $status;
+
+
+        if ($discount->save() === false) {
+            $errors = array();
+            $messages = $discount->getMessages();
+            foreach ($messages as $message) {
+                $e["message"] = $message->getMessage();
+                $e["field"] = $message->getField();
+                $errors[] = $e;
+            }
+            return $res->dataError('Discount update failed', $errors);
+        }
+/*
+        if ($status) {
+            $similar = ProductSaleTypePrice::find(array("productID=:productID: AND salesTypeID=:salesTypeID: ",
+                        'bind' => array("productID" => $productSaleTypePrice->productID, "salesTypeID" => $productSaleTypePrice->salesTypeID)));
+            foreach ($similar as $similarPrice) {
+                if ($similarPrice->productSaleTypePriceID != $productSaleTypePrice->productSaleTypePriceID) {
+                    $similarPrice->status = 0;
+
+                    if ($similarPrice->save() === false) {
+                        $errors = array();
+                        $messages = $similarPrice->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        return $res->dataError('ProductSaleTypePrice update failed', $errors);
+                    }
+                }
+            }
+        }
+        */
+
+        return $res->success("Discount updated successfully ", $discount);
+    }
+
+
+
+    public function getAllTypes(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+
+        if(!$token){
+            return $res->dataError("Missing data "); 
+        }
+      $selectQuery = "SELECT discountTypeID,discountTypeName,description FROM discount_types ";
+      $discountConditions = $this->rawSelect($selectQuery);
+      return $res->success("Dsicount types ",$discountConditions);
+
+   }
 
 
 }

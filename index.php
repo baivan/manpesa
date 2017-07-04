@@ -280,12 +280,17 @@ $condition_route->post('edit', 'edit');
 $condition_route->post('all', 'getAll');
 $condition_route->get('all', 'getAll');
 
-$condition_route = new MicroCollection();
-$condition_route->setPrefix('/discount/');
-$condition_route->setHandler(new DiscountController());
-$condition_route->post('create', 'create');
-$condition_route->post('edit', 'edit');
-$condition_route->get('crm/all', 'getTableDiscount');
+$discount_route = new MicroCollection();
+$discount_route->setPrefix('/discount/');
+$discount_route->setHandler(new DiscountController());
+$discount_route->post('create', 'create');
+$discount_route->post('edit', 'edit');
+$discount_route->get('crm/all', 'getTableDiscount');
+$discount_route->post('crm/all', 'getTableDiscount');
+$discount_route->get('types','getAllTypes');
+$discount_route->post('activate','actionDiscount');
+$discount_route->post('deactivate','actionDiscount');
+
 
 $reconcile_route = new MicroCollection();
 $reconcile_route->setPrefix('/reconcile/');
@@ -294,6 +299,7 @@ $reconcile_route->get('redo', 'redoReconciledTransactions');
 $reconcile_route->get('march','reconcileMonthlySales');
 $reconcile_route->get('april','reconcileSaleWithContactTransaction');
 $reconcile_route->get('agent','reconcileAgentSales');
+$reconcile_route->get('all/contact/sales','reconcileAllContactSales');
 
 
 $app->mount($user_route);
@@ -318,6 +324,7 @@ $app->mount($priority_route);
 $app->mount($call_route);
 $app->mount($metropol_route);
 $app->mount($condition_route);
+$app->mount($discount_route);
 $app->mount($reconcile_route);
 
 

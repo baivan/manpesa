@@ -223,18 +223,21 @@ class ReconcileController extends Controller
             $transactionManager = new TransactionManager();
             $dbTransaction = $transactionManager->get();
 
-            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE s.status=0 group by s.salesID";
+            $salesFebQuery = "SELECT s.salesID,s.contactsID,c.fullName,t.fullName,SUM(replace(t.depositAmount,',','')) as m_amount,s.amount FROM sales s JOIN contacts c ON s.contactsID=c.contactsID JOIN customer_transaction ct ON c.contactsID=ct.contactsID JOIN transaction t ON ct.transactionID=t.transactionID WHERE s.status > 0 and paid=0 group by s.salesID";
 
             $febSales = $this->rawSelect($salesFebQuery);
 
              try{
                 foreach ($febSales as $febSale) {
-                    $contactsID = $febSale['contactsID'];
+                   $contactsID = $febSale['contactsID'];
                     $userDepositAmount = $febSale['m_amount'];
                     $salesID = $febSale['salesID'];
                     $userSalesQuery = "SELECT * FROM sales WHERE salesID=$salesID AND status >=0";
+
                     $userSales = $this->rawSelect($userSalesQuery);
+
                     foreach ($userSales as $userSale) {
+
                         $saleID = $userSale['salesID'];
                         $sale = Sales::findFirst("salesID=$saleID");
                         if($userDepositAmount >= 1800){
@@ -259,6 +262,7 @@ class ReconcileController extends Controller
                             }
                     }
 
+
                 }
 
                  $dbTransaction->commit();
@@ -270,6 +274,90 @@ class ReconcileController extends Controller
             return $res->dataError('april sales   change error', $message);
         }
     }
+
+     public function reconcileAllContactSales(){
+           $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
+
+           
+
+            try {
+               $contactsQuery = "SELECT * from contacts";
+               $contacts = $this->rawSelect($contactsQuery);
+               foreach ($contacts as $contact) {
+                   $contactsID = $contact['contactsID'];
+                
+                   $matchedTransactionsQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit from customer_transaction ct JOIN transaction t on ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID ";
+                    $customerSalesQuery = "SELECT * FROM sales WHERE status>=0 and contactsID=$contactsID ORDER BY salesID ASC";
+
+
+                    $depositAmounts=$this->rawSelect($matchedTransactionsQuery);
+                    $sales = $this->rawSelect($customerSalesQuery);
+                    $totalDeposit =$depositAmounts[0]['totalDeposit'];
+
+                    foreach ($sales as $sale) {
+                        $status = $sale['status'];
+                        $amount = $sale['amount'];
+                        $salesID = $sale['salesID'];
+                        $paid = $sale['paid'];
+
+                        $balance = $amount - $paid;
+                        $excess = $totalDeposit - $balance;
+                        $o_sale = Sales::findFirst(array("salesID=:id: ",
+                                    'bind' => array("id" => $salesID)));
+                        if($totalDeposit > 0){
+                            if($status == 2){
+                                 if($totalDeposit >= $balance && $paid <=0){
+                                    $o_sale->paid = $paid+$balance;
+                                    $o_sale->status=2;
+                                     $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                                  }
+                              
+                                $totalDeposit = $totalDeposit - $amount;
+                                $res->dataError("status 2 $excess > 0 totalDeposit ", $totalDeposit);
+                            }
+                           elseif($status == 1 || $status == 0){//&& $paid >0 && $amount != $paid){
+                                if($totalDeposit >= $balance && $paid<=0){
+                                    $o_sale->paid = $paid+$balance;
+                                    $o_sale->status=2;
+                                    $totalDeposit = $totalDeposit-$balance;
+                                     $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                                }
+                                elseif($totalDeposit < $balance && $paid<=0){
+                                    $o_sale->paid = $paid + $totalDeposit;
+                                    $o_sale->status = 1;
+                                    $totalDeposit = 0;
+                                    $res->dataError("$totalDeposit < $balance ", $totalDeposit);
+                                }
+                            }
+
+                            if ($o_sale->save() === false) {
+                                    $errors = array();
+                                    $messages = $o_sale->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                 $res->dataError('Sale update new sale  failed to match', $errors);
+                           }
+                        }
+                        
+                  }
+               }
+               $dbTransaction->commit();
+              return $res->success("march sales   updated successfully", $sales);
+            }
+               catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+                 $message = $e->getMessage();
+              return $res->dataError('april sales   change error', $message);
+            }
+    }
+
 
 
 

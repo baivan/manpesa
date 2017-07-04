@@ -17,6 +17,13 @@ class Discount extends \Phalcon\Mvc\Model
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
+    public $discountTypeID;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
     public $saleTypeID;
 
     /**
@@ -25,6 +32,13 @@ class Discount extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $productID;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $userID;
 
     /**
      *
@@ -38,7 +52,7 @@ class Discount extends \Phalcon\Mvc\Model
      * @var string
      * @Column(type="string", length=10, nullable=false)
      */
-    public $rightHandOperand;
+    public $discountMargin;
 
     /**
      *
@@ -46,13 +60,6 @@ class Discount extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $discountConditionID;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", length=10, nullable=false)
-     */
-    public $leftHandOperand;
 
     /**
      *
