@@ -13,13 +13,15 @@ class JwtManager {
 
     public function verifyToken($token, $action = 0) {
         $key = "IMw2c3W5KWLFN1sBH1befeFocdWUs0Sd";
+        $config = include APP_PATH . "/app/config/config.php";
+        $logPathLocation = $config->logPath->location;
 
         $decoded;
 
         try {
             $decoded = JWT::decode($token, $key, array('HS256'));
         } catch (Exception $e) {
-            $logger = new FileAdapter('app/logs/error_logs.log');
+            $logger = new FileAdapter(logPathLocation.'error_logs.log');
             $logger->log("token errors " . $e->getMessage());
             $res = new SystemResponses();
             $res->composePushLog("Exeption", $e->getMessage(), "Token decode error");

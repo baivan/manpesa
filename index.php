@@ -161,8 +161,11 @@ $product_sale_type_price_route->post('create', 'create'); //{productID,salesType
 $product_sale_type_price_route->post('update', 'update'); //{productID,salesTypeID,categoryID,price,productSaleTypePriceID}
 $product_sale_type_price_route->post('all', 'getAll');
 $product_sale_type_price_route->get('all', 'getAll');
+$product_sale_type_price_route->get('all/v2','getAll_v2'); //userID,saleTypeID
+$product_sale_type_price_route->post('all/v2','getAll_v2');
 $product_sale_type_price_route->post('crm/all', 'getTablePrices');
 $product_sale_type_price_route->get('crm/all', 'getTablePrices');
+
 
 $role_route = new MicroCollection();
 $role_route->setPrefix('/role/');

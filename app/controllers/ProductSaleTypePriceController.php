@@ -25,6 +25,15 @@ class ProductSaleTypePriceController extends Controller {
         $success = $success->fetchAll($success);
         return $success;
     }
+    /*
+      checks if date is between two dates
+    */
+    protected function isDateBetweenDates($date, $startDate, $endDate) {
+        $date = new DateTime($date);
+        $startDate = new DateTime($startDate);
+        $endDate = new DateTime($endDate);
+        return $date > $startDate && $date < $endDate;
+    }
 
      /*
     create ProductSaleTypePrice
@@ -194,6 +203,7 @@ class ProductSaleTypePriceController extends Controller {
         $token = $request->getQuery('token');
         $productSaleTypePriceID = $request->getQuery('productSaleTypePriceID');
 
+
         if (!$token) {
             return $res->dataError("Missing data ");
         }
@@ -205,6 +215,9 @@ class ProductSaleTypePriceController extends Controller {
         }
 
         $priceQuery = "SELECT * from product_sale_type_price";
+        //$priceQuery = "SELECT * from product_sale_type_price p join discount d on p.productID=d.productID and p.salesTypeID=d.saleTypeID and d.status > 0";
+
+        
 
         if ($productSaleTypePriceID) {
             $priceQuery = "SELECT * FROM product_sale_type_price WHERE productSaleTypePriceID=$productSaleTypePriceID";
@@ -214,6 +227,91 @@ class ProductSaleTypePriceController extends Controller {
 
         return $res->success("Prices ", $prices);
     }
+    /*
+    retrieve all ProductSaleTypePrice new version
+    parameters:
+    token
+    */
+    public function getAll_v2($origin=0) {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $productSaleTypePriceID = $request->getQuery('productSaleTypePriceID');
+        $userID = $request->getQuery('userID');
+        $saleTypeID = $request->getQuery('saleTypeID');
+
+        if (!$token || !$userID || !$saleTypeID) {
+            return $res->dataError("Missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+       
+        /*$priceQuery = "SELECT p.productSaleTypePriceID,p.productID,p.salesTypeID,p.categoryID,p.deposit,d.discountID,d.discountMargin,d.discountAmount,d.startDate,d.endDate,dt.discountTypeName,dt.discountTypeID,dc.conditionName,dc.conditionDescription from product_sale_type_price p left join discount d on p.productID=d.productID and p.salesTypeID=d.saleTypeID and d.status > 0  LEFT JOIN discount_types dt on d.discountTypeID=dt.discountTypeID LEFT JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID ";
+        $priceQuery*/
+         $priceQuery = "SELECT * from product_sale_type_price ";
+         $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID";
+
+        if ($productSaleTypePriceID) {
+            $priceQuery =$priceQuery." WHERE productSaleTypePriceID=$productSaleTypePriceID";
+        }
+
+        $prices = $this->rawSelect($priceQuery);
+        $discounts = $this->rawSelect($discountsQuery);
+        $app_discount_statement = array();
+
+
+        foreach ($discounts as $discount) {
+            $agents = $discount['agents'];
+            $discountID = $discount['discountID'];
+            $startDate = $discount['startDate'];
+            $endDate = $discount['endDate'];
+            $cur_date = date("Y-m-d H:i:s");
+
+
+
+            if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
+                $o_discount = Discount::findFirst(array("discountID=:id: ",
+                            'bind' => array("id" => $discountID)));
+                $o_discount->status = 0;
+                $o_discount->save();
+               
+            }
+            else{
+                    if (strcasecmp($agents, 'all') == 0 ){
+                        $discountStatement = $discount['discountTypeName'].' '.$discount['conditionName'].' '.$discount['discountMargin'].' Refund: '.$discount['discountAmount'];
+                       
+                        array_push($app_discount_statement, $discountStatement);
+                    }
+                    else{
+                         $allAgents = explode(",", $agents);
+                         foreach ($allAgents as $agent) {
+                             if(strcasecmp($agents, $userID) == 0){
+                                $discountStatement = $discount['discountTypeName'].' '.$discount['conditionName'].' '.$discount['discountMargin'].' Refund: '.$discount['discountAmount'];
+                        
+                               array_push($app_discount_statement, $discountStatement);
+
+                             }
+                         }
+                    }
+            }
+            
+        }
+        $data = array(
+                "prices"=>$prices,
+                "discounts"=>$app_discount_statement
+                );
+        
+
+        return $res->success("Prices ", $data);
+    }
+
+
 
      /*
     retrieve  ProductSaleTypePrices to be tabulated on crm
