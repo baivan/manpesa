@@ -67,7 +67,7 @@ if ($host == '192.168.1.5') {
     );
 
     $logPath = array('location' => "../logs/envirofit/");
-} else if ($host == '192.168.1.23') {
+} else if ($host == '192.168.1.3') {
     $connection = array(
         'adapter' => 'mysql',
         'host' => 'localhost',

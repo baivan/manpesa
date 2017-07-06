@@ -98,17 +98,20 @@ class ProductsController extends Controller {
     parameters: mainProductID,complementaryProductID
     */
     private function addComplementProduct($mainProductID,$complementaryProductID,$dbTransaction){
+        $res = new SystemResponses();
 
         $complementProduct = ComplementProduct::findFirst(array("mainProductID=:m_id: and complementaryProductID=:c_id: ",
                     'bind' => array("m_id" => $mainProductID,"c_id"=>$complementaryProductID)));
+
+
 
         if($complementProduct){
             return true;
         }
 
         $complementProduct = new ComplementProduct();
-        $complementProduct->mainProductID = $mainProductID;
-        $complementProduct->complementaryProductID = $complementaryProductID;
+        $complementProduct->mainProductID = $complementaryProductID;
+        $complementProduct->complementaryProductID = $mainProductID;
         $complementProduct->createdAt = date("Y-m-d H:i:s");
 
         if ($complementProduct->save() === false) {
@@ -144,9 +147,12 @@ class ProductsController extends Controller {
         $productID = $json->productID;
         $productImage = $json->productImage;
         $categoryID = $json->categoryID;
-        $description = $join->description;
-        $dependentProductID = $join->dependentProductID;
+        $description = $json->description;
+        $dependentProductID = $json->dependentProductID;
         $token = $json->token;
+
+
+        
 
       
 
@@ -181,6 +187,8 @@ class ProductsController extends Controller {
 
 
         try{
+            
+
             if ($product->save() === false) {
                 $errors = array();
                 $messages = $product->getMessages();
@@ -192,6 +200,9 @@ class ProductsController extends Controller {
                 //return $res->dataError('product edit failed', $errors);
                 $dbTransaction->rollback('product edit failed', $errors);
             }
+
+           
+
             if($dependentProductID && is_numeric($dependentProductID)){
                 $this->addComplementProduct($product->productID,$dependentProductID,$dbTransaction);
             }
@@ -222,7 +233,7 @@ class ProductsController extends Controller {
         $token = $request->getQuery('token');
         $productID = $request->getQuery('productID');
 
-        $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt,  c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.mainProductID left JOIN product p1 on cp.complementaryProductID = p1.productID";
+        $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt, c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.complementaryProductID LEFT JOIN product p1 on cp.mainProductID = p1.productID";
         if (!$token) {
             return $res->dataError("Missing data ");
         }
@@ -234,7 +245,7 @@ class ProductsController extends Controller {
 
 
         if ($productID) {
-            $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt,  c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.mainProductID left JOIN product p1 on cp.complementaryProductID = p1.productIDWHERE p.productID=$productID";
+            $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt, c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.complementaryProductID LEFT JOIN product p1 on cp.mainProductID = p1.productID WHERE p.productID=$productID";
         }
 
         $products = $this->rawSelect($productQuery);

@@ -192,10 +192,17 @@ class ProspectsController extends Controller {
             return $res->dataError("Missing data ");
         }
 
-        $prospectQuery = "SELECT p.prospectsID, p.status, p.contactsID,c.workMobile, "
+      /*  $prospectQuery = "SELECT p.prospectsID, p.status, p.contactsID,c.workMobile, "
                 . "c.fullName,c.nationalIdNumber, c.workEmail,c.location, p.sourceID, ps.sourceName, p.createdAt, "
                 . "p.otherSource FROM prospects p INNER JOIN contacts c ON p.contactsID=c.contactsID "
                 . "LEFT JOIN prospect_source ps ON p.sourceID=ps.sourceID ";
+                */
+        $prospectQuery="SELECT p.prospectsID, p.status, p.contactsID,c.workMobile, "
+                    ."c.fullName,c.nationalIdNumber, c.workEmail,c.location, p.sourceID, ps.sourceName, "
+                    ."p.createdAt,p.otherSource,s.salesID,pr.productID,s.status as saleStatus,s.amount, "
+                    ."s.paid FROM prospects p INNER JOIN contacts c ON p.contactsID=c.contactsID LEFT JOIN "
+                    ."prospect_source ps ON p.sourceID=ps.sourceID LEFT JOIN sales s on c.contactsID=s.contactsID "
+                    ."and s.status > 0 LEFT JOIN product pr on s.productID=pr.productID ";
 
 
         if ($userID && !$prospectID) {

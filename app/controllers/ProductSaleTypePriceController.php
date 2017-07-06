@@ -284,7 +284,7 @@ class ProductSaleTypePriceController extends Controller {
             }
             else{
                     if (strcasecmp($agents, 'all') == 0 ){
-                        $discountStatement = $discount['discountTypeName'].' '.$discount['conditionName'].' '.$discount['discountMargin'].' Refund: '.$discount['discountAmount'];
+                         $discountStatement = 'Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
                        
                         array_push($app_discount_statement, $discountStatement);
                     }
@@ -292,7 +292,7 @@ class ProductSaleTypePriceController extends Controller {
                          $allAgents = explode(",", $agents);
                          foreach ($allAgents as $agent) {
                              if(strcasecmp($agents, $userID) == 0){
-                                $discountStatement = $discount['discountTypeName'].' '.$discount['conditionName'].' '.$discount['discountMargin'].' Refund: '.$discount['discountAmount'];
+                                $discountStatement = 'Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
                         
                                array_push($app_discount_statement, $discountStatement);
 
@@ -302,6 +302,8 @@ class ProductSaleTypePriceController extends Controller {
             }
             
         }
+
+        
         $data = array(
                 "prices"=>$prices,
                 "discounts"=>$app_discount_statement

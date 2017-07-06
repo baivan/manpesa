@@ -35,6 +35,8 @@ class SalesController extends Controller {
         return $date > $startDate && $date < $endDate;
     }
 
+
+
      /*
         create new sale
         accepts contactsID/prospect if contact/prospect already saved
@@ -59,7 +61,6 @@ class SalesController extends Controller {
         $userID = isset($json->userID) ? $json->userID : NULL;
         $amount = isset($json->amount) ? $json->amount : 0;
         $productID = isset($json->productID) ? $json->productID : NULL;
-
         $location = isset($json->location) ? $json->location : NULL;
         $workMobile = isset($json->workMobile) ? $json->workMobile : NULL;
         $fullName = isset($json->fullName) ? $json->fullName : NULL;
@@ -68,7 +69,7 @@ class SalesController extends Controller {
         $token = $json->token;
 
        
-
+        
         if (!$token) {
             return $res->dataError("Token missing " . json_encode($json), []);
         }
@@ -87,6 +88,8 @@ class SalesController extends Controller {
         if (!$productID) {
             return $res->dataError("product missing ", []);
         }
+
+
 
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -138,12 +141,18 @@ class SalesController extends Controller {
                 $dbTransaction->rollback('sale create failed' . json_encode($errors));
             }
 
+
+            $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity);//$salesID,$saleTypeID,$userID,$amount,$quantity
+
             /* send message to customer */
             $customer = $this->getCustomerDetails($customerID);
             $MSISDN = $customer["workMobile"];
             $name = $customer["fullName"];
 
             $res->sendMessage($MSISDN, "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit);
+
+            
+
             $dbTransaction->commit();
 
             return $res->success("Sale saved successfully, await payment ", $sale);
@@ -1634,4 +1643,103 @@ create new customers for contacts from old system who had made sales
 
     }
 
+    public function addDiscount($salesID,$saleTypeID,$userID,$amount,$quantity){
+           $res = new SystemResponses();
+        
+         $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
+                            'bind' => array("id" => $salesID)));
+         if($saleDiscount){
+            return false;
+         }
+         $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID";
+         $discounts = $this->rawSelect($discountsQuery);
+
+         $discountAmountOffered = 0;
+
+         foreach ($discounts as $discount) {
+                $agents = $discount['agents'];
+                $discountID = $discount['discountID'];
+                $startDate = $discount['startDate'];
+                $endDate = $discount['endDate'];
+                $cur_date = date("Y-m-d H:i:s");
+                $discountType = $discount['discountTypeName'];
+                $discountAmount = $discount['discountAmount'];
+
+                $can_offer_discount=false;
+
+
+
+                if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
+                    $o_discount = Discount::findFirst(array("discountID=:id: ",
+                                'bind' => array("id" => $discountID)));
+                    $o_discount->status = 0;
+                    $o_discount->save();
+               }
+               else{
+                    if (strcasecmp($agents, 'all') == 0 ){
+                            if(strcasecmp($discountType, 'amount')){
+                                $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$amount);
+                            }
+                            elseif(strcasecmp($discountType, 'quantity')){
+                                $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$quantity);
+                            }
+                        }
+                    else{
+                        $allAgents = explode(",", $agents);
+                         foreach ($allAgents as $agent) {
+                             if(strcasecmp($agents, $userID) == 0){
+                                if(strcasecmp($discountType, 'amount')){
+                                    $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$amount);
+                                    }
+                                    elseif(strcasecmp($discountType, 'quantity')){
+                                     $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$quantity);
+                                    }
+                             }
+                         }
+                    }
+               }
+
+                $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
+                             'bind' => array("id" => $salesID)));
+
+
+               if($can_offer_discount && $saleDiscount){
+                    return true;
+               }
+               else{
+                    $saleDiscount = new SaleDiscount();
+                    $saleDiscount->salesID = $salesID;
+                    $saleDiscount->discountID = $discountID;
+                    $saleDiscount->status = 0;
+                    $saleDiscount->userID = $userID;
+                    $saleDiscount->createdAt = date("Y-m-d H:i:s");
+                    if ($saleDiscount->save() === false) {
+                            $errors = array();
+                            $messages = $saleDiscount->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
+                            }
+                             //$dbTransaction->rollback('saleDiscount create failed' . json_encode($errors));
+                             $res->dataError('saleDiscount create failed', $errors);
+                             return false;
+                    }
+                    $res->success("Sale Discount added ",$saleDiscount);
+               }
+         }
+
+         return true;
+
+    }
+
+    private function compareDiscount($margin, $condition, $operand){
+            $eva= "$operand".$condition.$margin;
+          if($eva){
+              return true;
+          }
+          else{
+              return false;
+          }
+    }
 }

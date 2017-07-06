@@ -370,4 +370,74 @@ class ContactsController extends Controller {
         }
     }
 
+    public function contactSales(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $contactsID = $request->getQuery('contactsID');
+
+        if (!$token && !$contactsID) {
+            return $res->dataError("Missing data ");
+        }
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("search Data compromised");
+        }
+        $getContactsSalesQuery = "SELECT *  FROM sales WHERE status >= 0 AND status < 2 AND contactsID=$contactsID ";
+        $totalDepositQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalAmount FROM customer_transaction ct join transaction t ON ct.transactionID=t.transactionID  where ct.contactsID=$contactsID";
+        $contactSales = $this->rawSelect($getContactsSalesQuery);
+        $totalDeposit = $this->rawSelect($totalDepositQuery);
+
+        $totalDeposit = $totalDeposit[0]["totalAmount"];
+        $tobePaid = $totalDeposit;
+        $totalSalesAmount = 0;
+
+        $data = array();
+        $productIDs = array();
+
+
+
+        
+        foreach ($contactSales as $sale) {
+                $amount = $sale['amount'];
+                $status = $sale['status'];
+                $salesID = $sale['salesID'];
+                $productID = $sale['productID'];
+                $totalSalesAmount = $totalSalesAmount + $amount;
+                $tobePaid = $tobePaid - $amount;
+                array_push($productIDs, $productID);
+            }
+
+
+    if($tobePaid < 0){
+        //cannot sell to this client, ask them to pay 
+        //return $res->success("Success ", $tobePaid);
+        $data['canSell'] = false;
+        $data['pending'] = $tobePaid;
+        $data['products'] = $productIDs;
+
+
+    }
+    else if($tobePaid == 0 ){
+        //can sell to this client
+        //return $res->success("Success ", $tobePaid);
+        $data['canSell'] = true;
+        $data['pending'] = $tobePaid;
+        $data['products'] = $productIDs;
+
+    }
+    else if($tobePaid > 0 ){
+        //can sell to this client
+        //return $res->success("Success ", $tobePaid);
+        $data['canSell'] = true;
+        $data['pending'] = $tobePaid;
+        $data['products'] = $productIDs;
+    }
+    return $res->success("Success ", $data);
+
+
+    }
+
 }

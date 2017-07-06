@@ -200,6 +200,7 @@ $contacts_route->get('search', 'searchContacts');
 $contacts_route->get('crm/search', 'searchContacts');
 $contacts_route->post('create', 'createContact'); //workMobile,nationalIdNumber,fullName,location
 $contacts_route->get('reconcile', 'reconcile');
+$contacts_route->get('sales','contactSales');//token,contactsID
 
 $transaction_route = new MicroCollection();
 $transaction_route->setPrefix('/transaction/');
