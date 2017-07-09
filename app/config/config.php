@@ -18,7 +18,8 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-    );
+
+    );  
     $logPath = array('location' => "/var/log/envirofit/");
 } else if ($host == 'philo') {
     $connection = array(
