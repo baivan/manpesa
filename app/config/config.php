@@ -18,7 +18,6 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-            // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
     $logPath = array('location' => "/var/log/envirofit/");
 } else if ($host == 'philo') {
@@ -29,7 +28,6 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-            // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
     $logPath = array('location' => "/var/www/logs/envirofit/");
 } else if ($host == 'Jamess-MacBook-Air.local') {
@@ -40,7 +38,6 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-            // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
     $logPath = array('location' => "../logs/envirofit/");
 } else if ($host == 'jamess-air') {
@@ -51,7 +48,6 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-            // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
 
     $logPath = array('location' => "../logs/envirofit/");
@@ -63,7 +59,6 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-            // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
 
     $logPath = array('location' => "../logs/envirofit/");
@@ -75,7 +70,6 @@ if ($host == '192.168.1.5') {
         'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-            // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
 
     $logPath = array('location' => "../logs/envirofit/");
@@ -87,16 +81,9 @@ if ($host == '192.168.1.5') {
         'password' => 'fast_sms',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
-//        'adapter' => 'mysql',
-//        'host' => 'localhost',
-//        'username' => 'root',
-//        'password' => 'admin',
-//        'dbname' => 'envirofit',
-//        'charset' => 'utf8'
     );
 
     $logPath = array('location' => "/var/www/logs/envirofit/");
-//    $logPath = array('location' => "/var/log/envirofit/");
 }
 
 return new \Phalcon\Config([
