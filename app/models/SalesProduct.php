@@ -1,6 +1,6 @@
 <?php
 
-class Sales extends \Phalcon\Mvc\Model
+class SalesProduct extends \Phalcon\Mvc\Model
 {
 
     /**
@@ -10,40 +10,12 @@ class Sales extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $salesID;
+    public $salesProductID;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
-     */
-    public $paymentPlanID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $userID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $customerID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $contactsID;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", length=50, nullable=true)
      */
     public $productID;
 
@@ -52,7 +24,7 @@ class Sales extends \Phalcon\Mvc\Model
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $quantity;
+    public $salesID;
 
     /**
      *
@@ -60,13 +32,6 @@ class Sales extends \Phalcon\Mvc\Model
      * @Column(type="integer", length=11, nullable=false)
      */
     public $status;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", length=100, nullable=true)
-     */
-    public $amount;
 
     /**
      *
@@ -83,34 +48,20 @@ class Sales extends \Phalcon\Mvc\Model
     public $updatedAt;
 
     /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $prospectsID;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", length=100, nullable=false)
-     */
-    public $paid;
-
-    /**
      * Returns table name mapped in the model.
      *
      * @return string
      */
     public function getSource()
     {
-        return 'sales';
+        return 'sales_product';
     }
 
     /**
      * Allows to query a set of records that match the specified conditions
      *
      * @param mixed $parameters
-     * @return Sales[]
+     * @return SalesProduct[]
      */
     public static function find($parameters = null)
     {
@@ -121,7 +72,7 @@ class Sales extends \Phalcon\Mvc\Model
      * Allows to query the first record that match the specified conditions
      *
      * @param mixed $parameters
-     * @return Sales
+     * @return SalesProduct
      */
     public static function findFirst($parameters = null)
     {

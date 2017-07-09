@@ -65,6 +65,7 @@ class SalesController extends Controller {
         $workMobile = isset($json->workMobile) ? $json->workMobile : NULL;
         $fullName = isset($json->fullName) ? $json->fullName : NULL;
         $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
+        $quantity =  isset($json->quantity) ? $json->quantity : 1;
 
         $token = $json->token;
 
@@ -89,8 +90,8 @@ class SalesController extends Controller {
             return $res->dataError("product missing ", []);
         }
 
-
-
+        
+        
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
@@ -128,6 +129,7 @@ class SalesController extends Controller {
             $sale->contactsID = $contactsID;
             $sale->amount = $amount;
             $sale->productID = $productID;
+            $sale->quantity = $quantity;
             $sale->createdAt = date("Y-m-d H:i:s");
 
             if ($sale->save() === false) {
@@ -397,7 +399,7 @@ class SalesController extends Controller {
         $customerID = $request->getQuery('customerID');
         $userID = $request->getQuery('userID');
 
-        $saleQuery = " SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,p.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
+        $saleQuery = "SELECT s.salesID,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,s.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
 
         if (!$token || !$userID) {
