@@ -16,10 +16,10 @@ if ($host == '192.168.1.5') {
         'host' => 'localhost',
         'username' => 'envirofit',
         'password' => 'envirofit',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
-    );
+    );  
     $logPath = array('location' => "/var/log/envirofit/");
 } else if ($host == 'philo') {
     $connection = array(
@@ -27,7 +27,7 @@ if ($host == '192.168.1.5') {
         'host' => 'localhost',
         'username' => 'envirofit',
         'password' => 'envirofit',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
@@ -38,7 +38,7 @@ if ($host == '192.168.1.5') {
         'host' => 'localhost',
         'username' => 'envirofit',
         'password' => 'envirofit',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
@@ -49,7 +49,7 @@ if ($host == '192.168.1.5') {
         'host' => 'localhost',
         'username' => 'envirofit',
         'password' => 'envirofit',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
@@ -61,7 +61,7 @@ if ($host == '192.168.1.5') {
         'host' => 'localhost',
         'username' => 'envirofit',
         'password' => 'envirofit',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
@@ -73,7 +73,7 @@ if ($host == '192.168.1.5') {
         'host' => 'localhost',
         'username' => 'envirofit',
         'password' => 'envirofit',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
             // 'unix_socket'   => '/Applications/MAMP/tmp/mysql/mysql.sock',
     );
@@ -85,7 +85,7 @@ if ($host == '192.168.1.5') {
         'host' => 'ke-pr-db-1',
         'username' => 'fast_sms',
         'password' => 'fast_sms',
-        'dbname' => 'envirofit',
+        'dbname' => 'envirofit_alpha',
         'charset' => 'utf8'
 //        'adapter' => 'mysql',
 //        'host' => 'localhost',

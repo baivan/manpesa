@@ -34,9 +34,6 @@ class SalesController extends Controller {
         $endDate = new DateTime($endDate);
         return $date > $startDate && $date < $endDate;
     }
-
-
-
      /*
         create new sale
         accepts contactsID/prospect if contact/prospect already saved
