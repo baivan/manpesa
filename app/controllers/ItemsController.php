@@ -861,6 +861,7 @@ class ItemsController extends Controller {
 
         $itemIds = str_replace("]","",str_replace("[", "", $itemIDs));
         $itemIds = explode(",",$itemIds);
+        $res->dataError("Data itemIds ".$itemIds);
 
 
         try {
@@ -873,8 +874,11 @@ class ItemsController extends Controller {
 
                     $item = Item::findFirst(array("itemID=:itemId: AND status=1 ",
                                 'bind' => array("itemId" => $itemID)));
+
                     $sale = Sales::findFirst(array("salesID=:id: ",
                                 'bind' => array("id" => $salesID)));
+
+                     $res->dataError("items ".$itemID." saleID $salesID userItem ".$userItem->userItemID);
 
                     if ($userItem && $item && $sale) {
 
