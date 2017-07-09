@@ -74,6 +74,7 @@ $item_route->post('return', 'returnItem');
 $item_route->post('receive', 'receiveItem');
 $item_route->post('delete', 'deleteItem');
 $item_route->post('issue', 'issueItem'); //{salesID,ItemID,userID,contactsID}
+$item_route->post('issuev2','issueItemV2')//{salesID,ItemID[],userID,contactsID}
 
 $prospect_route = new MicroCollection();
 $prospect_route->setPrefix('/prospect/');

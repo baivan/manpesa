@@ -744,6 +744,8 @@ class ItemsController extends Controller {
         }
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
+
+
         if (!$tokenData) {
             return $res->dataError("Data compromised");
         }
@@ -817,6 +819,126 @@ class ItemsController extends Controller {
             } else {
                 return $res->success("Item not found ", false);
             }
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('Item create error', $message);
+        }
+    }
+
+     /*
+    sales agent for more than one item
+    give an item to a customer 
+    checks for payment based on sales_type
+    issues this item to the customer
+    parameters:
+    salesID,ItemID,userID
+    */
+
+    public function issueItemV2() {//{salesID,ItemID,userID}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $trasaction = new TransactionsController();
+
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+        $salesID = $json->salesID;
+        $itemIDs = $json->itemID;
+        $userID = $json->userID;
+        $token = $json->token;
+       
+
+        if (!$token || !$salesID || !$itemIDs || !$userID) {
+            return $res->dataError("Missing data ");
+        }
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+         if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        $itemIds = str_replace("]","",str_replace("[", "", $itemIDs));
+        $itemIds = explode(",",$itemIds);
+
+
+        try {
+
+
+            foreach ($itemIds as $itemID) {
+          
+                    $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status<=1",
+                                'bind' => array("itemId" => $itemID, "userID" => $userID)));
+
+                    $item = Item::findFirst(array("itemID=:itemId: AND status=1 ",
+                                'bind' => array("itemId" => $itemID)));
+                    $sale = Sales::findFirst(array("salesID=:id: ",
+                                'bind' => array("id" => $salesID)));
+
+                    if ($userItem && $item && $sale) {
+
+                        $isPaid = $trasaction->checkSalePaid($salesID);
+
+                        if (!$isPaid) {
+                            return $res->success("Sale minimum amount not settled ", $isPaid);
+                        }
+
+                        $userItem->status = $this->sold;
+                        $item->status = $this->sold;
+
+                        $saleItem = SalesItem::findFirst(array("itemID=:i_id:",
+                                    'bind' => array('i_id' => $itemID)));
+
+                        if ($saleItem) {
+                            return $res->dataError("Item already sold");
+                        } else {
+
+                            $saleItem = new SalesItem();
+                            $saleItem->saleID = $salesID;
+                            $saleItem->itemID = $itemID;
+                            $saleItem->status = $this->sold;
+                            $saleItem->createdAt = date("Y-m-d H:i:s");
+
+                            if ($saleItem->save() === false) {
+                                $errors = array();
+                                $messages = $saleItem->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("sale item create failed " . json_encode($errors));
+                            } elseif ($item->save() === false) {
+                                $errors = array();
+                                $messages = $item->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("Item update failed " . json_encode($errors));
+                            } elseif ($userItem->save() === false) {
+                                $errors = array();
+                                $messages = $userItem->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                $dbTransaction->rollback("user item update failed " . json_encode($errors));
+                            }
+
+                        }
+
+                       
+                    }
+                 else {
+                    return $res->success("Item not found ", false);
+                }
+              }
+              $dbTransaction->commit();
+              return $res->success("Item issued successfully ", $isPaid);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Item create error', $message);
