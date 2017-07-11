@@ -236,14 +236,19 @@ class ProductSaleTypePriceController extends Controller {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
-        $token = $request->getQuery('token');
-        $productSaleTypePriceID = $request->getQuery('productSaleTypePriceID');
-        $userID = $request->getQuery('userID');
-        $saleTypeID = $request->getQuery('saleTypeID');
+        $json = $request->getJsonRawBody();
+        $token = $json->token;//$request->getQuery('token');
+        $productSaleTypePriceID = $json->productSaleTypePriceID;
+        $userID = $json->userID;
+        $saleTypeID = $json->saleTypeID;
+        $products = $json->products;
 
         if (!$token || !$userID || !$saleTypeID) {
             return $res->dataError("Missing data ");
         }
+
+        $products = str_replace("]","",str_replace("[", "", $products));
+        $products = explode(",",$products);
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
@@ -254,59 +259,69 @@ class ProductSaleTypePriceController extends Controller {
        
         /*$priceQuery = "SELECT p.productSaleTypePriceID,p.productID,p.salesTypeID,p.categoryID,p.deposit,d.discountID,d.discountMargin,d.discountAmount,d.startDate,d.endDate,dt.discountTypeName,dt.discountTypeID,dc.conditionName,dc.conditionDescription from product_sale_type_price p left join discount d on p.productID=d.productID and p.salesTypeID=d.saleTypeID and d.status > 0  LEFT JOIN discount_types dt on d.discountTypeID=dt.discountTypeID LEFT JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID ";
         $priceQuery*/
-         $priceQuery = "SELECT * from product_sale_type_price ";
-         $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID";
 
-        if ($productSaleTypePriceID) {
-            $priceQuery =$priceQuery." WHERE productSaleTypePriceID=$productSaleTypePriceID";
-        }
+        $productData = array();
+        $pricesData = array();
+        $discounts = array();
+        
 
-        $prices = $this->rawSelect($priceQuery);
-        $discounts = $this->rawSelect($discountsQuery);
-        $app_discount_statement = array();
+         foreach ($products as $productID) {
+                 $priceQuery = "SELECT * FROM product_sale_type_price WHERE productID=$productID ";
+                $discountsQuery = "SELECT * FROM discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID  join product p on d.productID=p.productID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND d.productID=$productID ";
 
-
-        foreach ($discounts as $discount) {
-            $agents = $discount['agents'];
-            $discountID = $discount['discountID'];
-            $startDate = $discount['startDate'];
-            $endDate = $discount['endDate'];
-            $cur_date = date("Y-m-d H:i:s");
+                $prices = $this->rawSelect($priceQuery);
+                $discounts = $this->rawSelect($discountsQuery);
+                $app_discount_statement = array();
 
 
+                foreach ($discounts as $discount) {
+                    $agents = $discount['agents'];
+                    $discountID = $discount['discountID'];
+                    $startDate = $discount['startDate'];
+                    $endDate = $discount['endDate'];
+                    $cur_date = date("Y-m-d H:i:s");
 
-            if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
-                $o_discount = Discount::findFirst(array("discountID=:id: ",
-                            'bind' => array("id" => $discountID)));
-                $o_discount->status = 0;
-                $o_discount->save();
-               
-            }
-            else{
-                    if (strcasecmp($agents, 'all') == 0 ){
-                         $discountStatement = 'Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
+                    if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
+                        $o_discount = Discount::findFirst(array("discountID=:id: ",
+                                    'bind' => array("id" => $discountID)));
+                        $o_discount->status = 0;
+                        $o_discount->save();
                        
-                        array_push($app_discount_statement, $discountStatement);
                     }
                     else{
-                         $allAgents = explode(",", $agents);
-                         foreach ($allAgents as $agent) {
-                             if(strcasecmp($agents, $userID) == 0){
-                                $discountStatement = 'Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
-                        
-                               array_push($app_discount_statement, $discountStatement);
+                            if (strcasecmp($agents, 'all') == 0 ){
+                                 $discountStatement = 'Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
+                               
+                                //array_push($app_discount_statement, $discountStatement);
+                                 array_push($discounts ,$discountStatement);
+                            }
+                            else{
+                                 $allAgents = explode(",", $agents);
+                                 foreach ($allAgents as $agent) {
+                                     if(strcasecmp($agents, $userID) == 0){
+                                        $discountStatement = $discount['productName'].': Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
+                                
+                                      // array_push($app_discount_statement, $discountStatement);
+                                        array_push($discounts ,$discountStatement);
 
-                             }
-                         }
+                                     }
+                                 }
+                            }
                     }
-            }
-            
-        }
+                    
+                }
+
+                foreach ($prices as $price) {
+                    array_push($pricesData, $price);
+                }
+                
+
+             }
 
         
         $data = array(
-                "prices"=>$prices,
-                "discounts"=>$app_discount_statement
+                "prices"=>$pricesData,
+                "discounts"=>$discounts
                 );
         
 
