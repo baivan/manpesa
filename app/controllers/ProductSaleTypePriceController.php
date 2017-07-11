@@ -262,7 +262,7 @@ class ProductSaleTypePriceController extends Controller {
 
         $productData = array();
         $pricesData = array();
-        $discounts = array();
+        $discountsData = array();
         
 
          foreach ($products as $productID) {
@@ -290,10 +290,10 @@ class ProductSaleTypePriceController extends Controller {
                     }
                     else{
                             if (strcasecmp($agents, 'all') == 0 ){
-                                 $discountStatement = 'Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
+                                 $discountStatement = $discount['productName'].': Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
                                
                                 //array_push($app_discount_statement, $discountStatement);
-                                 array_push($discounts ,$discountStatement);
+                                 array_push($discountsData ,$discountStatement);
                             }
                             else{
                                  $allAgents = explode(",", $agents);
@@ -302,7 +302,7 @@ class ProductSaleTypePriceController extends Controller {
                                         $discountStatement = $discount['productName'].': Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
                                 
                                       // array_push($app_discount_statement, $discountStatement);
-                                        array_push($discounts ,$discountStatement);
+                                        array_push($discountsData ,$discountStatement);
 
                                      }
                                  }
@@ -321,7 +321,7 @@ class ProductSaleTypePriceController extends Controller {
         
         $data = array(
                 "prices"=>$pricesData,
-                "discounts"=>$discounts
+                "discounts"=>$discountsData
                 );
         
 
