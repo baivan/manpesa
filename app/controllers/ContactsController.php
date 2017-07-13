@@ -411,15 +411,23 @@ class ContactsController extends Controller {
             }
 
 
-    if($tobePaid < 0){
+    if($tobePaid < 0 && isset($productIDs)){
         //cannot sell to this client, ask them to pay 
         //return $res->success("Success ", $tobePaid);
         $data['canSell'] = false;
         $data['pending'] = $tobePaid;
         $data['products'] = $productIDs;
         $data['sales']=$contactSales;
+    }
 
- 
+    else if($tobePaid < 0 && !isset($productIDs) ){
+        //can sell to this client
+        //return $res->success("Success ", $tobePaid);
+        $data['canSell'] = true;
+        $data['pending'] = $tobePaid;
+        $data['products'] = $productIDs;
+        $data['sales']=$contactSales;
+
     }
     else if($tobePaid == 0 ){
         //can sell to this client
@@ -427,6 +435,7 @@ class ContactsController extends Controller {
         $data['canSell'] = true;
         $data['pending'] = $tobePaid;
         $data['products'] = $productIDs;
+        $data['sales']=$contactSales;
 
     }
     else if($tobePaid > 0 ){
@@ -435,6 +444,7 @@ class ContactsController extends Controller {
         $data['canSell'] = true;
         $data['pending'] = $tobePaid;
         $data['products'] = $productIDs;
+        $data['sales']=$contactSales;
     }
     return $res->success("Success ", $data);
 
