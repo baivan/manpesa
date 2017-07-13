@@ -423,6 +423,84 @@ class SalesController extends Controller {
 
         return $res->getSalesSuccess($sales);
     }
+
+    public function getSalesV2() {//{userID,customerID,token}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $customerID = $request->getQuery('customerID');
+        $userID = $request->getQuery('userID');
+
+
+        $saleQuery = "SELECT s.salesID,s.quantity,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,s.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
+
+
+        if (!$token || !$userID) {
+            return $res->dataError("Missing data ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+
+        if ($customerID > 0 && $userID > 0) {
+            $saleQuery = $saleQuery . " WHERE s.userID=$userID AND s.customerID=$customerID";
+        } elseif ($customerID > 0 && $userID <= 0) {
+            $saleQuery = $saleQuery . " WHERE s.customerID=$customerID";
+        } elseif ($userID > 0 && $customerID <= 0) {
+            $saleQuery = $saleQuery . " WHERE s.userID=$userID";
+        }
+       
+        $sales = $this->rawSelect($saleQuery);
+        $newSales = array();
+
+        foreach ($sales as $sale) {
+              $newSale['salesID'] = $sale['salesID'];
+              $newSale['quantity'] = $sale['quantity'];
+              $newSale['workMobile'] = $sale['workMobile'];
+              $newSale['workEmail'] = $sale['workEmail'];
+              $newSale['passportNumber'] = $sale['passportNumber'];
+              $newSale['nationalIdNumber'] = $sale['nationalIdNumber'];
+              $newSale['fullName'] = $sale['fullName'];
+              $newSale['createdAt'] = $sale['createdAt'];
+              $newSale['location'] = $sale['location'];
+              $newSale['customerID'] = $sale['customerID'];
+              $newSale['paymentPlanID'] = $sale['paymentPlanID'];
+              $newSale['amount'] = $sale['amount'];
+              $newSale['salesTypeName'] = $sale['salesTypeName'];
+              $newSale['productID'] = $sale['productID'];
+              $newSale['productName'] = $sale['productName'];
+              $newSale['categoryName'] = $sale['categoryName'];
+
+              $serials="";
+
+              $productIDs = str_replace("]","",str_replace("[", "", $sale['productID']));
+              $productIDs = explode(",",$productIDs);
+            if(count($productIDs)>=1){
+                $itemsQuery = "SELECT i.serialNumber  FROM sales_item it JOIN item i ON it.itemID=i.itemID WHERE saleID=".$sale["salesID"];
+                $serialNumbers = $this->rawSelect($itemsQuery);
+                foreach ($serialNumbers as $s_number) {
+                    //$serials=$serials.",".$s_number['serialNumber'];
+
+                    if(empty($serials)){
+                        $serials = $serials."".$s_number['serialNumber'];
+                    }
+                    else{
+                        $serials=$serials.",".$s_number['serialNumber'];
+                    }
+                }
+            }
+            $newSale['serialNumber']=$serials;
+            array_push($newSales, $newSale);
+        }
+
+
+        return $res->getSalesSuccess($newSales);
+    }
   /*
     retrieve  sales to be tabulated on crm
     parameters:

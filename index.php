@@ -96,6 +96,8 @@ $sale_route->post('create', 'create');
 $sale_route->post('crm/create', 'crmCreateSale');
 $sale_route->post('all', 'getSales');
 $sale_route->get('all', 'getSales');
+$sale_route->get('all/v2','getSalesV2');
+$sale_route->post('all/v2','getSalesV2');
 $sale_route->get('crm/items', 'getCRMSaleItems');
 $sale_route->post('crm/all', 'getTableSales');
 $sale_route->get('crm/all', 'getTableSales');
@@ -213,7 +215,7 @@ $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
 //$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
-//$transaction_route->get("dummy", 'dummyTransaction');
+$transaction_route->get("dummy", 'createDummy');
 $transaction_route->post('reconcilepayment', 'reconcilePayment'); //To reconcile unknown payments
 //$transaction_route->get('reconcile', 'reconcileTransaction');
 $transaction_route->get('link', 'reconcile');
