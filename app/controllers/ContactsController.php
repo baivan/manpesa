@@ -52,13 +52,14 @@ class ContactsController extends Controller {
         $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber,c.nationalIdNumber,c.location,p.prospectsID,cu.customerID,u.userID FROM contacts c "
                 . "LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID "
                 . "LEFT JOIN users u ON c.contactsID=u.userID WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter' "
-                . "OR c.location REGEXP '$filter'";
+                . "OR c.location REGEXP '$filter' ";
 
         if ($filter) {
             $contacts = $this->rawSelect($searchQuery);
         } else {
             $contacts = [];
         }
+
         return $res->success("contacts ", $contacts);
     }
 
@@ -397,8 +398,6 @@ class ContactsController extends Controller {
         $data = array();
         $productIDs = array();
 
-
-
         
         foreach ($contactSales as $sale) {
                 $amount = $sale['amount'];
@@ -408,6 +407,7 @@ class ContactsController extends Controller {
                 $totalSalesAmount = $totalSalesAmount + $amount;
                 $tobePaid = $tobePaid - $amount;
                 array_push($productIDs, $productID);
+
             }
 
 
@@ -417,8 +417,9 @@ class ContactsController extends Controller {
         $data['canSell'] = false;
         $data['pending'] = $tobePaid;
         $data['products'] = $productIDs;
+        $data['sales']=$contactSales;
 
-
+ 
     }
     else if($tobePaid == 0 ){
         //can sell to this client
