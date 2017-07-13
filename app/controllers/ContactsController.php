@@ -386,7 +386,7 @@ class ContactsController extends Controller {
         if (!$tokenData) {
             return $res->dataError("search Data compromised");
         }
-        $getContactsSalesQuery = "SELECT *  FROM sales WHERE status >= 0 AND status < 2 AND contactsID=$contactsID ";
+        $getContactsSalesQuery = "SELECT *  FROM sales s join payment_plan pp s.paymentPlanID=pp.paymentPlanID WHERE status >= 0 AND status < 2 AND contactsID=$contactsID ";
         $totalDepositQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalAmount FROM customer_transaction ct join transaction t ON ct.transactionID=t.transactionID  where ct.contactsID=$contactsID";
         $contactSales = $this->rawSelect($getContactsSalesQuery);
         $totalDeposit = $this->rawSelect($totalDepositQuery);
