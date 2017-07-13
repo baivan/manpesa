@@ -87,9 +87,6 @@ class SalesController extends Controller {
             return $res->dataError("product missing ", []);
         }
 
-        
-        
-
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
         if (!$tokenData) {
@@ -108,13 +105,25 @@ class SalesController extends Controller {
             $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction);
             $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
-            $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit);
+            $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit,$dbTransaction);
 
             $prospectsID = NULL;
             $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contactsID)));
             if ($prospect) {
                 $prospectsID = $prospect->prospectsID;
+            }
+
+            $paid =0;
+            if($status == 2){
+                $paid = $amount;
+            }
+            elseif($status > 2){
+                $paid = $status;
+                $status = 1;
+            }
+            elseif ($status < 2) {
+                $paid = 0;
             }
 
             $sale = new Sales();
@@ -127,6 +136,7 @@ class SalesController extends Controller {
             $sale->amount = $amount;
             $sale->productID = $productID;
             $sale->quantity = $quantity;
+            $sale->paid = $paid;
             $sale->createdAt = date("Y-m-d H:i:s");
 
             if ($sale->save() === false) {
@@ -149,8 +159,6 @@ class SalesController extends Controller {
             $name = $customer["fullName"];
 
             $res->sendMessage($MSISDN, "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit);
-
-            
 
             $dbTransaction->commit();
 
@@ -396,6 +404,7 @@ class SalesController extends Controller {
         $customerID = $request->getQuery('customerID');
         $userID = $request->getQuery('userID');
 
+
         $saleQuery = "SELECT s.salesID,s.quantity,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,s.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
 
 
@@ -484,14 +493,13 @@ class SalesController extends Controller {
                 $itemsQuery = "SELECT i.serialNumber  FROM sales_item it JOIN item i ON it.itemID=i.itemID WHERE saleID=".$sale["salesID"];
                 $serialNumbers = $this->rawSelect($itemsQuery);
                 foreach ($serialNumbers as $s_number) {
-                    //$serials=$serials.",".$s_number['serialNumber'];
-
                     if(empty($serials)){
                         $serials = $serials."".$s_number['serialNumber'];
                     }
                     else{
                         $serials=$serials.",".$s_number['serialNumber'];
                     }
+                   
                 }
             }
             $newSale['serialNumber']=$serials;
@@ -1639,7 +1647,82 @@ create new customers for contacts from old system who had made sales
 
     */
 
-    private function getCustomerBalance($contactsID,$saleAmount,$saleDeposit){
+    private function getCustomerBalance($contactsID,$saleAmount,$saleDeposit,$dbTransaction){
+                    $res= new SystemResponses();
+                   $matchedTransactionsQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit from customer_transaction ct JOIN transaction t on ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID ";
+                   
+                    $customerSalesQuery = "SELECT * FROM sales WHERE status>=0 and contactsID=$contactsID ORDER BY salesID ASC";
+
+
+                    $depositAmounts=$this->rawSelect($matchedTransactionsQuery);
+                    $sales = $this->rawSelect($customerSalesQuery);
+                    $totalDeposit =$depositAmounts[0]['totalDeposit'];
+
+                    foreach ($sales as $sale) {
+                        $status="";
+                        $status = $sale['status'];
+                        $amount = $sale['amount'];
+                        $salesID = $sale['salesID'];
+                        $paid = $sale['paid'];
+
+                        $balance = $amount - $paid;
+                        $excess = $totalDeposit - $balance;
+
+                        $o_sale = Sales::findFirst(array("salesID=:id: ",
+                                    'bind' => array("id" => $salesID)));
+                        if($totalDeposit > 0){
+                            if($status == 2){
+                                 if($totalDeposit >= $balance && $paid <=0){
+                                    $o_sale->paid = $paid+$balance;
+                                    $o_sale->status=2;
+                                     $res->dataError("salesID $salesID $totalDeposit >= $balance ", $totalDeposit);
+                                  }
+                              
+                                $totalDeposit = $totalDeposit - $amount;
+                                $res->dataError("salesID $salesID status 2 $excess > 0 totalDeposit ", $totalDeposit);
+                            }
+                           elseif($status == 1 || $status == 0){//&& $paid >0 && $amount != $paid){
+                                if($totalDeposit >= $balance && $paid<=0){
+                                    $o_sale->paid = $paid+$balance;
+                                    $o_sale->status=2;
+                                    $totalDeposit = $totalDeposit-$balance;
+                                     $res->dataError("salesID $salesID $totalDeposit >= $balance ", $totalDeposit);
+                                }
+                                elseif($totalDeposit < $balance && $paid<=0){
+                                    $o_sale->paid = $paid + $totalDeposit;
+                                    $o_sale->status = 1;
+                                    $totalDeposit = 0;
+                                    $res->dataError("salesID $salesID $totalDeposit < $balance ", $totalDeposit);
+                                }
+                            }
+
+
+                            if ($o_sale->save() === false) {
+                                    $errors = array();
+                                    $messages = $o_sale->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                 $dbTransaction->rollback('Sale update new sale  failed to match' . json_encode($errors));
+                           }
+                        }
+                        
+                  }
+
+                  if($totalDeposit >=$saleAmount){
+                    return 2;
+                  }
+                  else if($totalDeposit >= $saleDeposit || $totalDeposit > 0 ){
+                    return $totalDeposit;
+                  }
+                  else{
+                    return 0;
+                  }
+
+
+        /*
         $res= new SystemResponses();
         $matchedTransactionsQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit from customer_transaction ct JOIN transaction t on ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID ";
         $customerSalesQuery = "SELECT * FROM sales WHERE status>=0 and contactsID=$contactsID ORDER BY salesID ASC";
@@ -1716,7 +1799,7 @@ create new customers for contacts from old system who had made sales
         }
         else{
             return 0;
-        }
+        }*/
 
     }
 
