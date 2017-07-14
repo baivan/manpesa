@@ -96,31 +96,10 @@ class TransactionsController extends Controller {
             //Determine customer
 
             $transactionID = $transaction->transactionID;
-/* 
-            $customerTransaction = new CustomerTransaction();
-            $contact = NULL;
-            $contactsID = NULL;
 
-           $contactMapping = $this->rawSelect("SELECT contactsID FROM contacts "
-                    . "WHERE homeMobile='$accounNumber' || homeMobile='$mobile' || "
-                    . "workMobile='$accounNumber' || workMobile='$mobile' || passportNumber='$accounNumber' || "
-                    . "passportNumber='$mobile' || nationalIdNumber='$accounNumber' || "
-                    . "nationalIdNumber='$mobile' || fullName='$accounNumber' || "
-                    . "fullName='$mobile'");
-
-            if ($contactMapping) {
-                $contact = $contactMapping;
-                $contactsID = $contactMapping[0]['contactsID'];
-                $customerTransaction->transactionID = $transactionID;
-                $customerTransaction->contactsID = $contactsID;
-                $customerTransaction->createdAt = date("Y-m-d H:i:s");
-            }
-            */
-            
 
             $contactsID = $this->mapTransactionContact($accounNumber,$mobile);
-          //  return $res->success("payment received ", $contactsID);
-          //  $customerTransaction = new CustomerTransaction();
+
             if ($contactsID) {
                  $customerTransaction = new CustomerTransaction();
                  $customerTransaction->transactionID = $transactionID;
@@ -149,59 +128,17 @@ class TransactionsController extends Controller {
                         $e["field"] = $message->getField();
                         $errors[] = $e;
                     }
-                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                    $res->dataError('customer transaction create failed', $messages);
+                    $dbTransaction->rollback('Customer transaction create failed' . json_encode($errors));
+                    $res->dataError('Customer transaction create failed', $messages);
                    // return $res->success("Payment received", TRUE);
                 }
 
                 //Find incomplete sales
                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
                 if($depositAmount > 0){
-                    $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                    $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
                 }
-                /*
-                $incompleteSales = Sales::find(array("contactsID=:id: AND status>=:status: AND amount>=:amount: ",
-                            'bind' => array("id" => $contactsID, "status" => 0, "amount" => 0)));
-
-                foreach ($incompleteSales as $incompleteSale) {
-                    $amount = floatval($incompleteSale->amount);
-                    $paid = floatval($incompleteSale->paid);
-                    $unpaid = $amount - $paid;
-
-                    if ($depositAmount >= $unpaid) {
-                        $pay = $paid + $unpaid;
-                        $depositAmount = $depositAmount - $unpaid;
-                        $incompleteSale->paid = $pay;
-                        $incompleteSale->status = 2;
-                    } else {
-                        $pay = $paid + $depositAmount;
-                        $incompleteSale->paid = $pay;
-                        $incompleteSale->status = 1;
-                        $depositAmount = 0;
-                    }
-
-                    if ($incompleteSale->save() === false) {
-                        $errors = array();
-                        $messages = $incompleteSale->getMessages();
-                        foreach ($messages as $message) {
-                            $e["message"] = $message->getMessage();
-                            $e["field"] = $message->getField();
-                            $errors[] = $e;
-                        }
-                        $logger->log("Error while saving sale data: " . json_encode($errors));
-
-                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                        $res->dataError('customer transaction create failed', $messages);
-                        return $res->success("Payment received", TRUE);
-                    }
-
-                    $logger->log("Amount Remaining: " . json_encode($depositAmount));
-
-                    if ($depositAmount == 0) {
-                        break;
-                    }
-                }
-                */
+                
             } else {
                 $unknown = new TransactionUnknown();
                 $unknown->transactionID = $transactionID;
@@ -312,7 +249,7 @@ class TransactionsController extends Controller {
                             $e["field"] = $message->getField();
                             $errors[] = $e;
                         }
-                 $dbTransaction->rollback('failed to reconcile payment' . json_encode($errors));
+                 $dbTransaction->rollback('Failed to reconcile payment' . json_encode($errors));
                  $res->dataError('Update sale paid', $messages);
             }
 
@@ -898,6 +835,170 @@ class TransactionsController extends Controller {
         $limitQuery = "LIMIT $ofset, $limit";
 
         return "$sortClause $limitQuery";
+    }
+
+    /*
+      create new dummy transaction usually called by southwell payment gateway
+      paramters:
+      mobile,account,referenceNumber,amount,fullName,token
+     */
+
+    public function createDummy() { //{mobile,account,referenceNumber,amount,fullName,token}
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+
+      
+        $token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJpYXQiOjE0ODM5NTYwNDYsImFwcCI6ImphdmEzNjAiLCJvd25lciI6ImFub255bW91cyIsImFjdGlvbiI6Im9wZW5SZXF1ZXN0In0.eLHZjnFduufVspUz7E2QfTzKFfPqNWYBoENJbmIeZtA";//$request->getQuery('token');
+        $mobile = $request->getQuery('mobile');
+        $depositAmount = $request->getQuery('amount');
+        $accounNumber = $request->getQuery('account');
+
+
+        $code = rand(9999, 99999);
+        $referenceNumber = "TRATEST$code";
+        $fullName = "TRATEST PAYE $code";
+
+
+        if (!$token) {
+            return $res->dataError("Token missing ");
+        }
+        if (!$accounNumber) {
+            return $res->dataError("Account missing ");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+        if (!$tokenData) {
+            return $res->dataError("Data compromised");
+        }
+
+        try {
+            $transaction = new Transaction();
+            $transaction->mobile = $mobile;
+            $transaction->referenceNumber = $referenceNumber;
+            $transaction->fullName = $fullName;
+            $transaction->depositAmount = $depositAmount;
+            $transaction->nationalID = $nationalID;
+            $transaction->salesID = $accounNumber;
+            $transaction->createdAt = date("Y-m-d H:i:s");
+
+            if ($transaction->save() === false) {
+                $errors = array();
+                $messages = $transaction->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $res->dataError('sale create failed', $errors);
+                $dbTransaction->rollback('transaction create failed' . json_encode($errors));
+                //return $res->success("Payment received", TRUE);
+            }
+
+            //Determine customer
+
+            $transactionID = $transaction->transactionID;
+
+            
+
+            $contactsID = $this->mapTransactionContact($accounNumber,$mobile);
+          //  return $res->success("payment received ", $contactsID);
+          //  $customerTransaction = new CustomerTransaction();
+            if ($contactsID) {
+                 $customerTransaction = new CustomerTransaction();
+                 $customerTransaction->transactionID = $transactionID;
+                 $customerTransaction->contactsID = $contactsID;
+                 $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
+               
+
+                $customer = Customer::findFirst(array("contactsID=:id: ",
+                            'bind' => array("id" => $contactsID)));
+                if ($customer) {
+                    $customerTransaction->customerID = $customer->customerID;
+                }
+
+                $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                            'bind' => array("id" => $contactsID)));
+                if ($prospect) {
+                    $customerTransaction->prospectsID = $prospect->prospectsID;
+                }
+
+                if ($customerTransaction->save() === false) {
+                    $errors = array();
+                    $messages = $customerTransaction->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                    $res->dataError('customer transaction create failed', $messages);
+                   // return $res->success("Payment received", TRUE);
+                }
+
+                //Find incomplete sales
+                $depositAmount = floatval(str_replace(',', '', $depositAmount));
+                if($depositAmount > 0){
+                    $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                }
+               
+            } else {
+                $unknown = new TransactionUnknown();
+                $unknown->transactionID = $transactionID;
+                $unknown->createdAt = date("Y-m-d H:i:s");
+
+                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
+
+                if ($unknown->save() === false) {
+                    $errors = array();
+                    $messages = $unknown->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                    $res->dataError('customer transaction create failed', $messages);
+                }
+            }
+
+            $dbTransaction->commit();
+
+            $latestSale = Sales::findFirst("contactsID = $contactsID AND status > 0 ");
+            $users = array();
+            $userId['userId'] = $latestSale->userID;
+            array_push($users, $userId);
+
+            $customerMessage;
+            if($latestSale->amount > $latestSale->paid){
+                $customerMessage = "Dear " . $fullName . ", your payment of Ksh " . $depositAmount . " has been received. Balance due Ksh ".($latestSale->amount - $latestSale->paid);
+            }
+            elseif($latestSale->amount <= $latestSale->paid){
+                $customerMessage = "Dear " . $fullName . ", your payment of Ksh " . $depositAmount . " has been received. Your sale has been paid in full.";
+            }
+
+            $pushNotificationData = array();
+            $pushNotificationData['title'] = "New Payment";
+            $pushNotificationData['body'] = $fullName." has made payment of ".$depositAmount;
+
+
+            $res->sendMessage($mobile, $customerMessage);
+
+            $res->sendPushNotification($pushNotificationData, "New Payment", $fullName." has made payment of ".$depositAmount, $users);
+
+            return $res->success("Payment received ", true);
+        } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+            $message = $e->getMessage();
+            return $res->dataError('Transaction create error', $message);
+        }
     }
 
 

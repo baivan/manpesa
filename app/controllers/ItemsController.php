@@ -121,17 +121,23 @@ class ItemsController extends Controller {
 
             $dbTransaction->commit();
 
+             $productQuery = "SELECT * FROM product WHERE productID=$productID";
+             $product = $this->rawSelect($productQuery);
+
             $pushNotificationData = array();
-            $pushNotificationData['itemID'] = $item->itemID;
-            $pushNotificationData['productID'] = $productID;
-            $pushNotificationData['serialNumber'] = $serialNumber;
+            $pushNotificationData['title'] = "New Item";
+            $pushNotificationData['body'] = $product[0]['productName']." ".$serialNumber;
+            $users = array();
+            $userId['userId']=$userID;
+            array_push($users, $userId);
 
-            $res->sendPushNotification($pushNotificationData, "New Item", "You have been assigned new item", $userID);
-            $mobileNumberQuery = "select c.workMobile from users u join contacts c on u.contactID=c.contactsID where u.userID=1";
+            $res->sendPushNotification($pushNotificationData, "New Item", "You have been assigned new item", $users);
+
+            $mobileNumberQuery = "SELECT c.workMobile,c.fullName from users u join contacts c on u.contactID=c.contactsID where u.userID=$userID";
+           
             $mobileNumber = $this->rawSelect($mobileNumberQuery);
-
-            $message = "You have been assigned new item\n " . $serialNumber;
-            $res->sendMessage($workMobile[0]['workMobile'], $message);
+            $message = "Dear ".$mobileNumber[0]['fullName']." You have been assigned new item: ".$product[0]['productName']." serial number: " . $serialNumber;
+            $res->sendMessage($mobileNumber[0]['workMobile'], $message);
 
             return $res->success("Item created successfully ", $item);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -866,7 +872,6 @@ class ItemsController extends Controller {
 
         try {
 
-
             foreach ($itemIds as $itemID) {
           
                     $userItem = UserItems::findFirst(array("itemID=:itemId: AND userID=:userID: AND status<=1",
@@ -938,7 +943,7 @@ class ItemsController extends Controller {
                        
                     }
                  else {
-                    return $res->success("Item not found ", false);
+                    return $res->dataError("Item not found ", false);
                 }
               }
               $dbTransaction->commit();
