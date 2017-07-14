@@ -110,7 +110,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($data));
         $logger = new FileAdapter($this->getLogFile('success'));
         $logger->log($message . ' ' . json_encode($data));
-        $this->composePushLog("success", "from data" . $this->config->logPath->location, $data);
+       // $this->composePushLog("success", "from data" . $this->config->logPath->location, $data);
 
         return $response;
     }
@@ -124,7 +124,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($data));
         $logger = new FileAdapter($this->getLogFile('success'));
         $logger->log(' ' . json_encode($data));
-        $this->composePushLog("success", "get order success", json_encode($data));
+        //$this->composePushLog("success", "get order success", json_encode($data));
         return $response;
     }
 
@@ -144,7 +144,7 @@ class SystemResponses extends Controller {
         $logger = new FileAdapter($this->getLogFile('error'));
         $logger->log($message . ' ' . json_encode($data) . $this->config->logPath->location);
 
-        $this->composePushLog("error", "NOT FOUND " . $message, " " . json_encode($data));
+       // $this->composePushLog("error", "NOT FOUND " . $message, " " . json_encode($data));
         return $response;
     }
 
@@ -162,7 +162,7 @@ class SystemResponses extends Controller {
 
         $logger = new FileAdapter($this->getLogFile('error'));
         $logger->log($message . ' ' . json_encode($data));
-        $this->composePushLog("error", "UNPROCESSABLE " . $message, " " . json_encode($data));
+       // $this->composePushLog("error", "UNPROCESSABLE " . $message, " " . json_encode($data));
 
         return $response;
     }
@@ -189,7 +189,7 @@ class SystemResponses extends Controller {
     public function sendMessage($msisdn, $message) {
         $postData = array(
             "sender" => "EnvirofitKE",
-            "recipient" => $msisdn,
+            "recipient" => trim($msisdn),
             "message" => $message
         );
 

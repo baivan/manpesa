@@ -65,8 +65,6 @@ class SalesController extends Controller {
         $quantity =  isset($json->quantity) ? $json->quantity : 1;
 
         $token = $json->token;
-
-       
         
         if (!$token) {
             return $res->dataError("Token missing " . json_encode($json), []);
@@ -151,14 +149,26 @@ class SalesController extends Controller {
             }
 
 
-            $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity);//$salesID,$saleTypeID,$userID,$amount,$quantity
+           $discountAmount = $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity);
+           /* send message to customer */
 
-            /* send message to customer */
-            $customer = $this->getCustomerDetails($customerID);
+            $customer = $this->getCustomerDetails($contactsID);
             $MSISDN = $customer["workMobile"];
             $name = $customer["fullName"];
 
-            $res->sendMessage($MSISDN, "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit);
+           $customerMessage ;
+           if($discountAmount > 0){
+               $sale->amount = $amount - $discountAmount;
+               $sale->save();
+               
+               $customerMessage="Dear " . $name . ", your sale has been placed successfully! You have been awarded a discount of Ksh. ".$discountAmount.". Please pay Ksh. " . ($paymentPlanDeposit - $discountAmount) ." .To complete this sale.";
+           }
+           else{
+               $customerMessage= "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit." .To complete this sale.";
+           }
+
+
+            $res->sendMessage($MSISDN, $customerMessage);
 
             $dbTransaction->commit();
 
@@ -380,10 +390,13 @@ class SalesController extends Controller {
     retrive customer details
     parameters: customerID
     */
-    public function getCustomerDetails($customerID) {
-        $customerquery = "SELECT cs.workMobile ,cs.fullName from contacts cs left join customer co on cs.contactsID=co.contactsID WHERE co.customerID=$customerID";
+    public function getCustomerDetails($contactsID) {
+        
+        $customerquery = "SELECT workMobile ,fullName FROM contacts WHERE contactsID=$contactsID";
+
 
         $customer = $this->rawSelect($customerquery);
+        
         return $customer[0];
     }
    
@@ -1721,86 +1734,6 @@ create new customers for contacts from old system who had made sales
                     return 0;
                   }
 
-
-        /*
-        $res= new SystemResponses();
-        $matchedTransactionsQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit from customer_transaction ct JOIN transaction t on ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID ";
-        $customerSalesQuery = "SELECT * FROM sales WHERE status>=0 and contactsID=$contactsID ORDER BY salesID ASC";
-
-
-        $depositAmounts=$this->rawSelect($matchedTransactionsQuery);
-        $sales = $this->rawSelect($customerSalesQuery);
-        $totalDeposit =$depositAmounts[0]['totalDeposit'];
-
-        $res->dataError("Sale update new sale  failed to match ".$totalDeposit." te ".json_encode($sales));
-
-        foreach ($sales as $sale) {
-            $status = $sale['status'];
-            $amount = $sale['amount'];
-            $salesID = $sale['salesID'];
-            $paid = $sale['paid'];
-
-            $balance = $amount - $paid;
-            $excess = $totalDeposit - $balance;
-            $o_sale = Sales::findFirst(array("salesID=:id: ",
-                        'bind' => array("id" => $salesID)));
-            if($totalDeposit > 0){
-                if($status == 2){
-                     if($totalDeposit >= $balance && $paid <=0){
-                        $o_sale->paid = $paid+$balance;
-                        $o_sale->status=2;
-                        // $totalDeposit = $totalDeposit-$balance;
-                         $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
-                    }
-                  
-                    $totalDeposit = $totalDeposit - $amount;
-                    $res->dataError("status 2 $excess > 0 totalDeposit ", $totalDeposit);
-                }
-               elseif($status == 1 || $status == 0){//&& $paid >0 && $amount != $paid){
-                    if($totalDeposit >= $balance){
-                        $o_sale->paid = $paid+$balance;
-                        $o_sale->status=2;
-                        $totalDeposit = $totalDeposit-$balance;
-                         $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
-                    }
-                    elseif($totalDeposit < $balance){
-                        $o_sale->paid = $paid+$totalDeposit;
-                        $o_sale->status = 1;
-                        $totalDeposit = 0;
-                        $res->dataError("$totalDeposit < $balance ", $totalDeposit);
-                    }
-                }
-
-                if ($o_sale->save() === false) {
-                        $errors = array();
-                        $messages = $o_sale->getMessages();
-                        foreach ($messages as $message) {
-                            $e["message"] = $message->getMessage();
-                            $e["field"] = $message->getField();
-                            $errors[] = $e;
-                        }
-                     $res->dataError('Sale update new sale  failed to match', $errors);
-               }
-            }
-            
-        }
-
-        if($totalDeposit == 0){
-            return 0;
-        }
-        elseif($totalDeposit >= $saleAmount){
-            return 2;
-        }
-        elseif($totalDeposit >= $saleDeposit ){
-            return 1;
-        }
-        elseif($totalDeposit > 0){
-            return 1;
-        }
-        else{
-            return 0;
-        }*/
-
     }
 
     public function addDiscount($salesID,$saleTypeID,$userID,$amount,$quantity){
@@ -1809,7 +1742,9 @@ create new customers for contacts from old system who had made sales
          $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
                             'bind' => array("id" => $salesID)));
          if($saleDiscount){
-            return false;
+            $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
+                                'bind' => array("id" => $saleDiscount->discountID)));
+            return $discountAmountOffered->discountAmount;
          }
          $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID";
          $discounts = $this->rawSelect($discountsQuery);
@@ -1864,7 +1799,10 @@ create new customers for contacts from old system who had made sales
 
 
                if($can_offer_discount && $saleDiscount){
-                    return true;
+                     $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
+                                'bind' => array("id" => $saleDiscount->discountID)));
+                    return $discountAmountOffered->discountAmount;
+
                }
                else{
                     $saleDiscount = new SaleDiscount();
@@ -1883,13 +1821,16 @@ create new customers for contacts from old system who had made sales
                             }
                              //$dbTransaction->rollback('saleDiscount create failed' . json_encode($errors));
                              $res->dataError('saleDiscount create failed', $errors);
-                             return false;
+                             return 0;
                     }
                     $res->success("Sale Discount added ",$saleDiscount);
+                    $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
+                                'bind' => array("id" => $discountID)));
+                    return $discountAmountOffered->discountAmount;
                }
          }
 
-         return true;
+         return 0;
 
     }
 
