@@ -468,9 +468,10 @@ class ItemsController extends Controller {
 
     /*
      assing an item to a sales agent
+     {itemID,userID,token}
     */
 
-    public function assignItem() {//{itemID,userID,token}
+    public function assignItem() {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();

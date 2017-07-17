@@ -103,25 +103,12 @@ class SalesController extends Controller {
             $paymentPlanID = $this->createPaymentPlan($paymentPlanDeposit, $salesTypeID, $frequencyID, $dbTransaction);
             $customerID = $this->createCustomer($userID, $contactsID, $dbTransaction);
 
-            $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit,$dbTransaction);
-
+            
             $prospectsID = NULL;
             $prospect = Prospects::findFirst(array("contactsID=:id: ",
                         'bind' => array("id" => $contactsID)));
             if ($prospect) {
                 $prospectsID = $prospect->prospectsID;
-            }
-
-            $paid =0;
-            if($status == 2){
-                $paid = $amount;
-            }
-            elseif($status > 2){
-                $paid = $status;
-                $status = 1;
-            }
-            elseif ($status < 2) {
-                $paid = 0;
             }
 
             $sale = new Sales();
@@ -149,28 +136,89 @@ class SalesController extends Controller {
             }
 
 
-           $discountAmount = $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity);
-           /* send message to customer */
-
             $customer = $this->getCustomerDetails($contactsID);
             $MSISDN = $customer["workMobile"];
             $name = $customer["fullName"];
+            $paid =0;
+            $status = 0;
+            $customerMessage ;
 
-           $customerMessage ;
-           if($discountAmount > 0){
-               $sale->amount = $amount - $discountAmount;
-               $sale->save();
-               
-               $customerMessage="Dear " . $name . ", your sale has been placed successfully! You have been awarded a discount of Ksh. ".$discountAmount.". Please pay Ksh. " . ($paymentPlanDeposit - $discountAmount) ." .To complete this sale.";
+           $discountAmount = $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity,$productID);
+
+           if($discountAmount > 0 ){
+                  $status = $this->getCustomerBalance($contactsID,($amount - $discountAmount),$paymentPlanDeposit,$dbTransaction);
+                  $amount = $amount - $discountAmount;
+
+                  if($status == 2){
+                     $paid = $amount;
+                     $customerMessage="Dear " . $name . ", your sale has been placed successfully! You have been awarded a discount of Ksh. ".$discountAmount.". Your payment of Ksh. " . $amount ." has been deducted. Your sale is paid in full.";
+                    }
+                 elseif($status > 2){
+                    $paid = $status;
+                    $status = 1;
+                    $customerMessage="Dear " . $name . ", your sale has been placed successfully! You have been awarded a discount of Ksh. ".$discountAmount.". Your payment of Ksh. " . ($status) ." .Has been deducted. Please pay ".($amount-$status)." .To complete this sale.";
+
+                  }
+                  else{
+                    $paid = 0;
+                    $status = 0;
+                    $customerMessage="Dear " . $name . ", your sale has been placed successfully! You have been awarded a discount of Ksh. ".$discountAmount.". Please pay Ksh. " . ($paymentPlanDeposit - $discountAmount) ." .To complete this sale.";
+                  }
            }
            else{
-               $customerMessage= "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit." .To complete this sale.";
+             $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit,$dbTransaction);
+             
+                 if($status == 2){
+                    $paid = $amount;
+                    $customerMessage= "Dear " . $name . ", your sale has been placed successfully! Your payment of Ksh. " . ($amount) ." has been deducted. Your sale is paid in full.";
+                }
+                elseif($status > 2){
+                    $paid = $status;
+                    $status = 1;
+                    $customerMessage="Dear " . $name . ", your sale has been placed successfully! Your payment of Ksh. " . ($status) ." .Has been deducted. Please pay ".($amount-$status)." .To complete this sale.";
+
+                  }
+                  else{
+                    $paid = 0;
+                    $status = 0;
+                    $customerMessage= "Dear " . $name . ", your sale has been placed successfully, please pay Ksh. " . $paymentPlanDeposit." .To complete this sale.";
+
+                  }
+
+                
            }
 
+          /*  
+            if($status == 2){
+                $paid = $amount;
+            }
+            elseif($status > 2){
+                $paid = $status;
+                $status = 1;
+            }
+            elseif ($status < 2) {
+                $paid = 0;
+            }
+            */
+            $sale->status = $status;
+            $sale->paid = $paid;
+            $sale->amount = $amount;
+            $sale->updatedAt = date("Y-m-d H:i:s");
 
-            $res->sendMessage($MSISDN, $customerMessage);
 
+           if ($sale->save() === false) {
+                $errors = array();
+                $messages = $sale->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                $dbTransaction->rollback('Sale Discount add failed' . json_encode($errors));
+            }
             $dbTransaction->commit();
+            
+            $res->sendMessage($MSISDN, $customerMessage);
 
             return $res->success("Sale saved successfully, await payment ", $sale);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -1722,7 +1770,7 @@ create new customers for contacts from old system who had made sales
                            }
                         }
                         
-                  }
+                  } 
 
                   if($totalDeposit >=$saleAmount){
                     return 2;
@@ -1736,8 +1784,11 @@ create new customers for contacts from old system who had made sales
 
     }
 
-    public function addDiscount($salesID,$saleTypeID,$userID,$amount,$quantity){
-           $res = new SystemResponses();
+    public function addDiscount($salesID,$saleTypeID,$userID,$amount,$quantity,$productIDs){
+         $res = new SystemResponses();
+          $productIDs = str_replace("]","",str_replace("[", "", $productIDs));
+          $productIDs = explode(",",$productIDs);
+
         
          $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
                             'bind' => array("id" => $salesID)));
@@ -1746,91 +1797,95 @@ create new customers for contacts from old system who had made sales
                                 'bind' => array("id" => $saleDiscount->discountID)));
             return $discountAmountOffered->discountAmount;
          }
-         $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID";
-         $discounts = $this->rawSelect($discountsQuery);
 
          $discountAmountOffered = 0;
+         $totalDiscountToOffer = 0;
 
-         foreach ($discounts as $discount) {
-                $agents = $discount['agents'];
-                $discountID = $discount['discountID'];
-                $startDate = $discount['startDate'];
-                $endDate = $discount['endDate'];
-                $cur_date = date("Y-m-d H:i:s");
-                $discountType = $discount['discountTypeName'];
-                $discountAmount = $discount['discountAmount'];
+         foreach ($productIDs as $productID) {
+            $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND productID=$productID";
+             $discounts = $this->rawSelect($discountsQuery);
 
-                $can_offer_discount=false;
+             foreach ($discounts as $discount) {
+                    $agents = $discount['agents'];
+                    $discountID = $discount['discountID'];
+                    $startDate = $discount['startDate'];
+                    $endDate = $discount['endDate'];
+                    $cur_date = date("Y-m-d H:i:s");
+                    $discountType = $discount['discountTypeName'];
+                    $discountAmount = $discount['discountAmount'];
+
+                    $can_offer_discount=false;
 
 
 
-                if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
-                    $o_discount = Discount::findFirst(array("discountID=:id: ",
-                                'bind' => array("id" => $discountID)));
-                    $o_discount->status = 0;
-                    $o_discount->save();
-               }
-               else{
-                    if (strcasecmp($agents, 'all') == 0 ){
-                            if(strcasecmp($discountType, 'amount')){
-                                $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$amount);
-                            }
-                            elseif(strcasecmp($discountType, 'quantity')){
-                                $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$quantity);
-                            }
-                        }
-                    else{
-                        $allAgents = explode(",", $agents);
-                         foreach ($allAgents as $agent) {
-                             if(strcasecmp($agents, $userID) == 0){
-                                if(strcasecmp($discountType, 'amount')){
-                                    $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$amount);
+                    if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
+                        $o_discount = Discount::findFirst(array("discountID=:id: ",
+                                    'bind' => array("id" => $discountID)));
+                        $o_discount->status = 0;
+                        $o_discount->save();
+                       }
+                       else{
+                            if (strcasecmp($agents, 'all') == 0 ){
+                                    if(strcasecmp($discountType, 'amount')){
+                                        $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$amount);
                                     }
                                     elseif(strcasecmp($discountType, 'quantity')){
-                                     $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$quantity);
+                                        $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$quantity);
                                     }
-                             }
-                         }
-                    }
-               }
-
-                $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
-                             'bind' => array("id" => $salesID)));
-
-
-               if($can_offer_discount && $saleDiscount){
-                     $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
-                                'bind' => array("id" => $saleDiscount->discountID)));
-                    return $discountAmountOffered->discountAmount;
-
-               }
-               else{
-                    $saleDiscount = new SaleDiscount();
-                    $saleDiscount->salesID = $salesID;
-                    $saleDiscount->discountID = $discountID;
-                    $saleDiscount->status = 0;
-                    $saleDiscount->userID = $userID;
-                    $saleDiscount->createdAt = date("Y-m-d H:i:s");
-                    if ($saleDiscount->save() === false) {
-                            $errors = array();
-                            $messages = $saleDiscount->getMessages();
-                            foreach ($messages as $message) {
-                                $e["message"] = $message->getMessage();
-                                $e["field"] = $message->getField();
-                                $errors[] = $e;
+                                }
+                            else{
+                                $allAgents = explode(",", $agents);
+                                 foreach ($allAgents as $agent) {
+                                     if(strcasecmp($agents, $userID) == 0){
+                                        if(strcasecmp($discountType, 'amount')){
+                                            $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$amount);
+                                            }
+                                            elseif(strcasecmp($discountType, 'quantity')){
+                                             $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$quantity);
+                                            }
+                                     }
+                                 }
                             }
-                             //$dbTransaction->rollback('saleDiscount create failed' . json_encode($errors));
-                             $res->dataError('saleDiscount create failed', $errors);
-                             return 0;
-                    }
-                    $res->success("Sale Discount added ",$saleDiscount);
-                    $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
-                                'bind' => array("id" => $discountID)));
-                    return $discountAmountOffered->discountAmount;
-               }
-         }
+                       }
 
-         return 0;
+                        $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
+                                     'bind' => array("id" => $salesID)));
+
+
+                       if($can_offer_discount && $saleDiscount){
+                             $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
+                                        'bind' => array("id" => $saleDiscount->discountID)));
+                            //return $discountAmountOffered->discountAmount;
+                             $totalDiscountToOffer = $totalDiscountToOffer + $discountAmountOffered->discountAmount;
+
+                       }
+                       else{
+                            $saleDiscount = new SaleDiscount();
+                            $saleDiscount->salesID = $salesID;
+                            $saleDiscount->discountID = $discountID;
+                            $saleDiscount->status = 0;
+                            $saleDiscount->userID = $userID;
+                            $saleDiscount->createdAt = date("Y-m-d H:i:s");
+                            if ($saleDiscount->save() === false) {
+                                    $errors = array();
+                                    $messages = $saleDiscount->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                     //$dbTransaction->rollback('saleDiscount create failed' . json_encode($errors));
+                                     $res->dataError('saleDiscount create failed', $errors);
+                                     return 0;
+                            }
+                            $res->success("Sale Discount added ",$saleDiscount);
+                            $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
+                                        'bind' => array("id" => $discountID)));
+                            $totalDiscountToOffer =$totalDiscountToOffer + $discountAmountOffered->discountAmount;
+                        }
+                }
+         }
+         return $totalDiscountToOffer;
 
     }
 
