@@ -132,12 +132,13 @@ class ItemsController extends Controller {
             array_push($users, $userId);
 
             $res->sendPushNotification($pushNotificationData, "New Item", "You have been assigned new item", $users);
-
+        /* 
             $mobileNumberQuery = "SELECT c.workMobile,c.fullName from users u join contacts c on u.contactID=c.contactsID where u.userID=$userID";
            
             $mobileNumber = $this->rawSelect($mobileNumberQuery);
             $message = "Dear ".$mobileNumber[0]['fullName']." You have been assigned new item: ".$product[0]['productName']." serial number: " . $serialNumber;
             $res->sendMessage($mobileNumber[0]['workMobile'], $message);
+            */
 
             return $res->success("Item created successfully ", $item);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -145,7 +146,7 @@ class ItemsController extends Controller {
             return $res->dataError('Item create error', $message);
         }
     }
-
+ 
      /*
     update  item 
     paramters:
