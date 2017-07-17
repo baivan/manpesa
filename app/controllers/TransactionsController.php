@@ -249,7 +249,7 @@ class TransactionsController extends Controller {
                             $e["field"] = $message->getField();
                             $errors[] = $e;
                         }
-                 $dbTransaction->rollback('Failed to reconcile payment' . json_encode($errors));
+                 //$dbTransaction->rollback('Failed to reconcile payment' . json_encode($errors));
                  $res->dataError('Update sale paid', $messages);
             }
 

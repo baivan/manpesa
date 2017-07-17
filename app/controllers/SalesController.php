@@ -333,12 +333,12 @@ class SalesController extends Controller {
                 }
                 $dbTransaction->rollback('paymentPlan create failed' . json_encode($errors));
 
-            }
+             }
 
             $res->sendMessage($workMobile, "Dear " . $fullName . ", welcome to Envirofit. For any questions or comments call 0800722700 ");
             return $contact->contactsID;
         }
-    }
+     }
 
     /*
      creates an association between an item and a sale
@@ -681,6 +681,25 @@ class SalesController extends Controller {
         foreach ($sales as $sale) {
             $items = $this->getSaleItems($sale['salesID']);
             $sale['items'] = $items;
+
+            $productIDs = str_replace("]","",str_replace("[", "", $sale['productID']));
+            $productIDs = explode(",",$productIDs);
+            $productName = "";
+
+            foreach ($productIDs as $productID) {
+                $product = Product::findFirst("productID=$productID");
+
+                if(empty($productName))
+                {
+                    $productName = $product->productName;
+                }
+                else{
+                    $productName = $productName." <br> ".$product->productName;
+                }
+            }
+            $sale['productName'] = $productName;
+
+
             array_push($displaySales, $sale);
         }
 //
@@ -800,11 +819,31 @@ class SalesController extends Controller {
         foreach ($sales as $sale) {
             $items = $this->getSaleItems($sale['salesID']);
             $sale['items'] = $items;
+            
+
+            $productIDs = str_replace("]","",str_replace("[", "", $sale['productID']));
+            $productIDs = explode(",",$productIDs);
+            $productName = "";
+
+            foreach ($productIDs as $productID) {
+                $product = Product::findFirst("productID=$productID");
+
+                if(empty($productName))
+                {
+                    $productName = $product->productName;
+                }
+                else{
+                    $productName = $productName." <br> ".$product->productName;
+                }
+            }
+            $sale['productName'] = $productName;
+
             array_push($displaySales, $sale);
         }
 
         $data["totalSales"] = $count[0]['totalSales'];
         $data["sales"] = $displaySales;
+
 
 
         return $res->success("pending sales ", $data);
