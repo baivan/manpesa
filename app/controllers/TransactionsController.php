@@ -714,6 +714,7 @@ class TransactionsController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -721,9 +722,11 @@ class TransactionsController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
+        $exportTransactions = $this->rawSelect($exportQuery);
 
         $data["totalTransaction"] = $count[0]['totalTransaction'];
         $data["transactions"] = $items;
+        $data['exportTransactions'] = $exportTransactions;
         return $res->success("Transactions get successfully ", $data);
     }
 
@@ -806,6 +809,7 @@ class TransactionsController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -814,9 +818,11 @@ class TransactionsController extends Controller {
         //  return $res->success($countQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
+        $exportTransactions = $this->rawSelect($exportQuery);
 
         $data["totalTransaction"] = $count[0]['totalTransaction'];
         $data["transactions"] = $items;
+        $data["exportTransactions"] = $exportTransactions;
         return $res->success("Unknown payments get successfully ", $data);
     }
 

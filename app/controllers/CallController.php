@@ -278,6 +278,7 @@ class CallController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
        
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
@@ -288,9 +289,11 @@ class CallController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
+        $exportMessages = $this->rawSelect($exportQuery);
         
         $data["totalCalls"] = $count[0]['totalCalls'];
         $data["calls"] = $messages;
+        $data["exportCalls"] = $exportMessages;
 
         return $res->success("calls", $data);
     }

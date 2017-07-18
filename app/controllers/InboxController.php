@@ -157,6 +157,7 @@ class InboxController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $condition;
         $selectQuery = $selectQuery . $baseQuery . $condition;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit, $filter);
 
@@ -167,8 +168,10 @@ class InboxController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
+        $exportMessage = $this->rawSelect($exportQuery);
         $data["totalInbox"] = $count[0]['totalInbox'];
         $data["Messages"] = $messages;
+        $data["exportMessage"] = $exportMessage;
 
         return $res->success("Messages ", $data);
     }

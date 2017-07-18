@@ -567,6 +567,7 @@ class CustomerController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $esxportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
 
@@ -576,8 +577,10 @@ class CustomerController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $customers = $this->rawSelect($selectQuery);
+        $exportCustomers = $this->rawSelect($esxportQuery);
         $data["totalCustomers"] = $count[0]['totalCustomers'];
         $data["customers"] = $customers;
+        $data["exportCustomers"] = $exportCustomers;
 
         return $res->success("customers", $data);
     }

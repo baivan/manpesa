@@ -666,6 +666,7 @@ class SalesController extends Controller {
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -674,6 +675,7 @@ class SalesController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
+        $exportSales = $this->rawSelect($exportQuery);
 
 
         $displaySales = array();
@@ -702,9 +704,43 @@ class SalesController extends Controller {
 
             array_push($displaySales, $sale);
         }
-//
+       $dataToExport = array();
+        foreach ($exportSales as $e_sale) {
+            $items = $this->getSaleItems($e_sale['salesID']);
+            $e_sale['items'] = $items;
+           
+            $productIDs = str_replace("]","",str_replace("[", "", $e_sale['productID']));
+            $productIDs = explode(",",$productIDs);
+            $productName = "";
+
+           
+             foreach ($productIDs as $productID) {
+                if(is_numeric($productID)){
+                    $product = Product::findFirst("productID=$productID");
+                    if($product){
+                        if(empty($productName))
+                            {
+                                $productName = $product->productName;
+                            }
+                            else{
+                                $productName = $productName."\n".$product->productName;
+                            }
+                    }
+                }
+               
+    
+            }
+
+
+            $e_sale['productName'] = $productName;
+
+             array_push($dataToExport, $e_sale);
+
+        }
+
         $data["totalSales"] = $count[0]['totalSales'];
         $data["sales"] = $displaySales;
+        $data["exportSales"] = $dataToExport;
 
 
         return $res->success("Sales ", $data);
@@ -804,6 +840,7 @@ class SalesController extends Controller {
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -812,6 +849,7 @@ class SalesController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
+        $exportSales = $this->rawSelect($exportQuery);
 
 
         $displaySales = array();
@@ -841,9 +879,43 @@ class SalesController extends Controller {
             array_push($displaySales, $sale);
         }
 
+        $dataToExport = array();
+        foreach ($exportSales as $e_sale) {
+            $items = $this->getSaleItems($e_sale['salesID']);
+            $e_sale['items'] = $items;
+           
+            $productIDs = str_replace("]","",str_replace("[", "", $e_sale['productID']));
+            $productIDs = explode(",",$productIDs);
+            $productName = "";
+
+           
+             foreach ($productIDs as $productID) {
+                if(is_numeric($productID)){
+                    $product = Product::findFirst("productID=$productID");
+                    if($product){
+                        if(empty($productName))
+                            {
+                                $productName = $product->productName;
+                            }
+                            else{
+                                $productName = $productName."\n".$product->productName;
+                            }
+                    }
+                }
+               
+    
+            }
+
+
+            $e_sale['productName'] = $productName;
+
+             array_push($dataToExport, $e_sale);
+
+        }
+
         $data["totalSales"] = $count[0]['totalSales'];
         $data["sales"] = $displaySales;
-
+        $data["exportSales"] = $dataToExport;
 
 
         return $res->success("pending sales ", $data);
@@ -930,6 +1002,7 @@ class SalesController extends Controller {
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -938,10 +1011,11 @@ class SalesController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $sales = $this->rawSelect($selectQuery);
+        $exportSales = $this->rawSelect($exportQuery);
 
         $data["totalSales"] = $count[0]['totalSales'];
         $data["sales"] = $sales;
-
+        $data['exportSales'] = $exportSales;
 
         return $res->success("Sales ", $data);
     }

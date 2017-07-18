@@ -391,6 +391,7 @@ class TicketController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
 //        $selectQuery .= $sortClause;
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
@@ -401,8 +402,11 @@ class TicketController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $tickets = $this->rawSelect($selectQuery);
+        $exportTickets = $this->rawSelect($exportQuery);
+
         $data["totalTickets"] = $count[0]['totalTickets'];
         $data["tickets"] = $tickets;
+        $data['exportTickets'] = $exportTickets;
 
         return $res->success("Tickets ", $data);
     }

@@ -302,6 +302,7 @@ class ProspectsController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
 
@@ -311,9 +312,12 @@ class ProspectsController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $prospects = $this->rawSelect($selectQuery);
+        $exportProspects = $this->rawSelect($exportQuery);
+
         $data["totalProspects"] = $count[0]['totalProspects'];
         $data["prospects"] = $prospects;
-
+        $data['exportProspects'] = $exportProspects;
+ 
         return $res->success("Prospects ", $data);
     }
 

@@ -197,6 +197,7 @@ class OutboxController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -204,8 +205,10 @@ class OutboxController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
+        $exportMessages  = $this->rawSelect($exportQuery);
         $data["totalOutBox"] = $count[0]['totalOutBox'];
         $data["Messages"] = $messages;
+        $data["exportMessages"]=$exportMessages;
 
         return $res->success("Messages ", $data);
     }

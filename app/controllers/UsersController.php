@@ -758,6 +758,7 @@ status
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -765,8 +766,11 @@ status
         $count = $this->rawSelect($countQuery);
 
         $users = $this->rawSelect($selectQuery);
+        $exportUsers = $this->rawSelect($exportQuery);
+
         $data["totalUsers"] = $count[0]['totalUsers'];
         $data["users"] = $users;
+        $data["exportUsers"] = $exportUsers;
 
         return $res->success("Users", $data);
     }
