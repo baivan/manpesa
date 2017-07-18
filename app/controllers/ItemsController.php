@@ -277,7 +277,7 @@ class ItemsController extends Controller {
     limit (total number of items to be retrieved),
     filter (to be used on where statement)
     */
-
+ 
     public function getTableItems() { //sort, order, page, limit,filter
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -347,6 +347,7 @@ class ItemsController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -355,11 +356,39 @@ class ItemsController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
+        $exportItems=$this->rawSelect($exportQuery);
 
         $data["totalItems"] = $count[0]['totalItems'];
         $data["items"] = $items;
+        $data["exportItems"] = $exportItems;
         return $res->success("product items", $data);
     }
+
+    // public function getExportData(){
+    //     $jwtManager = new JwtManager();
+    //     $request = new Request();
+    //     $res = new SystemResponses();
+    //     $json = $request->getJsonRawBody();
+    //     $productID = $json->productID;
+    //     $token = $json->token;
+
+    //     if (!$token || !$productID ) {
+    //         return $res->dataError("Missing data ");
+    //     }
+    //     $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+    //     if (!$tokenData) {
+    //         return $res->dataError("Data compromised");
+    //     }
+
+    //     $selectQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt,u.userID,"
+    //             . "co.fullName FROM item i LEFT JOIN user_items ui on i.itemID=ui.itemID "
+    //             . "LEFT JOIN users u ON ui.userID=u.userID LEFT JOIN contacts co on u.contactID=co.contactsID WHERE productID=$productID";
+
+
+
+
+    // }
  /*
     retrieve  sold items to be tabulated on crm
     parameters:
@@ -434,6 +463,7 @@ class ItemsController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -442,9 +472,11 @@ class ItemsController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
+        $exportItems = $this->rawSelect($exportQuery);
 
         $data["totalItems"] = $count[0]['totalItems'];
         $data["items"] = $items;
+        $data["exportItems"] = $exportItems;
         return $res->success("product items", $data);
     }
 /*
@@ -952,7 +984,7 @@ class ItemsController extends Controller {
               return $res->success("Item issued successfully ", $isPaid);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
-            return $res->dataError('Item create error', $message);
+            return $res->dataError('Item issue error', $message);
         }
     }
 

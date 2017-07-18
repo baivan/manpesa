@@ -278,6 +278,7 @@ class CallController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+       
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -287,6 +288,7 @@ class CallController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $messages = $this->rawSelect($selectQuery);
+        
         $data["totalCalls"] = $count[0]['totalCalls'];
         $data["calls"] = $messages;
 
