@@ -977,8 +977,9 @@ class ItemsController extends Controller {
                        
                     }
                  else {
-                    return $res->dataError("Item not found ", false);
+                     $res->dataError("Item sale or userItem not found ".json_decode($json));
                 }
+                
               }
               $dbTransaction->commit();
               return $res->success("Item issued successfully ", $isPaid);
