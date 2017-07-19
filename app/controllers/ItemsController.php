@@ -982,7 +982,7 @@ class ItemsController extends Controller {
                 
               }
               $dbTransaction->commit();
-              return $res->success("Item issued successfully ", $isPaid);
+              return $res->success("Item issued successfully ", true);
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Item issue error', $message);
