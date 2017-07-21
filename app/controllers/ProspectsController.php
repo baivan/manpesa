@@ -248,6 +248,8 @@ class ProspectsController extends Controller {
         $filter = $request->getQuery('filter');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+
 
         $countQuery = "SELECT count(prospectsID) as totalProspects ";
 
@@ -312,11 +314,19 @@ class ProspectsController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $prospects = $this->rawSelect($selectQuery);
-        $exportProspects = $this->rawSelect($exportQuery);
+        if($isExport){
+             $exportProspects = $this->rawSelect($exportQuery);
+            $data["totalProspects"] = $count[0]['totalProspects'];
+            $data["prospects"] = $prospects;
+            $data['exportProspects'] = $exportProspects;
 
-        $data["totalProspects"] = $count[0]['totalProspects'];
-        $data["prospects"] = $prospects;
-        $data['exportProspects'] = $exportProspects;
+        }
+        else{
+            $data["totalProspects"] = $count[0]['totalProspects'];
+            $data["prospects"] = $prospects;
+            $data['exportProspects'] = 'no data';
+        }
+       
  
         return $res->success("Prospects ", $data);
     }

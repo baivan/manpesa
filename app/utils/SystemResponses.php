@@ -81,7 +81,6 @@ class SystemResponses extends Controller {
         $appName = "com.james.southwelservicemonitor";
         $this->sendAndroidPushNotification($data, $title, $body, $userID, $appName);
 
-        //   {"appName":"com.james.southwelservicemonitor","body":"body","title":"title","data":{"origin":"Payments", "description":"Connection timout", "resolution" :"Service stopped. Piga nduru ",  "alertTime":"12-13-2017 13:24:12","status":0,  "type":"Error"}, "users":[{"userId":"111"}]}
     }
 
     public function success($message, $data) {
@@ -95,7 +94,7 @@ class SystemResponses extends Controller {
 
         $response->setContent(json_encode($success));
         $logger = new FileAdapter($this->getLogFile('success'));
-        $logger->log($message . ' ' . json_encode($data));
+        $logger->log(date("Y-m-d H:i:s").'success '.$message);
 
         return $response;
     }
@@ -109,7 +108,7 @@ class SystemResponses extends Controller {
 
         $response->setContent(json_encode($data));
         $logger = new FileAdapter($this->getLogFile('success'));
-        $logger->log($message . ' ' . json_encode($data));
+        $logger->log(date("Y-m-d H:i:s").' success from data '.$message);
        // $this->composePushLog("success", "from data" . $this->config->logPath->location, $data);
 
         return $response;
@@ -123,8 +122,7 @@ class SystemResponses extends Controller {
         $success = array();
         $response->setContent(json_encode($data));
         $logger = new FileAdapter($this->getLogFile('success'));
-        $logger->log(' ' . json_encode($data));
-        //$this->composePushLog("success", "get order success", json_encode($data));
+        $logger->log(date("Y-m-d H:i:s").' get sales success');
         return $response;
     }
 
@@ -142,7 +140,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($error));
 
         $logger = new FileAdapter($this->getLogFile('error'));
-        $logger->log($message . ' ' . json_encode($data) . $this->config->logPath->location);
+        $logger->log(date("Y-m-d H:i:s").' not faound error '.$message . ' '. $this->config->logPath->location);
 
        // $this->composePushLog("error", "NOT FOUND " . $message, " " . json_encode($data));
         return $response;
@@ -161,7 +159,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($error));
 
         $logger = new FileAdapter($this->getLogFile('error'));
-        $logger->log($message . ' ' . json_encode($data));
+        $logger->log(date("Y-m-d H:i:s").' unProcessable ' .$message . ' ' . json_encode($data));
        // $this->composePushLog("error", "UNPROCESSABLE " . $message, " " . json_encode($data));
 
         return $response;
@@ -180,7 +178,7 @@ class SystemResponses extends Controller {
         $response->setContent(json_encode($error));
 
         $logger = new FileAdapter($this->getLogFile('error'));
-        $logger->log($message . ' ' . json_encode($data));
+        $logger->log(date("Y-m-d H:i:s").'data error '.$message);
         //$this->composePushLog("error", "DATA ERROR " . $message, " " . $data);
 
         return $response;

@@ -324,6 +324,8 @@ class TicketController extends Controller {
         $status = $request->getQuery('status');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+
 
         $countQuery = "SELECT count(ticketID) as totalTickets ";
 
@@ -402,11 +404,22 @@ class TicketController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $tickets = $this->rawSelect($selectQuery);
-        $exportTickets = $this->rawSelect($exportQuery);
+       
 
-        $data["totalTickets"] = $count[0]['totalTickets'];
-        $data["tickets"] = $tickets;
-        $data['exportTickets'] = $exportTickets;
+        if($isExport){
+            $exportTickets = $this->rawSelect($exportQuery);
+            $data["totalTickets"] = $count[0]['totalTickets'];
+            $data["tickets"] = $tickets;
+            $data['exportTickets'] = $exportTickets;
+
+        }
+        else{
+             $data["totalTickets"] = $count[0]['totalTickets'];
+            $data["tickets"] = $tickets;
+            $data['exportTickets'] = 'no data';
+        }
+
+      
 
         return $res->success("Tickets ", $data);
     }
@@ -434,6 +447,7 @@ class TicketController extends Controller {
         $page = $request->getQuery('page') ? $request->getQuery('page') : 1;
         $limit = $request->getQuery('limit') ? $request->getQuery('limit') : 10;
         $ticketID = $request->getQuery('ticketID') ? $request->getQuery('ticketID') : 10;
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
 
 
         $countQuery = "SELECT count(ticketUpdateID) as totalTicketUpdates ";
@@ -486,6 +500,7 @@ class TicketController extends Controller {
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
 
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
@@ -494,8 +509,14 @@ class TicketController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $ticketUpdates = $this->rawSelect($selectQuery);
-        $data["totalTicketUpdates"] = $count[0]['totalTicketUpdates'];
-        $data["ticketUpdates"] = $ticketUpdates;
+        if($isExport){
+            $exportTickets = $this->rawSelect($exportQuery);
+              $data["totalTicketUpdates"] = $count[0]['totalTicketUpdates'];
+             $data["ticketUpdatesExport"] = $exportTickets;
+             $data["ticketUpdates"] = $ticketUpdates;
+
+        }
+      
 
         return $res->success("ticketUpdates ", $data);
     }

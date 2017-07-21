@@ -208,6 +208,7 @@ class CallController extends Controller {
         $status = $request->getQuery('status');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : false;
 
         if ($customerID) {
             $customer = Customer::findFirst(array("customerID=:customerID:",
@@ -286,14 +287,17 @@ class CallController extends Controller {
 
         $logger->log("Calls Request Query: " . $selectQuery);
 
-        $count = $this->rawSelect($countQuery);
-
-        $messages = $this->rawSelect($selectQuery);
-        $exportMessages = $this->rawSelect($exportQuery);
+        if($isExport){
+            $data["exportCalls"] = $exportMessages;
+            $exportMessages = $this->rawSelect($exportQuery);
+        }
+        else{
+             $count = $this->rawSelect($countQuery);
+             $messages = $this->rawSelect($selectQuery);
+             $data["totalCalls"] = $count[0]['totalCalls'];
+             $data["calls"] = $messages;
+        }
         
-        $data["totalCalls"] = $count[0]['totalCalls'];
-        $data["calls"] = $messages;
-        $data["exportCalls"] = $exportMessages;
 
         return $res->success("calls", $data);
     }

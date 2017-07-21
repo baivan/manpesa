@@ -133,6 +133,9 @@ class OutboxController extends Controller {
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+
+       
 
         if ($customerID) {
             $customer = Customer::findFirst(array("customerID=:customerID:",
@@ -202,13 +205,23 @@ class OutboxController extends Controller {
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
 
-        $count = $this->rawSelect($countQuery);
+       
 
-        $messages = $this->rawSelect($selectQuery);
-        $exportMessages  = $this->rawSelect($exportQuery);
-        $data["totalOutBox"] = $count[0]['totalOutBox'];
-        $data["Messages"] = $messages;
-        $data["exportMessages"]=$exportMessages;
+        if($isExport){
+            $exportMessages  = $this->rawSelect($exportQuery);
+            $count = $this->rawSelect($countQuery);
+             $messages = $this->rawSelect($selectQuery);
+             $data["totalOutBox"] = $count[0]['totalOutBox'];
+             $data["Messages"] = $messages;
+            $data["exportMessage"] =  $exportMessages;//$exportMessage;
+        }
+        else{
+             $count = $this->rawSelect($countQuery);
+             $messages = $this->rawSelect($selectQuery);
+             $data["totalOutBox"] = $count[0]['totalOutBox'];
+             $data["Messages"] = $messages;
+             $data["exportMessage"] = "no data ".$isExport;
+        }
 
         return $res->success("Messages ", $data);
     }

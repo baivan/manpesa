@@ -129,7 +129,7 @@ class InboxController extends Controller {
     limit (total number of items to be retrieved),
     filter (to be used on where statement)
     */
-
+/*
     public function getTableInbox() { //sort, order, page, limit,filter
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -140,6 +140,7 @@ class InboxController extends Controller {
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
         $filter = $request->getQuery('filter');
+        $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
 
         $countQuery = "SELECT count(inboxID) as totalInbox ";
 
@@ -175,11 +176,12 @@ class InboxController extends Controller {
 
         return $res->success("Messages ", $data);
     }
+    */
 
     /*
     util function to build all get queries based on passed parameters
     */
-
+/*
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10, $filter = "") {
         $query = "";
 
@@ -204,6 +206,155 @@ class InboxController extends Controller {
         }
 
         return $query;
+    }
+*/
+
+    /*
+    retrieve  inbox sms to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+    public function getTableInbox() {
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : '';
+        $order = $request->getQuery('order') ? $request->getQuery('order') : '';
+        $page = $request->getQuery('page') ? $request->getQuery('page') : '';
+        $limit = $request->getQuery('limit') ? $request->getQuery('limit') : '';
+        $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
+        $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
+        $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
+        $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
+        $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+
+        $canExport = false;
+
+        if ($customerID) {
+            $customer = Customer::findFirst(array("customerID=:customerID:",
+                        'bind' => array("customerID" => $customerID)));
+            if ($customer) {
+                $contactsID = $customer->contactsID;
+            }
+        }
+
+
+        $countQuery = "SELECT count(inboxID) as totalInbox ";
+
+        $selectQuery = "SELECT i.inboxID,i.MSISDN,i.message,i.createdAt,c.fullName,c.contactsID  ";
+
+        $baseQuery = "FROM inbox i LEFT JOIN contacts c on i.MSISDN=c.workMobile  ";
+
+
+        $whereArray = [
+            'c.contactsID' => $contactsID,
+            'filter' => $filter,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['i.MSISDN', 'c.fullName', 'i.message'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND ";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'status' && $value == 404) {
+                $valueString = "" . $key . "=0" . " AND ";
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(o.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                    $canExport  =true;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND ");
+        }
+
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
+
+        $countQuery = $countQuery . $baseQuery . $whereQuery;
+        $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+       /* $count = $this->rawSelect($countQuery);
+
+        $messages = $this->rawSelect($selectQuery);
+        
+        $data["totalInbox"] = $count[0]['totalInbox'];
+        $data["Messages"] = $messages;
+
+        if($canExport ==true){
+            $exportMessages  = $this->rawSelect($exportQuery);
+            $data["exportMessage"] = $exportMessage;
+        }
+        */
+
+        if($isExport){
+            $exportMessages  = $this->rawSelect($exportQuery);
+            $count = $this->rawSelect($countQuery);
+             $messages = $this->rawSelect($selectQuery);
+             $data["totalInbox"] = $count[0]['totalInbox'];
+             $data["Messages"] = $messages;
+            $data["exportMessage"] =  $exportMessages;
+        }
+        else{
+             $count = $this->rawSelect($countQuery);
+             $messages = $this->rawSelect($selectQuery);
+             $data["totalOutBox"] = $count[0]['totalOutBox'];
+             $data["Messages"] = $messages;
+             $data["exportMessage"] = "no data ".$isExport;
+        }
+        
+
+        return $res->success("Messages ", $data);
+    }
+
+
+/*
+    util function to build all get queries based on passed parameters
+    */
+
+
+    public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
+
+        $sortClause = "ORDER BY $sort $order";
+
+        if (!$page || $page <= 0) {
+            $page = 1;
+        }
+        if (!$limit) {
+            $limit = 10;
+        }
+
+        $ofset = (int) ($page - 1) * $limit;
+        $limitQuery = "LIMIT $ofset, $limit";
+        return "$sortClause $limitQuery";
     }
 
 }

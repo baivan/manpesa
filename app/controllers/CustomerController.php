@@ -515,6 +515,8 @@ class CustomerController extends Controller {
         $filter = $request->getQuery('filter');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+
 
         $countQuery = "SELECT count(c.customerID) as totalCustomers ";
 
@@ -577,10 +579,18 @@ class CustomerController extends Controller {
         $count = $this->rawSelect($countQuery);
 
         $customers = $this->rawSelect($selectQuery);
-        $exportCustomers = $this->rawSelect($esxportQuery);
-        $data["totalCustomers"] = $count[0]['totalCustomers'];
-        $data["customers"] = $customers;
-        $data["exportCustomers"] = $exportCustomers;
+        if($isExport){
+            $exportCustomers = $this->rawSelect($esxportQuery);
+            $data["totalCustomers"] = $count[0]['totalCustomers'];
+            $data["customers"] = $customers;
+            $data["exportCustomers"] = $exportCustomers;
+        }
+        else{
+            $data["totalCustomers"] = $count[0]['totalCustomers'];
+            $data["customers"] = $customers;
+            $data["exportCustomers"] = 'no data';
+        }
+        
 
         return $res->success("customers", $data);
     }
