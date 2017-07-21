@@ -656,6 +656,7 @@ class TransactionsController extends Controller {
         $filter = $request->getQuery('filter');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
 
         $selectQuery = "SELECT ct.customerTransactionID AS transactionID, ct.contactsID, ct.customerID, ct.prospectsID, "
                 . "t.nationalID,t.fullName AS depositorName,t.referenceNumber, "
@@ -722,11 +723,20 @@ class TransactionsController extends Controller {
 
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
-        $exportTransactions = $this->rawSelect($exportQuery);
 
-        $data["totalTransaction"] = $count[0]['totalTransaction'];
-        $data["transactions"] = $items;
-        $data['exportTransactions'] = $exportTransactions;
+        if($isExport){
+             $exportTransactions = $this->rawSelect($exportQuery);
+            $data["totalTransaction"] = $count[0]['totalTransaction'];
+            $data["transactions"] = $items;
+            $data['exportTransactions'] = $exportTransactions;
+
+        }
+        else{
+            $data["totalTransaction"] = $count[0]['totalTransaction'];
+            $data["transactions"] = $items;
+            $data['exportTransactions'] = "no data";
+        }
+       
         return $res->success("Transactions get successfully ", $data);
     }
 
@@ -755,6 +765,8 @@ class TransactionsController extends Controller {
         $filter = $request->getQuery('filter');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+
 
         $selectQuery = "SELECT tu.unknownTransactionID, tu.transactionID, t.referenceNumber, "
                 . "t.nationalID, t.fullName AS depositorName, t.mobile, t.depositAmount, t.salesID AS accountNumber, t.createdAt ";
@@ -818,11 +830,21 @@ class TransactionsController extends Controller {
         //  return $res->success($countQuery);
         $count = $this->rawSelect($countQuery);
         $items = $this->rawSelect($selectQuery);
-        $exportTransactions = $this->rawSelect($exportQuery);
 
-        $data["totalTransaction"] = $count[0]['totalTransaction'];
-        $data["transactions"] = $items;
-        $data["exportTransactions"] = $exportTransactions;
+        if($isExport){
+            $exportTransactions = $this->rawSelect($exportQuery);
+            $data["totalTransaction"] = $count[0]['totalTransaction'];
+            $data["transactions"] = $items;
+            $data["exportTransactions"] = $exportTransactions;
+        }
+
+        else{
+
+            $data["totalTransaction"] = $count[0]['totalTransaction'];
+            $data["transactions"] = $items;
+            $data["exportTransactions"] = "no data";
+        }
+        
         return $res->success("Unknown payments get successfully ", $data);
     }
 
