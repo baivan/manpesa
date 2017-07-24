@@ -75,8 +75,8 @@ class SalesController extends Controller {
         if (!$userID) {
             return $res->dataError("userID missing ", []);
         }
-        if (!$amount) {
-            return $res->dataError("amount missing ", []);
+        if (!$amount || $amount <= 0) {
+            return $res->dataError("Please select amount ", []);
         }
         if (!$frequencyID) {
             $frequencyID = 0;
@@ -147,6 +147,7 @@ class SalesController extends Controller {
 
            if($discountAmount > 0 ){
                   $status = $this->getCustomerBalance($contactsID,($amount - $discountAmount),$paymentPlanDeposit,$dbTransaction);
+
                   $amount = $amount - $discountAmount;
 
                   if($status == 2){
