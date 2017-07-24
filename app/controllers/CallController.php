@@ -286,14 +286,17 @@ class CallController extends Controller {
         $selectQuery .= $queryBuilder;
 
         $logger->log("Calls Request Query: " . $selectQuery);
+        $count = $this->rawSelect($countQuery);
+        $messages = $this->rawSelect($selectQuery);
 
         if($isExport){
-            $data["exportCalls"] = $exportMessages;
-            $exportMessages = $this->rawSelect($exportQuery);
+             $exportMessages = $this->rawSelect($exportQuery);
+             $data["exportCalls"] = $exportMessages;
+             $data["totalCalls"] = $count[0]['totalCalls'];
+             $data["calls"] = $messages;
+           
         }
         else{
-             $count = $this->rawSelect($countQuery);
-             $messages = $this->rawSelect($selectQuery);
              $data["totalCalls"] = $count[0]['totalCalls'];
              $data["calls"] = $messages;
         }
