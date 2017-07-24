@@ -314,19 +314,18 @@ class InboxController extends Controller {
             $data["exportMessage"] = $exportMessage;
         }
         */
+        $count = $this->rawSelect($countQuery);
+        $messages = $this->rawSelect($selectQuery);
 
         if($isExport){
             $exportMessages  = $this->rawSelect($exportQuery);
-            $count = $this->rawSelect($countQuery);
-             $messages = $this->rawSelect($selectQuery);
              $data["totalInbox"] = $count[0]['totalInbox'];
              $data["Messages"] = $messages;
             $data["exportMessage"] =  $exportMessages;
         }
         else{
-             $count = $this->rawSelect($countQuery);
-             $messages = $this->rawSelect($selectQuery);
-             $data["totalOutBox"] = $count[0]['totalOutBox'];
+             
+             $data["totalInbox"] = $count[0]['totalInbox'];
              $data["Messages"] = $messages;
              $data["exportMessage"] = "no data ".$isExport;
         }
