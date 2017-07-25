@@ -863,7 +863,6 @@ class SalesController extends Controller {
         $sales = $this->rawSelect($selectQuery);
         
 
-
         $displaySales = array();
 
         foreach ($sales as $sale) {
@@ -933,8 +932,9 @@ class SalesController extends Controller {
 
         }
         else{
+             $data["totalSales"] = $count[0]['totalSales'];
             $data["sales"] = $displaySales;
-            $data["exportSales"] = $dataToExport;
+            $data["exportSales"] = "no data";
         }
         
         return $res->success("pending sales ", $data);
@@ -1040,8 +1040,9 @@ class SalesController extends Controller {
             $data['exportSales'] = $exportSales;
         }
         else{
+            $data["totalSales"] = $count[0]['totalSales'];
             $data["sales"] = $sales;
-            $data['exportSales'] = $exportSales;
+           
         }
        
 
