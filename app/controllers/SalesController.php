@@ -2039,5 +2039,39 @@ create new customers for contacts from old system who had made sales
           else{
               return false;
           }
+    } 
+
+
+    public function salesWelcomeCall(){
+         $res = new SystemResponses();
+        $salesQuery = "SELECT * FROM sales WHERE status > 0 AND date(updatedAt)=date(date_sub(now(), interval 3 day))";
+        $sales = $this->rawSelect($salesQuery);
+        
+
+        foreach ($sales as $sale) {
+            $ticket = new Ticket();
+
+            $ticket->ticketTitle="Welcome call ticket";
+            $ticket->ticketDescription = "Customer bought three days ago";
+            $ticket->contactsID = $sale['contactsID'];
+            $ticket->ticketCategoryID = 1;
+            $ticket->priorityID =1;
+            $ticket->status =0;
+            $ticket->createdAt = date("Y-m-d H:i:s");
+
+            if ($ticket->save() === false) {
+                $errors = array();
+                $messages = $ticket->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                 $res->dataError('Welcome call ticket create failed sale: '.json_encode($sale), $errors);
+            }
+
+        }
+
+        $res->success('Welcome call ticket created');
     }
 }

@@ -623,4 +623,6 @@ sends email notification on ticket create
         return "$sortClause $limitQuery";
     }
 
+    
+
 }

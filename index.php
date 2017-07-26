@@ -111,6 +111,7 @@ $sale_route->get('crm/monitor', 'monitorSales');
 $sale_route->post('delete', 'delete');
 $sale_route->post('crm/updatepartnersale', 'updatePartnerSale');
 $sale_route->get('crm/match', 'matchContacts');
+$sale_route->get('welcomecallticket','salesWelcomeCall');
 //$sale_route->post('updateOldSales', 'updateOldSales');
 
 $category_route = new MicroCollection();
