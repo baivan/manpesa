@@ -2050,6 +2050,7 @@ create new customers for contacts from old system who had made sales
 
         foreach ($sales as $sale) {
             $ticket = new Ticket();
+            
 
             $ticket->ticketTitle="Welcome call ticket";
             $ticket->ticketDescription = "Customer bought three days ago";

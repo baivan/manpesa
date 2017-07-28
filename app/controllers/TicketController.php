@@ -329,11 +329,11 @@ class TicketController extends Controller {
 
         $countQuery = "SELECT count(ticketID) as totalTickets ";
 
-        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID, c.fullName AS owner,t.otherOwner, "
+        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID,cu.customerID,c.fullName AS owner,t.otherOwner, "
                 . "c.workMobile, t.ticketCategoryID, cat.ticketCategoryName, t.otherCategory,t.priorityID,pr.priorityName, t.userID, "
                 . "c1.fullName AS triggerName, t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
 
-        $baseQuery = "FROM ticket t LEFT JOIN contacts c ON t.contactsID=c.contactsID LEFT JOIN users u "
+        $baseQuery = "FROM ticket t LEFT JOIN contacts c ON t.contactsID=c.contactsID LEFT JOIN customer cu on c.contactsID=cu.contactsID LEFT JOIN users u "
                 . "ON t.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN users u1 "
                 . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
                 . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
