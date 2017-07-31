@@ -283,8 +283,7 @@ class ReconcileController extends Controller
             $transactionManager = new TransactionManager();
             $dbTransaction = $transactionManager->get();
 
-           
-
+          
             try {
                $contactsQuery = "SELECT * from contacts";
                $contacts = $this->rawSelect($contactsQuery);
