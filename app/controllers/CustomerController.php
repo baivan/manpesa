@@ -615,6 +615,10 @@ class CustomerController extends Controller {
     }
 
     public function falseCustomers(){
+         $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+
         $selectQuery = "SELECT * from customer c JOIN sales s on c.`contactsID` = s.contactsID WHERE s.status = 0 AND paid<=0";
         $customers = $this->rawSelect($selectQuery);
         foreach ($customers as $customer) {
