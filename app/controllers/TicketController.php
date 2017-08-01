@@ -623,6 +623,50 @@ sends email notification on ticket create
         return "$sortClause $limitQuery";
     }
 
+    public function netPromoterTickets(){
+         $res = new SystemResponses();
+        $salesQuery = "SELECT * FROM customer c JOIN sales s on c.contactsID=s.contactsID WHERE c.contactsID NOT IN (SELECT contactsID FROM net_promoter_called_customer) AND c.status>=0 and s.status>0 and s.paid>0 AND date(s.createdAt) >= '2017-03-01' AND date(s.updatedAt)<>date(date_sub(now(), interval 3 day)) ORDER BY RAND() LIMIT 10";
+
+        $customers = $this->rawSelect($salesQuery);
+        foreach ($customers as $customer) {
+                $ticket = new Ticket();
+                $ticket->ticketTitle="Net promoter call ticket";
+                $ticket->ticketDescription = "Make net promoter call to this customer";
+                $ticket->contactsID = $customer['contactsID'];
+                $ticket->ticketCategoryID = 7;
+                $ticket->priorityID =1;
+                $ticket->status =0;
+                $ticket->createdAt = date("Y-m-d H:i:s");
+                if ($ticket->save() === false) {
+                    $errors = array();
+                    $messages = $ticket->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                     $res->dataError('Net promoter call ticket create failed sale: '.json_encode($sale), $errors);
+               }
+
+              $netPromoterCalledCustomer = new NetPromoterCalledCustomer();
+              $netPromoterCalledCustomer->contactsID=$customer['contactsID'];
+              $netPromoterCalledCustomer->ticketID=$ticket->ticketID;
+              $netPromoterCalledCustomer->createdAt = date("Y-m-d H:i:s");
+              if ($netPromoterCalledCustomer->save() === false) {
+                    $errors = array();
+                    $messages = $netPromoterCalledCustomer->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                     $res->dataError('Net promoter call netPromoterCalledCustomer create failed sale: '.json_encode($sale), $errors);
+               }
+        }
+
+        $res->success('Net promoter call ticket created');
+    }
+
     
 
 }

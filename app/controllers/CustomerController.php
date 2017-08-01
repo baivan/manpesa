@@ -614,4 +614,34 @@ class CustomerController extends Controller {
         return "$sortClause $limitQuery";
     }
 
+    public function falseCustomers(){
+        $selectQuery = "SELECT * from customer c JOIN sales s on c.`contactsID` = s.contactsID WHERE s.status = 0 AND paid<=0";
+        $customers = $this->rawSelect($selectQuery);
+        foreach ($customers as $customer) {
+            $contactsID = $customer['contactsID'];
+            $customerID = $customer['customerID'];
+            $contactQuery = "SELECT * from customer c JOIN sales s on c.`contactsID` = s.contactsID WHERE s.status>0 AND paid>0 AND c.contactsID=$contactsID";
+            $paidCustomer = $this->rawSelect($contactQuery); 
+            
+            $prospect = Prospects::findFirst("contactsID=$contactsID");
+
+            if(!$paidCustomer && !$prospect){
+                $customer_o=Customer::findFirst("contactsID=".$contactsID);
+                $customer_o =  Customer::findFirst("customerID=$customerID");
+                $prospect = new Prospects();
+                $prospect->status =1;
+                $prospect->userID = $customer_o->userID;
+                $prospect->contactsID=$contactsID;
+                $prospect->sourceID =0;
+                $prospect->otherSource = 0;
+                $prospect->createdAt = date("Y-m-d H:i:s");
+                $prospect->save();
+                $customer_o->status=-2;
+                $customer_o->save();
+            }
+
+        }
+        return $res->success("Success ",true);
+    }
+
 }

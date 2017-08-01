@@ -256,8 +256,7 @@ class ProspectsController extends Controller {
         $baseQuery = " FROM prospects  p join contacts co on p.contactsID=co.contactsID LEFT JOIN prospect_source ps "
                 . "ON p.sourceID=ps.sourceID ";
 
-        $selectQuery = "SELECT p.prospectsID, p.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.workEmail,co.location, p.sourceID, "
-                . "ps.sourceName, p.otherSource, p.createdAt  ";
+        $selectQuery = "SELECT p.prospectsID, p.contactsID, co.fullName,co.nationalIdNumber,co.workMobile,co.workEmail,co.location, p.sourceID, "." ps.sourceName, p.otherSource, p.createdAt ";
 
         $whereArray = [
             'p.status' => 1,
@@ -370,6 +369,53 @@ class ProspectsController extends Controller {
         $limitQuery = "LIMIT $ofset, $limit";
 
         return "$sortClause $limitQuery";
+    }
+
+    public function removeProspectsWhoAreCustomers(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+
+        $selectQuery = "SELECT * FROM prospects p join contacts c on p.contactsID=c.contactsID join sales s on c.contactsID=s.contactsID WHERE s.paid>0 and s.status>0 ";
+
+        $allProspects = $this->rawSelect($selectQuery);
+       // return $res->success("Done ",$allProspects);
+
+        foreach ($allProspects as $prospect) {
+            $prospectsID = $prospect['prospectsID'];
+
+            $contactsID = $prospect['contactsID'];
+            if($contactsID && $prospectsID){
+                $prospect_o = Prospects::findFirst("prospectsID = $prospectsID");
+                $customer = Customer::findFirst("contactsID = $contactsID");
+
+                if($customer && $prospect_o){
+                    $prospect_o->status = 5;
+                    $prospect_o->save();
+                    $res->success("Customer exists ",$prospect);
+                }
+                elseif (!$customer && $prospect_o ) {
+                    $customer = new Customer();
+                    $customer->userID = $prospect_o->userID;
+                    $customer->locationID=0;
+                    $customer->contactsID = $prospect_o->contactsID;
+                    $customer->status = 0;
+                    $customer->updatedBy =0;
+                    $customer->createdAt = date("Y-m-d H:i:s");
+                    $customer->save();
+                    $prospect_o->status = 5;
+                    $prospect_o->save();
+                    $res->success("Customer create ".json_encode($customer),$prospect);
+                }
+
+            }
+            else{
+                $res->success(" $contactsID Done ".$prospectsID);
+            }
+        }
+
+        return $res->success("Done ",$allProspects);
+
     }
 
 }

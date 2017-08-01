@@ -87,6 +87,7 @@ $prospect_route->get('all', 'getAll');
 $prospect_route->post('crm/all', 'getTableProspects');
 $prospect_route->get('crm/all', 'getTableProspects');
 $prospect_route->get('crm/source', 'getSources');
+$prospect_route->get('convert','removeProspectsWhoAreCustomers');
 
 
 $sale_route = new MicroCollection();
@@ -189,6 +190,7 @@ $customer_route->post('all', 'getAll');
 $customer_route->post('partner/create', 'create');
 $customer_route->post('update', 'update');
 $customer_route->post('delete', 'delete');
+$customer_route->get('convert','falseCustomers');
 
 $user_item_route = new MicroCollection();
 $user_item_route->setPrefix('/userItem/');
@@ -273,6 +275,7 @@ $ticket_route->post('close', 'close');
 $ticket_route->post('assign', 'assign');
 $ticket_route->get('crm/updates', 'tableTicketUpdates');
 $ticket_route->get('crm/email', 'email');
+$ticket_route->get('netpromoter','netPromoterTickets');
 
 
 $metropol_route = new MicroCollection();
