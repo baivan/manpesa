@@ -949,6 +949,7 @@ class SalesController extends Controller {
     limit (total number of items to be retrieved),
     filter (to be used on where statement)
     */
+    
     public function getTablePartnerSales() { 
         $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
         $logger = new FileAdapter($logPathLocation);
@@ -1019,7 +1020,7 @@ class SalesController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "AND $whereQuery " : "";
+        $whereQuery = $whereQuery ? "WHERE $whereQuery " : "";
 
         $countQuery = $countQuery . $defaultQuery . $whereQuery;
         $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
@@ -1034,7 +1035,7 @@ class SalesController extends Controller {
         $sales = $this->rawSelect($selectQuery);
 
         if($isExport){
-            $exportSales = $this->rawSelect($exportQuery);
+            $exportSales = $this->rawSelect($selectQuery);
             $data["totalSales"] = $count[0]['totalSales'];
             $data["sales"] = $sales;
             $data['exportSales'] = $exportSales;
@@ -1048,6 +1049,7 @@ class SalesController extends Controller {
 
         return $res->success("Sales ", $data);
     }
+    
 
  /*
     util function to build all get queries based on passed parameters
