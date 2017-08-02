@@ -279,7 +279,7 @@ class InboxController extends Controller {
                 $whereQuery .= $valueString;
             } else if ($key == 'date') {
                 if (!empty($value[0]) && !empty($value[1])) {
-                    $valueString = " DATE(o.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $valueString = " DATE(i.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                     $canExport  =true;
                 }

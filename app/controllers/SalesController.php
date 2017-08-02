@@ -23,6 +23,7 @@ class SalesController extends Controller {
         $success->setFetchMode(Phalcon\Db::FETCH_ASSOC);
         $success = $success->fetchAll($success);
         return $success;
+        
     }
 
      /*
@@ -975,7 +976,6 @@ class SalesController extends Controller {
                 . "c.workMobile,c.nationalIdNumber,c.fullName,c.location,psi.createdAt ";
 
 
-
         $whereArray = [
             'filter' => $filter,
             'psi.contactsID' => $contactsID,
@@ -1034,7 +1034,7 @@ class SalesController extends Controller {
         $sales = $this->rawSelect($selectQuery);
 
         if($isExport){
-             $exportSales = $this->rawSelect($exportQuery);
+            $exportSales = $this->rawSelect($exportQuery);
             $data["totalSales"] = $count[0]['totalSales'];
             $data["sales"] = $sales;
             $data['exportSales'] = $exportSales;
