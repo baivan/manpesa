@@ -64,6 +64,7 @@ class SalesController extends Controller {
         $fullName = isset($json->fullName) ? $json->fullName : NULL;
         $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
         $quantity =  isset($json->quantity) ? $json->quantity : 1;
+        
 
         $token = $json->token;
         
@@ -1035,7 +1036,7 @@ class SalesController extends Controller {
         $sales = $this->rawSelect($selectQuery);
 
         if($isExport){
-            $exportSales = $this->rawSelect($selectQuery);
+            $exportSales = $this->rawSelect($exportQuery);
             $data["totalSales"] = $count[0]['totalSales'];
             $data["sales"] = $sales;
             $data['exportSales'] = $exportSales;
