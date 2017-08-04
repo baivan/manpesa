@@ -238,7 +238,7 @@ class ProductSaleTypePriceController extends Controller {
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
         $token = $json->token;//$request->getQuery('token');
-        $productSaleTypePriceID = $json->productSaleTypePriceID;
+        //$productSaleTypePriceID = $json->productSaleTypePriceID;
         $userID = $json->userID;
         $saleTypeID = $json->saleTypeID;
         $products = $json->products;
@@ -266,12 +266,20 @@ class ProductSaleTypePriceController extends Controller {
         
 
          foreach ($products as $productID) {
+
                  $priceQuery = "SELECT * FROM product_sale_type_price WHERE productID=$productID ";
+                 $prices = $this->rawSelect($priceQuery);
+                if(!$prices && $productID == 6 ){
+                    $productID =5;
+                    $prices = $this->rawSelect("SELECT * FROM product_sale_type_price WHERE productID=$productID ");
+                }
                 $discountsQuery = "SELECT * FROM discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID  join product p on d.productID=p.productID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND d.productID=$productID ";
 
-                $prices = $this->rawSelect($priceQuery);
+                
                 $discounts = $this->rawSelect($discountsQuery);
                 $app_discount_statement = array();
+
+
 
 
                 foreach ($discounts as $discount) {

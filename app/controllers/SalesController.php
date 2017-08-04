@@ -64,7 +64,8 @@ class SalesController extends Controller {
         $fullName = isset($json->fullName) ? $json->fullName : NULL;
         $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
         $quantity =  isset($json->quantity) ? $json->quantity : 1;
-        
+        $groupID = isset($json->groupID)?$json->groupID : 0;
+
 
         $token = $json->token;
         
@@ -124,6 +125,7 @@ class SalesController extends Controller {
             $sale->productID = $productID;
             $sale->quantity = $quantity;
             $sale->paid = $paid;
+            $sale->groupID = $groupID;
             $sale->createdAt = date("Y-m-d H:i:s");
 
             if ($sale->save() === false) {
@@ -1047,7 +1049,6 @@ class SalesController extends Controller {
            
         }
        
-
         return $res->success("Sales ", $data);
     }
     
@@ -2050,7 +2051,6 @@ create new customers for contacts from old system who had made sales
         $salesQuery = "SELECT * FROM sales WHERE status > 0 AND date(updatedAt)=date(date_sub(now(), interval 3 day))";
         $sales = $this->rawSelect($salesQuery);
         
-
         foreach ($sales as $sale) {
             $ticket = new Ticket();
             

@@ -42,6 +42,13 @@ class GroupSale extends \Phalcon\Mvc\Model
 
     /**
      *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $userID;
+
+    /**
+     *
      * @var string
      * @Column(type="string", nullable=true)
      */
@@ -53,6 +60,13 @@ class GroupSale extends \Phalcon\Mvc\Model
      * @Column(type="string", nullable=true)
      */
     public $closedAt;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", nullable=true)
+     */
+    public $abortedAt;
 
     /**
      *

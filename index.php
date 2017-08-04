@@ -218,7 +218,7 @@ $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
 //$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
-$transaction_route->get("dummy", 'createDummy');
+//$transaction_route->get("dummy", 'createDummy');
 $transaction_route->post('reconcilepayment', 'reconcilePayment'); //To reconcile unknown payments
 //$transaction_route->get('reconcile', 'reconcileTransaction');
 $transaction_route->get('link', 'reconcile');
@@ -303,6 +303,15 @@ $discount_route->get('types','getAllTypes');
 $discount_route->post('activate','actionDiscount');
 $discount_route->post('deactivate','actionDiscount');
 
+$group_route = new MicroCollection();
+$group_route->setPrefix('/group/');
+$group_route->setHandler(new GroupSaleController());
+$group_route->post('create', 'create');
+$group_route->post('close','closeGroup');
+$group_route->post('abort','abortGroup');
+$group_route->post('getGroup','getGroup');
+$group_route->get('expire','expireGroup');
+
 
 $reconcile_route = new MicroCollection();
 $reconcile_route->setPrefix('/reconcile/');
@@ -337,7 +346,9 @@ $app->mount($call_route);
 $app->mount($metropol_route);
 $app->mount($condition_route);
 $app->mount($discount_route);
-$app->mount($reconcile_route);
+$app->mount($discount_route);
+$app->mount($group_route);
+//$app->mount($reconcile_route);
 
 
 try {
