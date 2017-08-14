@@ -58,6 +58,7 @@ class SalesTypeController extends Controller
 	    $salesType = new SalesType();
 	    $salesType->salesTypeName = $salesTypeName;
 	    $salesType->salesTypeDeposit = $salesTypeDeposit;
+	    $salesType->status = 1;
 
 	    if($salesType->save()===false){
 	            $errors = array();
@@ -150,7 +151,7 @@ class SalesTypeController extends Controller
     	$token = $request->getQuery('token');
         $salesTypeID = $request->getQuery('salesTypeID');
 
-        $salesTypeQuery = "SELECT * FROM sales_type ";
+        $salesTypeQuery = "SELECT * FROM sales_type WHERE status>0 ";
 
          if(!$token){
         	return $res->dataError("Token Missing");

@@ -270,7 +270,7 @@ class ProductSaleTypePriceController extends Controller {
                  $priceQuery = "SELECT * FROM product_sale_type_price WHERE productID=$productID ";
                  $prices = $this->rawSelect($priceQuery);
                 if(!$prices && $productID == 6 ){
-                    $productID =5;
+                    $productID = 5;
                     $prices = $this->rawSelect("SELECT * FROM product_sale_type_price WHERE productID=$productID ");
                 }
                 $discountsQuery = "SELECT * FROM discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID  join product p on d.productID=p.productID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND d.productID=$productID ";
@@ -364,7 +364,7 @@ class ProductSaleTypePriceController extends Controller {
         $countQuery = "SELECT count(productSaleTypePriceID) as totalPrices ";
         $baseQuery = " FROM product_sale_type_price ps join product p on ps.productID=p.productID "
                 . "LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID "
-                . "LEFT JOIN users u ON ps.userID=u.userID LEFT JOIN contacts ct ON u.contactID=ct.contactsID";
+                . "LEFT JOIN users u ON ps.userID=u.userID LEFT JOIN contacts ct ON u.contactID=ct.contactsID WHERE st.status=0 ";
 
         $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName, "
                 . "st.salesTypeName,ps.deposit ,ps.price, ct.fullName, ps.status, ps.createdAt  ";
@@ -372,9 +372,9 @@ class ProductSaleTypePriceController extends Controller {
 
 
         if ($productID && $filter) {
-            $condition = " WHERE ps.productID=$productID  AND ";
+            $condition = " AND ps.productID=$productID  AND ";
         } elseif ($productID && !$filter) {
-            $condition = " WHERE ps.productID=$productID  ";
+            $condition = " AND ps.productID=$productID  ";
         } elseif (!$productID && !$filter) {
             $condition = "  ";
         }

@@ -65,6 +65,8 @@ class SalesController extends Controller {
         $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
         $quantity =  isset($json->quantity) ? $json->quantity : 1;
         $groupID = isset($json->groupID)?$json->groupID : 0;
+        $numberOfMembers=0;
+        $groupDiscount=0;
 
 
         $token = $json->token;
@@ -78,14 +80,17 @@ class SalesController extends Controller {
         if (!$userID) {
             return $res->dataError("userID missing ", []);
         }
-        if (!$amount || $amount <= 0) {
-            return $res->dataError("Please select amount ", []);
-        }
         if (!$frequencyID) {
             $frequencyID = 0;
         }
         if (!$productID) {
             return $res->dataError("product missing ", []);
+        }
+
+        if (!$amount || $amount <= 0) {
+             $res->dataError("Please select amount ", []);
+             
+
         }
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
@@ -148,6 +153,11 @@ class SalesController extends Controller {
             $customerMessage ;
 
            $discountAmount = $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity,$productID);
+           if($groupID){
+               $numberOfMembers = $this->rawSelect("SELECT count(salesID) as numberOfMembers FROM sales WHERE groupID=$groupID AND status=0 ");
+               $groupDiscount = $this->getGroupDiscount($salesTypeID,$numberOfMembers[0]['numberOfMembers']);
+               $discountAmount =$discountAmount + $groupDiscount;
+           }
 
            if($discountAmount > 0 ){
                   $status = $this->getCustomerBalance($contactsID,($amount - $discountAmount),$paymentPlanDeposit,$dbTransaction);
@@ -193,18 +203,7 @@ class SalesController extends Controller {
                 
            }
 
-          /*  
-            if($status == 2){
-                $paid = $amount;
-            }
-            elseif($status > 2){
-                $paid = $status;
-                $status = 1;
-            }
-            elseif ($status < 2) {
-                $paid = 0;
-            }
-            */
+         
             $sale->status = $status;
             $sale->paid = $paid;
             $sale->amount = $amount;
@@ -224,8 +223,23 @@ class SalesController extends Controller {
             $dbTransaction->commit();
             
             $res->sendMessage($MSISDN, $customerMessage);
+            if($groupID > 0){
+                $data = $this->getSalesV2(1,$groupID,$userID);
+                if($groupDiscount){
+                     $data['groupDiscount'] = $groupDiscount * $numberOfMembers;
+                }
+                else{
+                     $data['groupDiscount'] = 0;
+                }
+               
+                return $res->success("Sale saved successfully ", $data);
+            }
+            else{
+               
+                return $res->success("Sale saved successfully, await payment ", $sale);
+            }
 
-            return $res->success("Sale saved successfully, await payment ", $sale);
+
         } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('sale create error', $message);
@@ -469,6 +483,7 @@ class SalesController extends Controller {
         $token = $request->getQuery('token');
         $customerID = $request->getQuery('customerID');
         $userID = $request->getQuery('userID');
+        $groupID = $request->getQuery('groupID');
 
 
         $saleQuery = "SELECT s.salesID,s.quantity,si.itemID,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,i.serialNumber,s.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID  LEFT JOIN sales_item si ON s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
@@ -492,6 +507,9 @@ class SalesController extends Controller {
         } elseif ($userID > 0 && $customerID <= 0) {
             $saleQuery = $saleQuery . " WHERE s.userID=$userID";
         }
+        elseif ($groupID > 0 && $userID > 0) {
+            $saleQuery = $saleQuery . " WHERE s.groupID=$groupID AND s.userID=$userID";
+        }
        
         $sales = $this->rawSelect($saleQuery);
 
@@ -499,39 +517,49 @@ class SalesController extends Controller {
         return $res->getSalesSuccess($sales);
     }
 
-    public function getSalesV2() {//{userID,customerID,token}
+    public function getSalesV2($origin=0,$groupID,$userID) {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $customerID = $request->getQuery('customerID');
-        $userID = $request->getQuery('userID');
-
-
-        $saleQuery = "SELECT s.salesID,s.quantity,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,s.productID,p.productName, ca.categoryName FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID ";
-
-
-        if (!$token || !$userID) {
-            return $res->dataError("Missing data ");
+        if($origin <= 0){
+             $userID = $request->getQuery('userID');
+             $groupID = $request->getQuery('groupID');
         }
+       
 
-        $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        $saleQuery = "SELECT s.salesID,s.quantity,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,s.productID,p.productName, ca.categoryName,s.groupID FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID WHERE s.status>=0";
 
-        if (!$tokenData) {
-            return $res->dataError("Data compromised");
+        if($origin == 0){
+            if (!$token || !$userID) {
+                return $res->dataError("Missing data ");
+            }
+
+            $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+            if (!$tokenData) {
+                return $res->dataError("Data compromised");
+            }
+
         }
-
 
         if ($customerID > 0 && $userID > 0) {
-            $saleQuery = $saleQuery . " WHERE s.userID=$userID AND s.customerID=$customerID";
+            $saleQuery = $saleQuery . " AND s.userID=$userID AND s.customerID=$customerID";
         } elseif ($customerID > 0 && $userID <= 0) {
-            $saleQuery = $saleQuery . " WHERE s.customerID=$customerID";
-        } elseif ($userID > 0 && $customerID <= 0) {
-            $saleQuery = $saleQuery . " WHERE s.userID=$userID";
+            $saleQuery = $saleQuery . " AND s.customerID=$customerID";
         }
+        elseif ($groupID > 0 && $userID > 0) {
+            $saleQuery = $saleQuery . " AND s.groupID=$groupID AND s.userID=$userID";
+        }
+        elseif ($userID > 0 && $customerID <= 0) {
+            $saleQuery = $saleQuery . " AND s.userID=$userID";
+        }
+        
        
         $sales = $this->rawSelect($saleQuery);
         $newSales = array();
+        $totalAmount = 0;
 
         foreach ($sales as $sale) {
               $newSale['salesID'] = $sale['salesID'];
@@ -550,8 +578,10 @@ class SalesController extends Controller {
               $newSale['productID'] = $sale['productID'];
               $newSale['productName'] = $sale['productName'];
               $newSale['categoryName'] = $sale['categoryName'];
+              $newSale['groupID'] = $sale['groupID'];
 
               $serials="";
+              $totalAmount = $totalAmount+$sale['amount'];
 
               $productIDs = str_replace("]","",str_replace("[", "", $sale['productID']));
               $productIDs = explode(",",$productIDs);
@@ -572,8 +602,15 @@ class SalesController extends Controller {
             array_push($newSales, $newSale);
         }
 
-
-        return $res->getSalesSuccess($newSales);
+        if($origin>0){
+            $groupSales['numberOfSales'] = count($sales);
+            $groupSales['sales'] =$newSales;
+            $groupSales['totalAmount'] =$totalAmount; 
+            return $groupSales;
+        }
+        else{
+           return $res->getSalesSuccess($newSales);
+        }
     }
   /*
     retrieve  sales to be tabulated on crm
@@ -1948,7 +1985,9 @@ create new customers for contacts from old system who had made sales
          $totalDiscountToOffer = 0;
 
          foreach ($productIDs as $productID) {
-            $discountsQuery = "SELECT * from discount d join discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND productID=$productID";
+            $discountsQuery = "SELECT * FROM discount d JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND productID=$productID";
+            
+             
              $discounts = $this->rawSelect($discountsQuery);
 
              foreach ($discounts as $discount) {
@@ -1959,9 +1998,7 @@ create new customers for contacts from old system who had made sales
                     $cur_date = date("Y-m-d H:i:s");
                     $discountType = $discount['discountTypeName'];
                     $discountAmount = $discount['discountAmount'];
-
                     $can_offer_discount=false;
-
 
 
                     if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
@@ -1997,8 +2034,8 @@ create new customers for contacts from old system who had made sales
                         $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: ",
                                      'bind' => array("id" => $salesID)));
 
-
-                       if($can_offer_discount && $saleDiscount){
+                 if($can_offer_discount){
+                       if($saleDiscount){
                              $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
                                         'bind' => array("id" => $saleDiscount->discountID)));
                             //return $discountAmountOffered->discountAmount;
@@ -2029,11 +2066,116 @@ create new customers for contacts from old system who had made sales
                                         'bind' => array("id" => $discountID)));
                             $totalDiscountToOffer =$totalDiscountToOffer + $discountAmountOffered->discountAmount;
                         }
+                    }
                 }
          }
+
          return $totalDiscountToOffer;
 
     }
+
+    private function getGroupDiscount($saleTypeID,$groupID,$numberOfMembers=0){
+           $totalDiscountToOffer = 0;
+
+            $groupDiscountQuery = "SELECT * FROM discount d JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND dt.discountTypeName REGEXP 'group'";
+
+            $groupDiscounts = $this->rawSelect($groupDiscountQuery);
+            foreach ($groupDiscounts as $discount) {
+                    $agents = $discount['agents'];
+                    $discountID = $discount['discountID'];
+                    $startDate = $discount['startDate'];
+                    $endDate = $discount['endDate'];
+                    $cur_date = date("Y-m-d H:i:s");
+                    $discountType = $discount['discountTypeName'];
+                    $discountAmount = $discount['discountAmount'];
+                    $can_offer_discount=false;
+
+                 if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
+                        $o_discount = Discount::findFirst(array("discountID=:id: ",
+                                                  'bind' => array("id" => $discountID)));
+                        $o_discount->status = 0;
+                        $o_discount->save();
+                    }
+                else{
+                    if (strcasecmp($agents, 'all') == 0 ){
+                                   
+                         $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$numberOfMembers);
+                        }
+                        else{
+                                $allAgents = explode(",", $agents);
+                                 foreach ($allAgents as $agent) {
+                                     if(strcasecmp($agents, $userID) == 0){
+                                
+                                       $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$numberOfMembers);
+                                     }
+                                 }
+                            }
+
+                }
+
+               /* $saleDiscount = SaleDiscount::findFirst(array("salesID=:id: && discountID=:d_id: ",
+                                     'bind' => array("id" => $salesID,'d_id'=>$discountID)));*/
+                //get all group sales with current discount if any 
+                if($can_offer_discount){
+                    $sales = $this->rawSelect("SELECT s.amount,s.status,d.discountAmount,d.discountID FROM sales s left join sale_discount sd on s.salesID=sd.salesID left join discount d on sd.discountID=d.discountID WHERE s.groupID=$groupID AND s.status=0");
+
+                    //assign this discount to sales in this group
+                    foreach ($sales  as $sale) {
+                        $salesID = $sale['salesID'];
+                        //if same discount countinue else update amount
+                        if($sale['discountID'] != $discountID){
+                            $o_sale = Sales::findFirst("salesID=".$sale['salesID']);
+                            $o_sale->amount = ($o_sale->amount+$sale['discountAmount']) - $discountAmount;
+                            //update sale 
+                            $o_sale->save();
+                        }
+
+                    
+
+                            $saleDiscounts=$this->rawSelect("select * from sale_discount sd join discount d on sd.discountID=d.discountID join discount_types dt  on d.discountTypeID=dt.discountTypeID where dt.discountTypeName regexp 'group' and salesID=$salesID ");
+
+
+
+                               if($saleDiscounts){
+                                     $saleDiscount=SaleDiscount::findFirst("saleDiscountID=".$saleDiscounts[0]['saleDiscountID']);
+                                     $saleDiscount->discountID = $discountID;
+                                     $saleDiscount->save();
+
+                               }
+                               else{
+                                    $saleDiscount = new SaleDiscount();
+                                    $saleDiscount->salesID = $salesID;
+                                    $saleDiscount->discountID = $discountID;
+                                    $saleDiscount->status = 0;
+                                    $saleDiscount->userID = $userID;
+                                    $saleDiscount->createdAt = date("Y-m-d H:i:s");
+                                    if ($saleDiscount->save() === false) {
+                                            $errors = array();
+                                            $messages = $saleDiscount->getMessages();
+                                            foreach ($messages as $message) {
+                                                $e["message"] = $message->getMessage();
+                                                $e["field"] = $message->getField();
+                                                $errors[] = $e;
+                                            }
+                                             //$dbTransaction->rollback('saleDiscount create failed' . json_encode($errors));
+                                             $res->dataError('saleDiscount create failed', $errors);
+                                             return 0;
+                                    }
+                                    $res->success("Sale Discount added ",$saleDiscount);
+                                    $discountAmountOffered = Discount::findFirst(array("discountID=:id: ",
+                                                'bind' => array("id" => $discountID)));
+                                    $totalDiscountToOffer =$totalDiscountToOffer + $discountAmountOffered->discountAmount;
+                                }
+                            }
+                }
+            
+            }
+
+            return $totalDiscountToOffer;
+
+            
+    }
+
 
     private function compareDiscount($margin, $condition, $operand){
             $eva= "$operand".$condition.$margin;
