@@ -364,7 +364,7 @@ class ProductSaleTypePriceController extends Controller {
         $countQuery = "SELECT count(productSaleTypePriceID) as totalPrices ";
         $baseQuery = " FROM product_sale_type_price ps join product p on ps.productID=p.productID "
                 . "LEFT JOIN category c on ps.categoryID=c.categoryID LEFT JOIN sales_type st on ps.salesTypeID=st.salesTypeID "
-                . "LEFT JOIN users u ON ps.userID=u.userID LEFT JOIN contacts ct ON u.contactID=ct.contactsID WHERE st.status=0 ";
+                . "LEFT JOIN users u ON ps.userID=u.userID LEFT JOIN contacts ct ON u.contactID=ct.contactsID WHERE st.status=1 ";
 
         $selectQuery = "SELECT ps.productSaleTypePriceID, c.categoryName,p.productName, "
                 . "st.salesTypeName,ps.deposit ,ps.price, ct.fullName, ps.status, ps.createdAt  ";
