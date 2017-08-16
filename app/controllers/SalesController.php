@@ -649,7 +649,7 @@ class SalesController extends Controller {
         $selectQuery = "SELECT s.salesID, s.paymentPlanID,pp.paymentPlanDeposit AS planDepositAmount,"
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
                 . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
-                . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
+                . "c.workMobile AS customerMobile, c.nationalIdNumber,c.location, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.paid, s.status, s.createdAt ";
 
      
@@ -674,7 +674,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName'];
+                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName,c.location'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -831,7 +831,7 @@ class SalesController extends Controller {
         $selectQuery = "SELECT s.salesID, s.paymentPlanID,pp.paymentPlanDeposit AS planDepositAmount,"
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
                 . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
-                . "c.workMobile AS customerMobile, c.nationalIdNumber, s.productID, "
+                . "c.workMobile AS customerMobile, c.nationalIdNumber,c.location, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.paid, s.status, s.createdAt ";
 
         $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
@@ -856,7 +856,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName'];
+                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName,c.location'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -1030,7 +1030,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
+                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName','c.location','c.workMobile', 'p.productName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {

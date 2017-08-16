@@ -10,9 +10,9 @@ use Phalcon\Logger\Adapter\File as FileAdapter;
 
 class GroupSaleController extends Controller
 {
-	protected $closeGroupStatus = 2;
-	protected $expireGroupStatus = 3;
-	protected $abortedStatus = 5;
+    protected $closeGroupStatus = 2;
+    protected $expireGroupStatus = 3;
+    protected $abortedStatus = 5;
 
     /*
     Raw query select function to work in any version of phalcon
@@ -65,47 +65,47 @@ class GroupSaleController extends Controller
         }
 
         try{
-	        $lastId = $this->rawSelect("SELECT groupID from group_sale ORDER by groupID desc limit 1");
-	        if(!$lastId){
-	        	$lastId = 0;
-	        }
-	        else{
-	        	$lastId = $lastId[0]['groupID'];
-	        }
-	      
-	        $groupSale = new GroupSale();
-	        $groupSale->createdAt = date("Y-m-d H:i:s");
-	        $groupSale->numberOfMembers = 0;
-	        $groupSale->status=0;
-	        $groupSale->userID = $userID;
-	        $groupSale->groupToken="group".($lastId+1);
-	        $groupSale->groupName = $groupName;
+            $lastId = $this->rawSelect("SELECT groupID from group_sale ORDER by groupID desc limit 1");
+            if(!$lastId){
+                $lastId = 0;
+            }
+            else{
+                $lastId = $lastId[0]['groupID'];
+            }
+          
+            $groupSale = new GroupSale();
+            $groupSale->createdAt = date("Y-m-d H:i:s");
+            $groupSale->numberOfMembers = 0;
+            $groupSale->status=0;
+            $groupSale->userID = $userID;
+            $groupSale->groupToken="group".($lastId+1);
+            $groupSale->groupName = $groupName;
 
-	         if ($groupSale->save() === false) {
-	                $errors = array();
-	                $messages = $groupSale->getMessages();
-	                foreach ($messages as $message) {
-	                    $e["message"] = $message->getMessage();
-	                    $e["field"] = $message->getField();
-	                    $errors[] = $e;
-	                }
-	                $dbTransaction->rollback('Group Sale create failed' . json_encode($errors));
-	          }
+             if ($groupSale->save() === false) {
+                    $errors = array();
+                    $messages = $groupSale->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('Group Sale create failed' . json_encode($errors));
+              }
 
-	          $dbTransaction->commit();
+              $dbTransaction->commit();
 
               $customerMessage = "Please use ".$groupSale->groupToken." for the group with name ".$groupSale->groupName;
-	          $res->sendMessage($MSISDN, $customerMessage);
-	          return $res->success("Group Sale created ", $groupSale);
-	      }
-	      catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+              $res->sendMessage($MSISDN, $customerMessage);
+              return $res->success("Group Sale created ", $groupSale);
+          }
+          catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
             return $res->dataError('Group Sale create error', $message);
         }
     }
 
     public function closeGroup(){
-    	$jwtManager = new JwtManager();
+        $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
@@ -120,35 +120,35 @@ class GroupSaleController extends Controller
         if (!$token) {
             return $res->dataError("Token missing ",[]);
         }
-        if (!$MSISDN || $groupID) {
+        if (!$MSISDN || !$groupID) {
             return $res->dataError("Group data missing ", []);
         }
 
         try{
-	         $groupSale = GroupSale::findFirst("groupID=$groupID");
-	         if(!$groupSale){
-	         	return $res->success("Group not found ");
-	         }
+             $groupSale = GroupSale::findFirst("groupID=$groupID");
+             if(!$groupSale){
+                return $res->success("Group not found ");
+             }
 
-	         $groupSale->closedAt = date("Y-m-d H:i:s");
-	         $groupSale->status = $this->closeGroupStatus;
+             $groupSale->closedAt = date("Y-m-d H:i:s");
+             $groupSale->status = $this->closeGroupStatus;
 
-	         if ($groupSale->save() === false) {
-	                $errors = array();
-	                $messages = $groupSale->getMessages();
-	                foreach ($messages as $message) {
-	                    $e["message"] = $message->getMessage();
-	                    $e["field"] = $message->getField();
-	                    $errors[] = $e;
-	                }
-	                $dbTransaction->rollback('Group Sale close failed' . json_encode($errors));
-	          }
+             if ($groupSale->save() === false) {
+                    $errors = array();
+                    $messages = $groupSale->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('Group Sale close failed' . json_encode($errors));
+              }
 
-	           $dbTransaction->commit();
+               $dbTransaction->commit();
 
               $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been closed successfully";
-	          $res->sendMessage($MSISDN, $customerMessage);
-	          return $res->success("Sale saved successfully, await payment ", $sale);
+              $res->sendMessage($MSISDN, $customerMessage);
+              return $res->success("Group clossed successfully await payment ", $sale);
 
         }
         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -158,7 +158,7 @@ class GroupSaleController extends Controller
     }
 
     public function abortGroup(){
-    	$jwtManager = new JwtManager();
+        $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
@@ -178,30 +178,30 @@ class GroupSaleController extends Controller
         }
 
         try{
-	         $groupSale = GroupSale::findFirst("groupID=$groupID");
-	         if(!$groupSale){
-	         	return $res->success("Group not found ");
-	         }
+             $groupSale = GroupSale::findFirst("groupID=$groupID");
+             if(!$groupSale){
+                return $res->success("Group not found ");
+             }
 
-	         $groupSale->abortedAt = date("Y-m-d H:i:s");
-	         $groupSale->status = $this->abortedStatus;
+             $groupSale->abortedAt = date("Y-m-d H:i:s");
+             $groupSale->status = $this->abortedStatus;
 
-	         if ($groupSale->save() === false) {
-	                $errors = array();
-	                $messages = $groupSale->getMessages();
-	                foreach ($messages as $message) {
-	                    $e["message"] = $message->getMessage();
-	                    $e["field"] = $message->getField();
-	                    $errors[] = $e;
-	                }
-	                $dbTransaction->rollback('Group Sale close failed' . json_encode($errors));
-	          }
+             if ($groupSale->save() === false) {
+                    $errors = array();
+                    $messages = $groupSale->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                    $dbTransaction->rollback('Group Sale close failed' . json_encode($errors));
+              }
 
-	           $dbTransaction->commit();
+               $dbTransaction->commit();
 
               $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been closed successfully";
-	          $res->sendMessage($MSISDN, $customerMessage);
-	          return $res->success("Sale saved successfully, await payment ", $sale);
+              $res->sendMessage($MSISDN, $customerMessage);
+              return $res->success("Sale saved successfully, await payment ", $sale);
 
         }
         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -221,11 +221,11 @@ class GroupSaleController extends Controller
         foreach ($groupSales as $groupSale) {
             $groupID = $groupSale['groupID'];
              $groupSale_o = GroupSale::findFirst("groupID=$groupID");
-	         if(!$groupSale){
-	         	 $res->success("Group not found ");
-	         }
-	         $groupSale_o->status=$this->expireGroupStatus;
-	         $groupSale_o->expiredAt = date("Y-m-d H:i:s");
+             if(!$groupSale){
+                 $res->success("Group not found ");
+             }
+             $groupSale_o->status=$this->expireGroupStatus;
+             $groupSale_o->expiredAt = date("Y-m-d H:i:s");
 
             if ($groupSale_o->save() === false) {
                 $errors = array();
