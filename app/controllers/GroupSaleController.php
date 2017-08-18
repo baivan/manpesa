@@ -293,5 +293,126 @@ class GroupSaleController extends Controller
        return $res->success("Groups ",$groups);
     }
 
+
+    /*
+    retrieve  groupSales to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+ 
+    public function getTableGroupSales() { //sort, order, page, limit,filter
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $groupID = $request->getQuery('groupID');
+        $userID = $request->getQuery('userID');
+        $sort = $request->getQuery('sort');
+        $order = $request->getQuery('order');
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+
+        $selectQuery = "SELECT gs.groupID,gs.groupToken,gs.groupName,gs.userID,gs.closedAt,c.fullName as agentName,gs.createdAt,count(s.salesID) as numberOfMembers,sum(s.amount) as saleAmount,sd.saleDiscountID,d.discountAmount,dt.discountTypeName,st.salesTypeName ";
+
+        $baseQuery = "FROM group_sale gs join users u on gs.userID=u.userID join contacts c on u.contactID=c.contactsID join sales s on gs.groupID=s.groupID join payment_plan pp on s.paymentPlanID=pp.paymentPlanID join sales_type st on pp.salesTypeID=st.salesTypeID left join sale_discount sd on s.salesID=sd.salesID left join discount d on sd.discountID=d.discountID left join discount_types dt on d.discountTypeID=dt.discountTypeID and dt.discountTypeName regexp 'group' ";
+
+        $countQuery = "SELECT count(gs.groupID) as totalGroups ";
+
+
+        $whereArray = [
+            'filter' => $filter,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $whereQuery = "";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['gs.groupToken','gs.groupName','c.fullName'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND ";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(gs.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, " AND ");
+        }
+
+
+        $whereQuery = $whereQuery ? " WHERE $whereQuery " : "";
+
+        $countQuery = $countQuery . $baseQuery . $whereQuery;
+        $selectQuery = $selectQuery . $baseQuery . $whereQuery;
+        $exportQuery = $selectQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+       $res->success("Groups ".$selectQuery);
+
+            $count = $this->rawSelect($countQuery);
+             $groups = $this->rawSelect($selectQuery);
+             $data["totalGroups"] = $count[0]['totalGroups'];
+             $data["groups"] = $groups;
+
+
+         if($isExport){
+            $exportGroups  = $this->rawSelect($exportQuery);
+            $data["exportGroups"] =  $exportGroups;//$exportMessage;
+        }
+        else{
+             
+             $data["exportGroups"] = "no data ".$isExport;
+        }
+        return $res->success("Groups ", $data);
+    }
+    /*
+    util function to build all get queries based on passed parameters
+    */
+    public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
+
+        if(!$sort){
+          $sort="s.createdAt";
+        }
+
+        $sortClause = " ORDER BY $sort $order ";
+        $groupClause = " GROUP BY s.groupID ";
+
+        if (!$page || $page <= 0) {
+            $page = 1;
+        }
+        if (!$limit) {
+            $limit = 10;
+        }
+
+        $ofset = (int) ($page - 1) * $limit;
+        $limitQuery = " LIMIT $ofset, $limit ";
+
+        return "$groupClause $sortClause $limitQuery";
+    }
+
 }
 

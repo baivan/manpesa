@@ -674,7 +674,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName,c.location'];
+                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName','c.location'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {

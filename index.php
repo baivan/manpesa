@@ -311,6 +311,9 @@ $group_route->post('close','closeGroup');
 $group_route->post('abort','abortGroup');
 $group_route->post('getGroup','getGroup');
 $group_route->get('expire','expireGroup');
+$group_route->get('crm/all','getTableGroupSales');
+$group_route->post('crm/all','getTableGroupSales');
+
 
 
 $reconcile_route = new MicroCollection();
