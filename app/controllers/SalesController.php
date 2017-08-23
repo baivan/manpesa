@@ -2189,9 +2189,17 @@ create new customers for contacts from old system who had made sales
 
 
     public function salesWelcomeCall(){
+
+        $file = $_SERVER['SCRIPT_FILENAME']; 
+        $ps = "ps aux|grep -v grep|grep $file -c"; 
+        $shell = shell_exec($ps); 
+        if((int)$shell==1){
+            return ;
+        }
+
          $res = new SystemResponses();
-        $salesQuery = "SELECT * FROM sales WHERE status > 0 AND date(updatedAt)=date(date_sub(now(), interval 3 day))";
-        $sales = $this->rawSelect($salesQuery);
+         $salesQuery = "SELECT * FROM sales WHERE status > 0 AND date(updatedAt)=date(date_sub(now(), interval 3 day))";
+         $sales = $this->rawSelect($salesQuery);
         
         foreach ($sales as $sale) {
             $ticket = new Ticket();
