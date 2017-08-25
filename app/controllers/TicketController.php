@@ -624,12 +624,13 @@ sends email notification on ticket create
     }
 
     public function netPromoterTickets(){
-        $file = $_SERVER['SCRIPT_FILENAME']; 
+      /*  $file = $_SERVER['SCRIPT_FILENAME']; 
         $ps = "ps aux|grep -v grep|grep $file -c"; 
         $shell = shell_exec($ps); 
         if((int)$shell==1){
             return ;
         }
+        */
 
         $res = new SystemResponses();
         $salesQuery = "SELECT * FROM customer c JOIN sales s on c.contactsID=s.contactsID WHERE c.contactsID NOT IN (SELECT contactsID FROM net_promoter_called_customer) AND c.status>=0 and s.status>0 and s.paid>0 AND date(s.createdAt) >= '2017-03-01' AND date(s.updatedAt)<>date(date_sub(now(), interval 3 day)) ORDER BY RAND() LIMIT 10";
