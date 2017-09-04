@@ -168,9 +168,10 @@ class ReconcileController extends Controller
             $transactionManager = new TransactionManager();
             $dbTransaction = $transactionManager->get();
 
-            $selectQuery = "SELECT s.salesID,c.contactsID,c.fullName,t.fullName,s.amount,SUM(replace(t.depositAmount,',','')) as deposit from sales s join contacts c on s.contactsID=c.contactsID join customer_transaction ct on c.contactsID=ct.contactsID join transaction t on ct.transactionID=t.transactionID where date(s.createdAt) >= '2017-02-01' and date(s.createdAt) <= '2017-02-28' and s.paid >0 and s.status <=0 group by s.salesID";
+            /*$selectQuery = "SELECT s.salesID,c.contactsID,c.fullName,t.fullName,s.amount,SUM(replace(t.depositAmount,',','')) as deposit from sales s join contacts c on s.contactsID=c.contactsID join customer_transaction ct on c.contactsID=ct.contactsID join transaction t on ct.transactionID=t.transactionID where date(s.createdAt) >= '2017-02-01' and date(s.createdAt) <= '2017-02-28' and s.paid >0 and s.status <=0 group by s.salesID";
+            */
+            $selectQuery = "SELECT s.salesID,c.contactsID,c.fullName,t.fullName,s.amount,SUM(replace(t.depositAmount,',','')) as deposit from sales s join contacts c on s.contactsID=c.contactsID join customer_transaction ct on c.contactsID=ct.contactsID join transaction t on ct.transactionID=t.transactionID where date(s.createdAt) >= '2017-08-01' and date(s.createdAt) <= '2017-08-31' and s.paid =2000 group by s.salesID";
             $sales = $this->rawSelect($selectQuery);
-
 
             try{
 
@@ -214,6 +215,8 @@ class ReconcileController extends Controller
         }
 
     }
+
+    
 
     public function reconcileSaleWithContactTransaction(){
            $jwtManager = new JwtManager();
