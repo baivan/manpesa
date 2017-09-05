@@ -136,7 +136,13 @@ class TransactionsController extends Controller {
                 //Find incomplete sales
                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
                 if($depositAmount > 0){
-                    $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                   // if(strtolower(strpos($accounNumber,"group"))===0 ){
+                    if(substr($accounNumber, 0, strlen('group')) === 'group' ){
+                        $remainingAmount = $this->distributeGroupTransaction($accounNumber,$depositAmount,$dbTransaction);
+                    }
+                    else{
+                        $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                    }
                 }
                 
             } else {
@@ -172,11 +178,19 @@ class TransactionsController extends Controller {
     map customer to mobile number or id
     */
     private function mapTransactionContact($nationalID,$mobileNumber){
+        $res = new SystemResponses();
+
         $matchBothQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber=$nationalID and workMobile=$mobileNumber";
         $matchNationalIDQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber=$nationalID ";
         $matchMobileQuery = "SELECT contactsID FROM contacts WHERE workMobile=$mobileNumber ";
-
+       
+        if(substr($nationalID, 0, strlen('group')) === 'group' ){
+            $contact = $this->rawSelect($matchMobileQuery);
+            return $contact[0]['contactsID'];
+        }
+        
         $contact = $this->rawSelect($matchBothQuery);
+        
         if($contact){
             return $contact[0]['contactsID'];
         }
@@ -561,7 +575,8 @@ class TransactionsController extends Controller {
         }
     }
 
-    public function checkPayment() {//{token,salesID}
+    //check group sale payment
+    public function checkGroupPayment(){//{token,groupID}
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
@@ -569,13 +584,41 @@ class TransactionsController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
         $token = $json->token;
-        //  $userID = $json->userID;
+        $groupID = $json->groupID;
+
+        $group = Group::findFirst(array("groupID=:id: ",
+                    'bind' => array("id" => $groupID)));
+        //all sales of this group
+         $groupSales = $this->rawSelect("SELECT * FROM sales WHERE groupID=$groupID AND status>=0 ");
+
+
+
+
+
+    }
+
+    public function checkPayment() {//{token,salesID}
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+        $transactionManager = new TransactionManager();
+        $activityLog= new ActivityLogsController();        
+        $dbTransaction = $transactionManager->get();
+        $token = $json->token;
         $salesID = $json->salesID;
+        $groupID = $json->groupID;
+        $userID = $json->userID;
+        $latitude = $json->latitude;
+        $longitude = $json->longitude;
+        $activityLog->create($userID,"Check payment ",$longitude,$latitude);
 
-
-
-        /* $getAmountQuery = "SELECT SUM(replace(t.depositAmount,',','')) as amount, s.amount as saleAmount, st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus FROM transaction t JOIN contacts c on t.salesID=c.workMobile or t.salesID=c.nationalIdNumber JOIN customer cu on c.contactsID=cu.contactsID JOIN sales s on cu.customerID=s.customerID JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on t.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID where s.salesID=$salesID and c.workMobile <>0"; */
+        
         $getAmountQuery = " SELECT s.paid as amount,s.amount as saleAmount,st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus from sales s JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID where s.salesID=$salesID";
+
+        if($groupID > 0){
+           $getAmountQuery = "SELECT s.paid as amount,s.amount as saleAmount,st.salesTypeDeposit,st.salesTypeName,si.saleItemID,i.serialNumber,i.status as itemStatus,sg.groupToken,sg.status from sales s JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID JOIN group_sale sg on s.groupID=sg.groupID left join sales_item si on s.salesID=si.saleID LEFT JOIN item i on si.itemID=i.itemID where s.groupID=7 and sg.status=2";
+        }
 
         $transaction = $this->rawSelect($getAmountQuery);
 
@@ -945,8 +988,6 @@ class TransactionsController extends Controller {
                  $customerTransaction->contactsID = $contactsID;
                  $customerTransaction->createdAt = date("Y-m-d H:i:s");
 
-               
-
                 $customer = Customer::findFirst(array("contactsID=:id: ",
                             'bind' => array("id" => $contactsID)));
                 if ($customer) {
@@ -975,7 +1016,12 @@ class TransactionsController extends Controller {
                 //Find incomplete sales
                 $depositAmount = floatval(str_replace(',', '', $depositAmount));
                 if($depositAmount > 0){
-                    $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                    if(substr($accounNumber, 0, strlen('group')) === 'group' ){
+                        $remainingAmount = $this->distributeGroupTransaction($accounNumber,$depositAmount,$dbTransaction);
+                    }
+                    else{
+                        $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                    }
                 }
                
             } else {
@@ -1027,6 +1073,47 @@ class TransactionsController extends Controller {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
         }
+    }
+
+    public function distributeGroupTransaction($groupToken,$depositAmount){
+        $res= new SystemResponses();
+        $group = GroupSale::findFirst("groupToken='$groupToken'");
+        if(!$group){
+        $res->success("distributeGroupTransaction group not found groupToken"
+                    .$groupToken." depositAmount ".$depositAmount);
+            return false;
+        }
+
+        $sales = $this->rawSelect("SELECT * FROM sales WHERE status>=0 AND groupID=".$group->groupID);
+        $totalAmount = $this->rawSelect("SELECT SUM(amount) as amount FROM sales WHERE status>=0 AND  groupID=".$group->groupID);
+        $totalAmount=$totalAmount[0]['amount'];
+        $res->success("group totalAmount ".$totalAmount." depositAmount ".$depositAmount);
+        foreach ($sales as $sale) {
+            $o_sale = Sales::findFirst("salesID=".$sale['salesID']);
+            if($depositAmount>=$sale['amount']){
+                $o_sale->paid=$o_sale->amount;
+                $o_sale->status=2;
+                $depositAmount=$depositAmount-$o_sale->amount;
+            }
+            elseif($depositAmount>0 && $depositAmount<$sale['amount'] ){
+                $o_sale->paid=$depositAmount;
+                $o_sale->status=1;
+            }
+            elseif($depositAmount==0){
+                break;
+            }
+
+            $o_sale->save();
+            $res->success("saved group sale amount salesID".$sale['salesID']);
+        }
+
+        //update group to have this  show it has been paid
+        $group->status=7 ;
+        $group->save();
+        $res->success("saved group sale $groupToken");
+
+
+        return true;
     }
 
 

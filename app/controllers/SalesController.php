@@ -48,6 +48,7 @@ class SalesController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
+        $activityLog= new ActivityLogsController();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
 
@@ -65,11 +66,15 @@ class SalesController extends Controller {
         $nationalIdNumber = isset($json->nationalIdNumber) ? $json->nationalIdNumber : NULL;
         $quantity =  isset($json->quantity) ? $json->quantity : 1;
         $groupID = isset($json->groupID)?$json->groupID : 0;
-        $numberOfMembers=0;
-        $groupDiscount=0;
+        $longitude = isset($json->longitude)?$json->longitude :0;
+        $latitude = isset($json->latitude)?$json->latitude :0;
+        $numberOfMembers = 0;
+        $groupDiscount = 0;
 
 
         $token = $json->token;
+
+
         
         if (!$token) {
             return $res->dataError("Token missing " . json_encode($json), []);
@@ -89,15 +94,17 @@ class SalesController extends Controller {
 
         if (!$amount || $amount <= 0) {
              $res->dataError("Please select amount ", []);
-             
-
         }
+
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
         if (!$tokenData) {
             return $res->dataError("Data compromised");
         }
+
+
+        $activityLog->create($userID,"Create sale",$longitude,$latitude);
 
 
         try {
@@ -120,7 +127,7 @@ class SalesController extends Controller {
             }
 
             $sale = new Sales();
-            $sale->status = $status?$status:0;
+            $sale->status = 0;
             $sale->paymentPlanID = $paymentPlanID;
             $sale->userID = $userID;
             $sale->customerID = $customerID;
@@ -129,9 +136,11 @@ class SalesController extends Controller {
             $sale->amount = $amount;
             $sale->productID = $productID;
             $sale->quantity = $quantity;
-            $sale->paid = $paid;
+            $sale->paid = 0;
             $sale->groupID = $groupID;
             $sale->createdAt = date("Y-m-d H:i:s");
+
+            $res->success("Sale amount  $amount");
 
             if ($sale->save() === false) {
                 $errors = array();
@@ -153,15 +162,22 @@ class SalesController extends Controller {
             $customerMessage ;
 
            $discountAmount = $this->addDiscount($sale->salesID,$salesTypeID,$userID,$amount,$quantity,$productID);
+           $res->success("Normal discount inside sales add Discount  $discountAmount");
            if($groupID){
                $numberOfMembers = $this->rawSelect("SELECT count(salesID) as numberOfMembers FROM sales WHERE groupID=$groupID AND status=0 ");
-               $groupDiscount = $this->getGroupDiscount($salesTypeID,$numberOfMembers[0]['numberOfMembers']);
-               $discountAmount =$discountAmount + $groupDiscount;
+               $numberOfMembers= $numberOfMembers[0]['numberOfMembers'];
+               $groupDiscount = $this->getGroupDiscount($salesTypeID,$groupID,$userID,$numberOfMembers); 
+               $res->success("Group discount inside sales  $groupDiscount");
+              // $discountAmount =$discountAmount + $groupDiscount;
            }
 
            if($discountAmount > 0 ){
-                  $status = $this->getCustomerBalance($contactsID,($amount - $discountAmount),$paymentPlanDeposit,$dbTransaction);
-
+                if($groupID<=0){
+                      $status = $this->getCustomerBalance($contactsID,($amount - $discountAmount),$paymentPlanDeposit,$dbTransaction);
+                    }
+                  else{
+                    $status = 0;
+                  }
                   $amount = $amount - $discountAmount;
 
                   if($status == 2){
@@ -181,9 +197,15 @@ class SalesController extends Controller {
                   }
            }
            else{
-             $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit,$dbTransaction);
+              if($groupID<=0){
+                 $status = $this->getCustomerBalance($contactsID,$amount,$paymentPlanDeposit,$dbTransaction);
+              }
+              else{
+                $status=0;
+              }
+              
              
-                 if($status == 2){
+                if($status == 2){
                     $paid = $amount;
                     $customerMessage= "Dear " . $name . ", your sale has been placed successfully! Your payment of Ksh. " . ($amount) ." has been deducted. Your sale is paid in full.";
                 }
@@ -209,6 +231,8 @@ class SalesController extends Controller {
             $sale->amount = $amount;
             $sale->updatedAt = date("Y-m-d H:i:s");
 
+            $res->success("Saved sale amount  $amount");
+
 
            if ($sale->save() === false) {
                 $errors = array();
@@ -221,8 +245,9 @@ class SalesController extends Controller {
                 $dbTransaction->rollback('Sale Discount add failed' . json_encode($errors));
             }
             $dbTransaction->commit();
+
+        
             
-            $res->sendMessage($MSISDN, $customerMessage);
             if($groupID > 0){
                 $data = $this->getSalesV2(1,$groupID,$userID);
                 if($groupDiscount){
@@ -235,7 +260,7 @@ class SalesController extends Controller {
                 return $res->success("Sale saved successfully ", $data);
             }
             else{
-               
+                 $res->sendMessage($MSISDN, $customerMessage);
                 return $res->success("Sale saved successfully, await payment ", $sale);
             }
 
@@ -428,6 +453,7 @@ class SalesController extends Controller {
         if (!$token || !$salesID) {//|| !$salesTypeID || !$userID || !$amount || !$frequencyID){
             return $res->dataError("fields missing");
         }
+        //$activityLog->create($userID,"delete sale");
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
@@ -522,14 +548,32 @@ class SalesController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
+        $activityLog= new ActivityLogsController();
+
         $customerID = $request->getQuery('customerID');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $timeToQuery = $request->getQuery('timeToQuery');
+
         if($origin <= 0){
-             $userID = $request->getQuery('userID');
+             $userID = $request->getQuery('userID'); 
              $groupID = $request->getQuery('groupID');
         }
-       
 
-        $saleQuery = "SELECT s.salesID,s.quantity,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,s.productID,p.productName, ca.categoryName,s.groupID FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID WHERE s.status>=0";
+        $activityLog->create($userID,"get sales ",$longitude,$latitude);
+
+        $saleQuery = "SELECT s.salesID,s.quantity,co.workMobile,co.workEmail,co.passportNumber,co.nationalIdNumber,co.fullName,s.createdAt,co.location,c.customerID,s.paymentPlanID,s.amount,st.salesTypeName,s.productID,p.productName, ca.categoryName,s.groupID,g.groupName,g.groupToken FROM sales s JOIN customer c on s.customerID=c.customerID LEFT JOIN contacts co on c.contactsID=co.contactsID LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID LEFT JOIN product p ON s.productID=p.productID LEFT JOIN category ca on p.categoryID=ca.categoryID LEFT JOIN group_sale g on s.groupID=g.groupID WHERE s.status>=0";
+
+        if($timeToQuery>7){
+           $saleQuery= $saleQuery.' AND month(date(s.createdAt))=month(CURRENT_DATE()) ';
+        }
+        else if($timeToQuery==7){
+            $saleQuery=$saleQuery.' AND CURRENT_DATE()-date(s.createdAt) <=7 ';
+        }
+        else if($timeToQuery ==1){
+            $saleQuery=$saleQuery.' AND date(s.createdAt) = CURRENT_DATE() ';
+        }
+
 
         if($origin == 0){
             if (!$token || !$userID) {
@@ -579,6 +623,8 @@ class SalesController extends Controller {
               $newSale['productName'] = $sale['productName'];
               $newSale['categoryName'] = $sale['categoryName'];
               $newSale['groupID'] = $sale['groupID'];
+              $newSale['groupToken'] = $sale['groupToken'];
+              $newSale['groupName'] = $sale['groupName'];
 
               $serials="";
               $totalAmount = $totalAmount+$sale['amount'];
@@ -650,7 +696,8 @@ class SalesController extends Controller {
                 . "pp.salesTypeID, st.salesTypeName,pp.frequencyID,f.numberOfDays, "
                 . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
                 . "c.workMobile AS customerMobile, c.nationalIdNumber,c.location, s.productID, "
-                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, s.amount, s.paid, s.status, s.createdAt ";
+                . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, "
+                ."s.amount, s.paid, s.status, s.createdAt,gs.groupToken,gs.groupID,gs.numberOfMembers,gs.expiredAt,gs.closedAt,gs.abortedAt ";
 
      
         $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
@@ -658,7 +705,7 @@ class SalesController extends Controller {
                 . "ON pp.frequencyID=f.frequencyID "
                 . "LEFT JOIN contacts c on s.contactsID=c.contactsID LEFT JOIN product p "
                 . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
-                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID  ";
+                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN group_sale gs ON s.groupID=gs.groupID";
 
         $whereArray = [
             's.status' => $status,
@@ -674,7 +721,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName','c.location'];
+                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName','gs.groupToken','gs.groupName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -856,7 +903,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName,c.location'];
+                $searchColumns = ['st.salesTypeName', 'f.frequencyName', 'c.fullName', 'c.workMobile', 'c1.fullName', 'c1.workMobile', 'p.productName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -980,6 +1027,82 @@ class SalesController extends Controller {
         
         return $res->success("pending sales ", $data);
     }
+
+
+ /*
+    retrieve groups sales to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+    
+
+    public function getGroupSales() { //sort, order, page, limit,filter,userID
+        $logPathLocation = $this->config->logPath->location . 'apicalls_logs.log';
+        $logger = new FileAdapter($logPathLocation);
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $userID = $request->getQuery('userID');
+        $groupID = $request->getQuery('groupID');
+        
+       // $countQuery = "SELECT count(s.salesID) as totalSales ";
+
+        $selectQuery = "SELECT s.salesID,s.amount,s.quantity,s.productID,gs.groupName,c.workMobile,c.nationalIdNumber,c.fullName,dt.discountTypeName,d.discountAmount,s.customerID,s.contactsID ";
+
+     
+        $defaultQuery = " FROM sales s JOIN group_sale gs on s.groupID=gs.groupID JOIN contacts c on s.contactsID=c.contactsID JOIN sale_discount sd on s.salesID=sd.salesID join discount d on sd.discountID=d.discountID join discount_types dt on d.discountTypeID=dt.discountTypeID and dt.discountTypeName regexp 'group' where s.groupID=$groupID group by s.salesID ";
+
+       
+        $selectQuery = $selectQuery . $defaultQuery;
+      //  $countQuery = $countQuery . $defaultQuery;
+
+        $logger->log("Sales Request Query: " . $selectQuery);
+        $sales = $this->rawSelect($selectQuery); 
+       //  $count = $this->rawSelect($countQuery);
+      
+
+
+        $displaySales = array();
+        $totalGrossSalesAmount = 0;
+
+        foreach ($sales as $sale) {
+            $items = $this->getSaleItems($sale['salesID']);
+            $sale['items'] = $items;
+            $sale['grossAmount'] = $sale['amount'] + $sale['discountAmount'];
+            $productIDs = str_replace("]","",str_replace("[", "", $sale['productID']));
+            $productIDs = explode(",",$productIDs);
+            $productName = "";
+            $totalGrossSalesAmount = $totalGrossSalesAmount+$sale['grossAmount'];
+
+            foreach ($productIDs as $productID) {
+                $product = Product::findFirst("productID=$productID");
+
+                if(empty($productName))
+                { 
+                    $productName = $product->productName;
+                }
+                else{
+                    $productName = $productName." <br> ".$product->productName;
+                }
+            }
+            $sale['productName'] = $productName;
+
+
+            array_push($displaySales, $sale);
+        }
+
+            
+       //$data["sales"] = $displaySales; 
+        $data["totalSales"] = count($displaySales);//$count[0]['totalSales'];
+        $data["sales"] = $displaySales;
+        $data['totalGrossSalesAmount'] = $totalGrossSalesAmount;
+       return $res->success("Sales", $data);
+    }
  /*
     retrieve partner sales to be tabulated on crm
     parameters:
@@ -1030,7 +1153,7 @@ class SalesController extends Controller {
         foreach ($whereArray as $key => $value) {
 
             if ($key == 'filter') {
-                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName','c.location','c.workMobile', 'p.productName'];
+                $searchColumns = ['psi.serialNumber', 'psi.salesPartner', 'c.fullName', 'c.workMobile', 'p.productName'];
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
@@ -1985,7 +2108,7 @@ create new customers for contacts from old system who had made sales
          $totalDiscountToOffer = 0;
 
          foreach ($productIDs as $productID) {
-            $discountsQuery = "SELECT * FROM discount d JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND productID=$productID";
+            $discountsQuery = "SELECT * FROM discount d JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND productID=$productID AND discountTypeName not regexp 'group';";
             
              
              $discounts = $this->rawSelect($discountsQuery);
@@ -2074,7 +2197,8 @@ create new customers for contacts from old system who had made sales
 
     }
 
-    private function getGroupDiscount($saleTypeID,$groupID,$numberOfMembers=0){
+    private function getGroupDiscount($saleTypeID,$groupID,$userID,$numberOfMembers=0){
+           $res=new SystemResponses();
            $totalDiscountToOffer = 0;
 
             $groupDiscountQuery = "SELECT * FROM discount d JOIN discount_condition dc on d.discountConditionID=dc.discountConditionID JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.status=1 AND d.saleTypeID=$saleTypeID AND dt.discountTypeName REGEXP 'group'";
@@ -2098,14 +2222,12 @@ create new customers for contacts from old system who had made sales
                     }
                 else{
                     if (strcasecmp($agents, 'all') == 0 ){
-                                   
                          $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$numberOfMembers);
                         }
-                        else{
-                                $allAgents = explode(",", $agents);
-                                 foreach ($allAgents as $agent) {
+                    else{
+                         $allAgents = explode(",", $agents);
+                            foreach ($allAgents as $agent) {
                                      if(strcasecmp($agents, $userID) == 0){
-                                
                                        $can_offer_discount = $this->compareDiscount($discount['discountMargin'],$discount['conditionName'],$numberOfMembers);
                                      }
                                  }
@@ -2117,22 +2239,30 @@ create new customers for contacts from old system who had made sales
                                      'bind' => array("id" => $salesID,'d_id'=>$discountID)));*/
                 //get all group sales with current discount if any 
                 if($can_offer_discount){
-                    $sales = $this->rawSelect("SELECT s.amount,s.status,d.discountAmount,d.discountID FROM sales s left join sale_discount sd on s.salesID=sd.salesID left join discount d on sd.discountID=d.discountID WHERE s.groupID=$groupID AND s.status=0");
+                    $sales = $this->rawSelect("SELECT s.salesID, s.amount,s.status,d.discountAmount,d.discountID FROM sales s left join sale_discount sd on s.salesID=sd.salesID left join discount d on sd.discountID=d.discountID WHERE s.groupID=$groupID AND s.status=0");
 
                     //assign this discount to sales in this group
                     foreach ($sales  as $sale) {
                         $salesID = $sale['salesID'];
                         //if same discount countinue else update amount
                         if($sale['discountID'] != $discountID){
-                            $o_sale = Sales::findFirst("salesID=".$sale['salesID']);
-                            $o_sale->amount = ($o_sale->amount+$sale['discountAmount']) - $discountAmount;
-                            //update sale 
+                            $o_sale = Sales::findFirst("salesID=$salesID");
+                            $sale_discount = $this->rawSelect("SELECT * FROM discount d JOIN discount_types dt on d.discountTypeID=dt.discountTypeID WHERE d.discountID=".$sale['discountID']);
+
+
+                            if(strpos(strtolower($sale_discount[0]['discountTypeName']),'group') !==false){
+                                $o_sale->amount = ($o_sale->amount+$sale['discountAmount']) - $discountAmount;
+                            }
+                            else{
+                                $o_sale->amount = $o_sale->amount - $discountAmount;
+                            }
                             $o_sale->save();
+                            
                         }
 
                     
 
-                            $saleDiscounts=$this->rawSelect("select * from sale_discount sd join discount d on sd.discountID=d.discountID join discount_types dt  on d.discountTypeID=dt.discountTypeID where dt.discountTypeName regexp 'group' and salesID=$salesID ");
+                        $saleDiscounts=$this->rawSelect("select * from sale_discount sd join discount d on sd.discountID=d.discountID join discount_types dt  on d.discountTypeID=dt.discountTypeID where dt.discountTypeName regexp 'group' and salesID=$salesID ");
 
 
 
@@ -2171,36 +2301,40 @@ create new customers for contacts from old system who had made sales
             
             }
 
-            return $totalDiscountToOffer;
+            $res->success("Group discount to offer $$totalDiscountToOffer");
 
+            return $totalDiscountToOffer;
             
     }
 
 
     private function compareDiscount($margin, $condition, $operand){
+           $res = new SystemResponses();
             $eva= "$operand".$condition.$margin;
-          if($eva){
-              return true;
-          }
-          else{
-              return false;
-          }
+            $res->success("Discount condition ".$eva);
+            switch ($condition) {
+                case '==':
+                    return $operand==$margin?true:false;
+                case '>=':
+                    return $operand>=$margin?true:false;
+                case '<=':
+                    return $operand<=$margin?true:false;
+                case '<':
+                    return $operand<$margin?true:false;
+                case '>':
+                    return $operand>$margin?true:false;
+                
+                default:
+
+                    return false;
+            }
     } 
 
 
     public function salesWelcomeCall(){
-
-        /*$file = $_SERVER['SCRIPT_FILENAME']; 
-        $ps = "ps aux|grep -v grep|grep $file -c"; 
-        $shell = shell_exec($ps); 
-        if((int)$shell==1){
-            return ;
-        }
-        */
-
          $res = new SystemResponses();
-         $salesQuery = "SELECT * FROM sales WHERE status > 0 AND date(updatedAt)=date(date_sub(now(), interval 3 day))";
-         $sales = $this->rawSelect($salesQuery);
+        $salesQuery = "SELECT * FROM sales WHERE status > 0 AND date(updatedAt)=date(date_sub(now(), interval 3 day))";
+        $sales = $this->rawSelect($salesQuery);
         
         foreach ($sales as $sale) {
             $ticket = new Ticket();
@@ -2229,4 +2363,5 @@ create new customers for contacts from old system who had made sales
 
         $res->success('Welcome call ticket created');
     }
+
 }

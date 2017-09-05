@@ -151,11 +151,6 @@ class ProductsController extends Controller {
         $dependentProductID = $json->dependentProductID;
         $token = $json->token;
 
-
-        
-
-      
-
         if (!$token || !$productID ) {
             return $res->dataError("Missing data ");
         }
@@ -232,6 +227,13 @@ class ProductsController extends Controller {
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $productID = $request->getQuery('productID');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $userID=$request->getQuery('userID');
+        $activityLog= new ActivityLogsController();
+
+        $activityLog->create($userID,"get products ",$longitude,$latitude);
+
 
         $productQuery = "SELECT p.productID,p.productName,p.productImage,p.createdAt, c.categoryID,c.categoryName,p1.productID as mainProductID,p1.productName as mainProductName FROM product p JOIN category c ON p.categoryID = c.categoryID LEFT JOIN complement_product cp on p.productID=cp.complementaryProductID LEFT JOIN product p1 on cp.mainProductID = p1.productID";
         if (!$token) {

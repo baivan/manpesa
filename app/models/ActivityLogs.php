@@ -6,6 +6,8 @@ class ActivityLogs extends \Phalcon\Mvc\Model
     /**
      *
      * @var integer
+     * @Primary
+     * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
     public $activityLogsID;

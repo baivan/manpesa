@@ -60,6 +60,7 @@ class ItemsController extends Controller {
         if (!$token || !$serialNumber || !$productID || !$userID) {
             return $res->dataError("Missing data ");
         }
+
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
         if (!$tokenData) {
@@ -221,6 +222,7 @@ class ItemsController extends Controller {
 
     public function getAllItems() {
         $jwtManager = new JwtManager();
+        $activityLog= new ActivityLogsController();
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
@@ -229,6 +231,12 @@ class ItemsController extends Controller {
         $status = $request->getQuery('status');
         $action = $request->getQuery('action');
         $userID = $request->getQuery('userID');
+        $longitude=$request->getQuery('longitude');
+        $latitude=$request->getQuery('latitude');
+
+
+        $activityLog->create($userID,"get items ",$longitude,$latitude);
+
 
         if (!$token) {
             return $res->dataError("Token Missing");
@@ -364,7 +372,31 @@ class ItemsController extends Controller {
         return $res->success("product items", $data);
     }
 
-    
+    // public function getExportData(){
+    //     $jwtManager = new JwtManager();
+    //     $request = new Request();
+    //     $res = new SystemResponses();
+    //     $json = $request->getJsonRawBody();
+    //     $productID = $json->productID;
+    //     $token = $json->token;
+
+    //     if (!$token || !$productID ) {
+    //         return $res->dataError("Missing data ");
+    //     }
+    //     $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+
+    //     if (!$tokenData) {
+    //         return $res->dataError("Data compromised");
+    //     }
+
+    //     $selectQuery = "SELECT i.itemID,i.serialNumber,i.status,i.productID,i.createdAt,u.userID,"
+    //             . "co.fullName FROM item i LEFT JOIN user_items ui on i.itemID=ui.itemID "
+    //             . "LEFT JOIN users u ON ui.userID=u.userID LEFT JOIN contacts co on u.contactID=co.contactsID WHERE productID=$productID";
+
+
+
+
+    // }
  /*
     retrieve  sold items to be tabulated on crm
     parameters:
@@ -574,6 +606,7 @@ class ItemsController extends Controller {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
+        $activityLog= new ActivityLogsController();
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
@@ -581,7 +614,12 @@ class ItemsController extends Controller {
         $token = $json->token;
         $userID = $json->itemID;
         $itemID = $json->itemID;
+        $longitude = $json->longitude;
+        $latitude=$json->latitude;
         $status = $this->received;
+
+        $activityLog->create($userID,"receive item ",$longitude,$latitude);
+
 
         if (!$token || !$itemID || !$itemID || !$status) {
             return $res->dataError("Missing data ");
@@ -623,6 +661,7 @@ class ItemsController extends Controller {
         $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
+        $activityLog= new ActivityLogsController();
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
@@ -630,11 +669,16 @@ class ItemsController extends Controller {
         $token = $json->token;
         $userID = $json->itemID;
         $itemID = $json->itemID;
+        $longitude = $json->longitude;
+        $latitude=$json->latitude;
         $status = $this->received;
 
         if (!$token || !$itemID || !$itemID || !$status) {
             return $res->dataError("Missing data ");
         }
+
+        $activityLog->create($userID,"receive item ",$longitude,$latitude);
+
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
         if (!$tokenData) {
@@ -744,6 +788,8 @@ class ItemsController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $trasaction = new TransactionsController();
+        $activityLog= new ActivityLogsController();
+
 
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
@@ -752,6 +798,8 @@ class ItemsController extends Controller {
         $salesID = $json->salesID;
         $itemID = $json->itemID;
         $userID = $json->userID;
+        $longitude = $json->longitude;
+        $latitude=$json->latitude;
         $token = $json->token;
        
 
@@ -759,6 +807,7 @@ class ItemsController extends Controller {
             return $res->dataError("Missing data ");
         }
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
+        $activityLog->create($userID,"receive item ",$longitude,$latitude);
 
 
 
@@ -855,6 +904,7 @@ class ItemsController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $trasaction = new TransactionsController();
+        $activityLog= new ActivityLogsController();
 
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
@@ -863,12 +913,16 @@ class ItemsController extends Controller {
         $salesID = $json->salesID;
         $itemIDs = $json->itemID;
         $userID = $json->userID;
+        $longitude = $json->longitude;
+        $latitude=$json->latitude;
         $token = $json->token;
        
 
         if (!$token || !$salesID || !$itemIDs || !$userID) {
             return $res->dataError("Missing data ");
         }
+        $activityLog->create($userID,"receive item ",$longitude,$latitude);
+
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
          if (!$tokenData) {

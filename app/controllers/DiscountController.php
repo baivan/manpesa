@@ -26,7 +26,7 @@ class DiscountController extends Controller
 
     public function create() //{saleTypeID,productID,agents,discountTypeID,discountConditionID,discountMargin,discountAmount,startDate,endDate,status,token
     {
-    	$jwtManager = new JwtManager();
+        $jwtManager = new JwtManager();
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
@@ -47,7 +47,7 @@ class DiscountController extends Controller
 
 
        if(!$token || !$userID ||!$discountTypeID || !$saleTypeID ||!$productID || !$discountAmount || !$startDate || !$endDate ){
-        	return $res->dataError("Missing data ",false); 
+            return $res->dataError("Missing data ",false); 
         }
 
        /* $discount = Discount::findFirst(array("saleTypeID=:s_id: and productID = :p_id: and agents = :agents: ",
@@ -69,7 +69,7 @@ class DiscountController extends Controller
 
         try{
 
-		       if ($discount->save() === false) {
+               if ($discount->save() === false) {
                     $errors = array();
                     $messages = $discount->getMessages();
                     foreach ($messages as $message) {

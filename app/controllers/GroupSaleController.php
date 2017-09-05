@@ -45,11 +45,18 @@ class GroupSaleController extends Controller
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
+        $activityLog= new ActivityLogsController();
+
 
         $groupName = isset($json->groupName) ? $json->groupName : NULL;
         $MSISDN = isset($json->MSISDN)?$json->MSISDN:NULL;
         $userID = isset($json->userID)?$json->userID:NULL;
+        $longitude = $json->longitude;
+        $latitude = $json->latitude;
         $token = $json->token;
+
+        $activityLog->create($userID,"create or search group check groupName",$longitude,$latitude);
+
 
         if (!$token) {
             return $res->dataError("Token missing ",[]);
@@ -58,10 +65,11 @@ class GroupSaleController extends Controller
             return $res->dataError("data missing ", []);
         }
 
-        $group = GroupSale::findFirst("(groupName='$groupName' OR groupToken='$groupName')  AND status=0");
+        //$group = GroupSale::findFirst("(groupName='$groupName' OR groupToken='$groupName')  AND status=0");
+        $group = $this->rawSelect("SELECT * from group_sale WHERE (groupName='$groupName' OR groupToken='$groupName')  AND status=0");
 
-        if($group){
-            return $res->success("Group exists ",$group);
+        if($group[0]){
+            return $res->success("Group exists ",$group[0]);
         }
 
         try{
@@ -111,10 +119,13 @@ class GroupSaleController extends Controller
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
+        $activityLog= new ActivityLogsController();
 
         $groupName = isset($json->groupName) ? $json->groupName : NULL;
         $groupID = isset($json->groupID) ? $json->groupID : NULL;
         $MSISDN = isset($json->MSISDN)?$json->MSISDN:NULL;
+        $longitude = $json->longitude;
+        $latitude = $json->latitude;
         $token = $json->token;
 
         if (!$token) {
@@ -123,6 +134,9 @@ class GroupSaleController extends Controller
         if (!$MSISDN || !$groupID) {
             return $res->dataError("Group data missing ", []);
         }
+
+        $activityLog->create($userID,"Close group ",$longitude,$latitude);
+
 
         try{
              $groupSale = GroupSale::findFirst("groupID=$groupID");
@@ -146,9 +160,33 @@ class GroupSaleController extends Controller
 
                $dbTransaction->commit();
 
-              $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been closed successfully";
+               $groupDetails = $this->rawSelect("select sum(amount) as totalAmount,count(salesID) members from sales where groupID=$groupID");
+
+               $customerMessage ="";
+
+               if($groupDetails[0]['members']<5){
+                    $sales =  $this->rawSelect("SELECT * FROM sales WHERE groupID=$groupID");
+                    foreach ($sales as $sale) {
+                         $sale_o = Sales::findFirst("salesID=".$sale['salesID']);
+                         $sale_o->status=-2;
+                         if ($sale_o->save() === false) {
+                                $errors = array();
+                                $messages = $sale_o->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                 $res->dataError('sale_o expire failed sale: '.json_encode($sale_o), $errors);
+                            }
+                     }
+                $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been closed successfully. All sales has been deleted you didn't reach manimum number of 5.";
+               }
+               else{
+                $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been closed successfully. Pay Ksh.".$groupDetails[0]['totalAmount']+" to paybill 113941 ";
+               }
               $res->sendMessage($MSISDN, $customerMessage);
-              return $res->success("Group clossed successfully await payment ", $sale);
+              return $res->success("Group clossed successfully await payment ", $groupSale);
 
         }
         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -164,18 +202,24 @@ class GroupSaleController extends Controller
         $json = $request->getJsonRawBody();
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
+        $activityLog= new ActivityLogsController();
+
 
         $groupName = isset($json->groupName) ? $json->groupName : NULL;
         $groupID = isset($json->groupID) ? $json->groupID : NULL;
         $MSISDN = isset($json->MSISDN)?$json->MSISDN:NULL;
+        $longitude = $json->longitude;
+        $latitude = $json->latitude;
         $token = $json->token;
 
         if (!$token) {
             return $res->dataError("Token missing ",[]);
         }
-        if (!$MSISDN || $groupID) {
+        if (!$MSISDN || !$groupID) {
             return $res->dataError("Group data missing ", []);
         }
+        $activityLog->create($userID,"Abort group ",$longitude,$latitude);
+
 
         try{
              $groupSale = GroupSale::findFirst("groupID=$groupID");
@@ -198,10 +242,24 @@ class GroupSaleController extends Controller
               }
 
                $dbTransaction->commit();
-
-              $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been closed successfully";
+                   $sales =  $this->rawSelect("SELECT * FROM sales WHERE groupID=$groupID");
+                    foreach ($sales as $sale) {
+                         $sale_o = Sales::findFirst("salesID=".$sale['salesID']);
+                         $sale_o->status=-2;
+                         if ($sale_o->save() === false) {
+                                $errors = array();
+                                $messages = $sale_o->getMessages();
+                                foreach ($messages as $message) {
+                                    $e["message"] = $message->getMessage();
+                                    $e["field"] = $message->getField();
+                                    $errors[] = $e;
+                                }
+                                 $res->dataError('sale_o expire failed sale: '.json_encode($sale_o), $errors);
+                            }
+                     }
+              $customerMessage =$groupSale->groupName." (".$groupSale->groupToken.")"." has been aborted successfully. ";
               $res->sendMessage($MSISDN, $customerMessage);
-              return $res->success("Sale saved successfully, await payment ", $sale);
+              return $res->success("Sale saved successfully, await payment ", $groupSale);
 
         }
         catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
@@ -212,11 +270,11 @@ class GroupSaleController extends Controller
 
 
     public function expireGroup(){
-         $res = new SystemResponses();
-        $expiredGroupsQuery= "SELECT * FROM group_sale WHERE status=0 AND TIMESTAMPDIFF(HOUR,createdAt, now()) >= 1";
+        $res = new SystemResponses();
+        $expiredGroupsQuery= "SELECT * FROM group_sale WHERE TIMESTAMPDIFF(HOUR,createdAt, now()) >= 1";
         $groupSales = $this->rawSelect($expiredGroupsQuery);
 
-         $res->success('groupSales ',$groupSales);
+        $res->success('groupSales ',$groupSales);
         
         foreach ($groupSales as $groupSale) {
             $groupID = $groupSale['groupID'];
@@ -240,7 +298,7 @@ class GroupSaleController extends Controller
 
             //get and delete all sales associated with this group
             
-            $sales =  $this->select("SELECT * FROM sales WHERE groupID=$groupID");
+            $sales =  $this->rawSelect("SELECT * FROM sales WHERE status= AND groupID=$groupID");
             foreach ($sales as $sale) {
                  $sale_o = Sales::findFirst("salesID=".$sale['salesID']);
                  $sale_o->status=-2;
@@ -371,7 +429,7 @@ class GroupSaleController extends Controller
         $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
         $selectQuery .= $queryBuilder;
 
-       $res->success("Groups ".$selectQuery);
+     //  $res->success("Groups ".$selectQuery);
 
             $count = $this->rawSelect($countQuery);
              $groups = $this->rawSelect($selectQuery);
@@ -384,7 +442,6 @@ class GroupSaleController extends Controller
             $data["exportGroups"] =  $exportGroups;//$exportMessage;
         }
         else{
-             
              $data["exportGroups"] = "no data ".$isExport;
         }
         return $res->success("Groups ", $data);
@@ -413,6 +470,9 @@ class GroupSaleController extends Controller
 
         return "$groupClause $sortClause $limitQuery";
     }
+
+
+    
 
 }
 

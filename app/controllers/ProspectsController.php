@@ -187,6 +187,14 @@ class ProspectsController extends Controller {
         $token = $request->getQuery('token');
         $prospectID = $request->getQuery('prospectID');
         $userID = $request->getQuery('userID');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $timeToQuery = $request->getQuery('timeToQuery');
+        $activityLog= new ActivityLogsController();
+        $activityLog->create($userID,"get prospects ",$longitude,$latitude);
+
+       
+       
 
         if (!$token) {
             return $res->dataError("Missing data ");
@@ -212,6 +220,17 @@ class ProspectsController extends Controller {
         } elseif ($userID && $prospectID) {
             $prospectQuery = $prospectQuery . " WHERE p.userID=$userID AND p.prospectsID=$prospectID";
         }
+
+        if($timeToQuery>7){
+            $prospectQuery=$prospectQuery.' AND month(date(c.createdAt))=month(CURRENT_DATE()) ';
+        }
+        else if($timeToQuery==7){
+             $prospectQuery=$prospectQuery.' AND CURRENT_DATE()-date(c.createdAt) <=7 ';
+        }
+        else if($timeToQuery ==1){
+             $prospectQuery=$prospectQuery.' AND date(c.createdAt) = CURRENT_DATE() ';
+        }
+     $res->success("prospect query $prospectQuery");
 
 
         $prospects = $this->rawSelect($prospectQuery);

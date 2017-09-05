@@ -396,6 +396,8 @@ password
     public function login() {//usename, password
         $logPathLocation = $this->config->logPath->location . 'info.log';
         $logger = new FileAdapter($logPathLocation);
+        $activityLog= new ActivityLogsController();        
+
 
         $jwtManager = new JwtManager();
         $request = new Request();
@@ -405,6 +407,11 @@ password
         $username = $json->username;
         $password = $json->password;
         $token = $json->token;
+        $latitude = $json->latitude;
+        $longitude = $json->longitude;
+        
+        $activityLog->create(-1,"user $username pass $password Login request",$longitude,$latitude);
+
 
         if (!$username || !$password || !$token) {
             return $res->dataError("Login fields missing ");
@@ -446,7 +453,8 @@ password
                 ];
 
 
-
+               $activityLog->create($user->userID,"Login request",$longitude,$latitude);
+ 
                 return $res->success("login successful ", $data);
             }
             return $res->unProcessable("password missmatch ", $json);
@@ -530,10 +538,16 @@ app get user summary
 */
     public function userSummary() {
         $jwtManager = new JwtManager();
+        $activityLog= new ActivityLogsController();        
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $userID = $request->getQuery('userID');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $timeToQuery = $request->getQuery('timeToQuery');
+
+        $activityLog->create($userID,"User get summary",$longitude,$latitude);
 
         if (!$token || !$userID) {
             return $res->dataError("Missing data ");
@@ -545,58 +559,68 @@ app get user summary
             return $res->dataError("Data compromised");
         }
 
-       // $overalQuery = "SELECT SUM(amount) as amount, u.targetSale FROM `sales` s join users u on s.userID=u.userID WHERE s.userID=$userID";
-        $targetSaleQuery = "SELECT SUM(pp.price) as amount  from user_items ui join item i on ui.itemID = i.itemID JOIN product_sale_type_price pp on i.productID=pp.productID join sales_type st on pp.salesTypeID=st.salesTypeID where ui.userID=$userID and st.salesTypeName='cash' and i.status <=1";
-        $totalSalesQuery = "SELECT SUM(pp.price) as amount  from user_items ui join item i on ui.itemID = i.itemID JOIN product_sale_type_price pp on i.productID=pp.productID join sales_type st on pp.salesTypeID=st.salesTypeID where ui.userID=$userID and st.salesTypeName='cash' and (i.status =2 or i.status =5)";
-
-        $perSaleTypeQuery = "SELECT SUM(s.paid) as paid,SUM(s.amount) as totalAmount,st.salesTypeName from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st ON pp.salesTypeID=st.salesTypeID where paid > 0 and userID = $userID  GROUP BY st.salesTypeID";
-
-
-        $saleTypesQuery = "SELECT * FROM sales_type";
-        $saleTypes = $this->rawSelect($saleTypesQuery);
-        $targetSale = $this->rawSelect($targetSaleQuery);
-        $totalSales = $this->rawSelect($totalSalesQuery);
-        $saleTypesTotal = $this->rawSelect($perSaleTypeQuery);
         
 
-     
+       // $overalQuery = "SELECT SUM(amount) as amount, u.targetSale FROM `sales` s join users u on s.userID=u.userID WHERE s.userID=$userID";
+        $targetSaleQuery = "SELECT SUM(pp.price) as amount  from user_items ui join item i on ui.itemID = i.itemID JOIN product_sale_type_price pp on i.productID=pp.productID join sales_type st on pp.salesTypeID=st.salesTypeID where ui.userID=$userID and st.salesTypeName='cash' and i.status <=1";
+        $totalSalesQuery = "SELECT SUM(pp.price) as amount  from user_items ui join item i on ui.itemID = i.itemID JOIN product_sale_type_price pp on i.productID=pp.productID join sales_type st on pp.salesTypeID=st.salesTypeID where ui.userID=$userID and (i.status =2 or i.status =5)";
 
-        foreach ($saleTypes as $saleType) {
-            $salesTypeID = $saleType['salesTypeID'];
-            $saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID AND s.userID=$userID";
-            $typeData = $this->rawSelect($saleTypeQuery);
-            
-            $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
+        $perSaleTypeQuery = "SELECT count(s.salesID) as numberOfSales,SUM(s.paid) as paid,SUM(s.amount) as totalAmount,st.salesTypeName from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st ON pp.salesTypeID=st.salesTypeID where paid > 0 and s.status>0 and userID = $userID  ";
 
-            if (is_null($typeData[0]['amount'])) {
-                $data[$typeData[0]['salesTypeName']] = 0;
-            } else {
-                $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
-            }
+        $incompletePaygoQuery = "SELECT count(s.salesID) as incompletePaygo FROM sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st ON pp.salesTypeID=st.salesTypeID WHERE st.salesTypeName='Pay As you Go' AND s.status=1 and s.paid>0 and userID = $userID ";
+        $completePaygoQuery = "SELECT count(s.salesID) as completePaygo FROM sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st ON pp.salesTypeID=st.salesTypeID WHERE st.salesTypeName='Pay As you Go' AND s.status=2 and s.paid>0 and userID = $userID ";
+
+
+
+        if($timeToQuery>7){
+            //$timeToQuery = 'month(CURRENT_DATE())';
+            $targetSaleQuery = $targetSaleQuery.' and month(date(ui.createdAt))=month(CURRENT_DATE())';
+            $totalSalesQuery = $totalSalesQuery.' and month(date(ui.createdAt))=month(CURRENT_DATE())';
+            $perSaleTypeQuery = $perSaleTypeQuery.' and month(date(s.createdAt))=month(CURRENT_DATE()) ';
+            $incompletePaygoQuery = $incompletePaygoQuery.' and month(date(s.createdAt))=month(CURRENT_DATE())';
+            $completePaygoQuery = $completePaygoQuery.' and month(date(s.createdAt))=month(CURRENT_DATE()) ';
+
         }
+        else if($timeToQuery==7){
+             //$timeToQuery = '- CURRENT_DATE() <=7';
+            $targetSaleQuery = $targetSaleQuery.' and  CURRENT_DATE()-date(ui.createdAt) <=7';
+            $totalSalesQuery = $totalSalesQuery.' and  CURRENT_DATE()-date(ui.createdAt) <=7';
+            $perSaleTypeQuery = $perSaleTypeQuery.' and CURRENT_DATE()-date(s.createdAt) <=7 ';
+            $completePaygoQuery = $completePaygoQuery.' and CURRENT_DATE()-date(s.createdAt) <=7 ';
+            $incompletePaygoQuery = $incompletePaygoQuery.' and CURRENT_DATE()-date(s.createdAt) <=7 ';
+
+        }
+        else if($timeToQuery == 1){
+            // $timeToQuery = 'CURRENT_DATE()';
+            $targetSaleQuery = $targetSaleQuery.' and date(ui.createdAt) = CURRENT_DATE()';
+            $totalSalesQuery = $totalSalesQuery.' and date(ui.createdAt) = CURRENT_DATE()';
+            $perSaleTypeQuery = $perSaleTypeQuery.' and date(s.createdAt) = CURRENT_DATE() ';
+            $incompletePaygoQuery = $incompletePaygoQuery.' and date(s.createdAt) = CURRENT_DATE()';
+            $completePaygoQuery = $completePaygoQuery.' and date(s.createdAt) = CURRENT_DATE()';
+
+        }
+
+
+
+       
+        $targetSale = $this->rawSelect($targetSaleQuery);
+        $totalSales = $this->rawSelect($totalSalesQuery);
+        $saleTypesTotal = $this->rawSelect($perSaleTypeQuery." GROUP BY st.salesTypeID");    
+        $incompletePaygo = $this->rawSelect($incompletePaygoQuery);
+        $completePaygo = $this->rawSelect($completePaygoQuery); 
+
+        $res->success("incompletePaygo $incompletePaygoQuery \n completePaygo $completePaygoQuery \n saleTypesTotal $perSaleTypeQuery");
+
 
        $data = array('targetSale' => isset($targetSale[0]["amount"])?$targetSale[0]["amount"]:0,
         'totalSales' => isset($totalSales[0]["amount"])?$totalSales[0]["amount"]:0,
-        'saleTypesTotal' => $saleTypesTotal);
-
-       //after everyone has updated put off this
-
-       foreach ($saleTypes as $saleType) {
-            $salesTypeID = $saleType['salesTypeID'];
-            $saleTypeQuery = "SELECT SUM(s.amount) as amount,st.salesTypeName FROM `sales` s JOIN payment_plan pp on s.paymentPlanID = pp.paymentPlanID LEFT JOIN sales_type st on pp.salesTypeID=st.salesTypeID WHERE st.salesTypeID=$salesTypeID AND s.userID=$userID";
-            $typeData = $this->rawSelect($saleTypeQuery);
-            
-            $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
-
-            if (is_null($typeData[0]['amount'])) {
-                $data[$typeData[0]['salesTypeName']] = 0;
-            } else {
-                $data[$typeData[0]['salesTypeName']] = $typeData[0]['amount'];
-            }
-        }
+        'saleTypesTotal' => $saleTypesTotal,
+        'cashCommissionRate'=>450,'paygoCommissionRate'=>300,'futurePayGoCommissionRate'=>150,
+        'incompletePaygo'=>$incompletePaygo[0]['incompletePaygo'],'completePaygo'=>$completePaygo[0]['completePaygo']);
 
 
-        return $res->success("userSummary", $data);
+        return $res->success(" userSummary ", $data);
+
     }
 
 /*

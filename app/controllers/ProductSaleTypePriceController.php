@@ -201,12 +201,19 @@ class ProductSaleTypePriceController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $token = $request->getQuery('token');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $userID=$request->getQuery('userID');
+        $activityLog= new ActivityLogsController();
+
+
         $productSaleTypePriceID = $request->getQuery('productSaleTypePriceID');
 
 
         if (!$token) {
             return $res->dataError("Missing data ");
         }
+        $activityLog->create($userID,"get product sales price ",$longitude,$latitude);
 
         $tokenData = $jwtManager->verifyToken($token, 'openRequest');
 
@@ -237,15 +244,24 @@ class ProductSaleTypePriceController extends Controller {
         $request = new Request();
         $res = new SystemResponses();
         $json = $request->getJsonRawBody();
+        $activityLog= new ActivityLogsController();
+
         $token = $json->token;//$request->getQuery('token');
         //$productSaleTypePriceID = $json->productSaleTypePriceID;
         $userID = $json->userID;
         $saleTypeID = $json->saleTypeID;
         $products = $json->products;
+        $latitude=$json->latitude;
+        $longitude=$json->longitude;
+        $groupID = $json->groupID;
+
 
         if (!$token || !$userID || !$saleTypeID) {
             return $res->dataError("Missing data ");
         }
+
+        $activityLog->create($userID,"get sales ",$longitude,$latitude);
+
 
         $products = str_replace("]","",str_replace("[", "", $products));
         $products = explode(",",$products);
@@ -279,15 +295,16 @@ class ProductSaleTypePriceController extends Controller {
                 $discounts = $this->rawSelect($discountsQuery);
                 $app_discount_statement = array();
 
-
-
-
                 foreach ($discounts as $discount) {
                     $agents = $discount['agents'];
                     $discountID = $discount['discountID'];
                     $startDate = $discount['startDate'];
                     $endDate = $discount['endDate'];
                     $cur_date = date("Y-m-d H:i:s");
+
+                    if(!$groupID && strcasecmp($discount['discountTypeName'],'group')==0){
+                        continue;
+                    }
 
                     if($this->isDateBetweenDates($cur_date, $startDate, $endDate) == false){
                         $o_discount = Discount::findFirst(array("discountID=:id: ",
@@ -297,6 +314,7 @@ class ProductSaleTypePriceController extends Controller {
                        
                     }
                     else{
+
                             if (strcasecmp($agents, 'all') == 0 ){
                                  $discountStatement = $discount['productName'].': Reward of '.$discount['discountAmount'].' if '.$discount['discountTypeName'].' is '.$discount['conditionDescription'].' '.$discount['discountMargin'];
                                

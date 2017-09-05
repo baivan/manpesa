@@ -150,6 +150,14 @@ class SalesTypeController extends Controller
     	$res = new SystemResponses();
     	$token = $request->getQuery('token');
         $salesTypeID = $request->getQuery('salesTypeID');
+        $userID = $request->getQuery('userID');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $activityLog= new ActivityLogsController();
+
+
+        $activityLog->create($userID,"Get sales types ",$longitude,$latitude);
+       
 
         $salesTypeQuery = "SELECT * FROM sales_type WHERE status>0 ";
 
