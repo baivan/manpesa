@@ -361,7 +361,48 @@ class ReconcileController extends Controller
     }
 
 
+    //create a link between inbox and contacts for easier loading
+    public function contactInbox(){
+           $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
 
+            try {
+
+                $datas = $this->rawSelect("SELECT i.inboxID,c.contactsID FROM inbox i JOIN contacts c on i.MSISDN=c.workMobile");
+
+                foreach ($datas as $data) {
+                    $inbox = Inbox::findFirst("inboxID=".$data['inboxID']);
+                    $inbox->contactsID = $data['contactsID'];
+                    $inbox->save();
+                    if ($inbox->save() === false) {
+                          $errors = array();
+                          $messages = $inbox->getMessages();
+                          foreach ($messages as $message) {
+                              $e["message"] = $message->getMessage();
+                              $e["field"] = $message->getField();
+                              $errors[] = $e;
+                          }
+                       $res->dataError('inbox update error', $errors);
+                    }
+
+
+                  //  $res->success("inbox ".json_encode($inbox));
+                }
+
+                
+               $dbTransaction->commit();
+              return $res->success("inbox successfully", $datas);
+            }
+            catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+                 $message = $e->getMessage();
+              return $res->dataError('april sales   change error', $message);
+            }  
+
+    }
 
 }
 

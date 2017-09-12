@@ -323,6 +323,7 @@ $reconcile_route->get('redo', 'redoReconciledTransactions');
 $reconcile_route->get('march','reconcileMonthlySales');
 $reconcile_route->get('april','reconcileSaleWithContactTransaction');
 $reconcile_route->get('agent','reconcileAgentSales');
+$reconcile_route->get('inbox','contactInbox');
 $reconcile_route->get('all/contact/sales','reconcileAllContactSales');
 
 
@@ -351,7 +352,7 @@ $app->mount($condition_route);
 $app->mount($discount_route);
 $app->mount($discount_route);
 $app->mount($group_route);
-//$app->mount($reconcile_route);
+$app->mount($reconcile_route);
 
 
 try {

@@ -28,6 +28,13 @@ class Inbox extends \Phalcon\Mvc\Model
 
     /**
      *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=true)
+     */
+    public $contactsID;
+
+    /**
+     *
      * @var string
      * @Column(type="string", length=600, nullable=false)
      */
