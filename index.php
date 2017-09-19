@@ -314,6 +314,13 @@ $group_route->get('expire','expireGroup');
 $group_route->get('crm/all','getTableGroupSales');
 $group_route->post('crm/all','getTableGroupSales');
 
+$promotion_route = new MicroCollection();
+$promotion_route->setPrefix('/promotion/');
+$promotion_route->setHandler(new PromotionController());
+$promotion_route->post('create', 'create');
+$promotion_route->get('crm/all','getTablePromotions');
+$promotion_route->post('crm/all','getTablePromotions');
+
 
 
 $reconcile_route = new MicroCollection();
@@ -352,6 +359,7 @@ $app->mount($condition_route);
 $app->mount($discount_route);
 $app->mount($discount_route);
 $app->mount($group_route);
+$app->mount($promotion_route);
 $app->mount($reconcile_route);
 
 
