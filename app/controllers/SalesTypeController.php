@@ -220,8 +220,6 @@ class SalesTypeController extends Controller
 			$data["salesTypes"] = $salesTypes;
 
 			return $res->getSalesSuccess($data);
-
-
 	}
 
 	 /*
@@ -259,6 +257,44 @@ class SalesTypeController extends Controller
 		return $query;
 
 	}
+
+
+	 public function getSalesCategory(){
+        $jwtManager = new JwtManager();
+    	$request = new Request();
+    	$res = new SystemResponses();
+    	$token = $request->getQuery('token');
+        $saleCategoryID = $request->getQuery('saleCategoryID');
+        $userID = $request->getQuery('userID');
+        $longitude = $request->getQuery('longitude');
+        $latitude = $request->getQuery('latitude');
+        $activityLog= new ActivityLogsController();
+
+        $salesCatQuery = "SELECT * FROM sales_category";
+        $rewardTypesQuery = "SELECT * FROM reward_type";
+
+         if(!$token){
+        	return $res->dataError("Token Missing");
+        }
+
+        $tokenData = $jwtManager->verifyToken($token,'openRequest');
+
+	    if(!$tokenData){
+	        return $res->dataError("Data compromised");
+	      }
+
+        if($salesTypeID>0){
+        	$salesCatQuery = "SELECT * FROM sales_category WHERE saleCategoryID=$saleCategoryID";
+        }
+
+        $salesCat= $this->rawSelect($salesCatQuery);
+        $rewardTypes = $this->rawSelect($rewardTypesQuery);
+        $data['salesCategories'] = $salesCat;
+        $data['rewardTypes'] = $rewardTypes;
+
+		return $res->success("Sales categories",$data);
+    }
+
 
 
 

@@ -192,7 +192,7 @@ class PromotionController extends Controller
 
         $selectQuery = "SELECT p.promotionID,p.promotionName,p.startDate,p.endDate,p.status,sp.isPendingSale,sp.isPartnerSale,sp.isAgentSale,sp.isGroup,sp.saleCreatedAt,pp.productID,pp.isWarranted,pr.promotionRewardID,pr.rewardTypeID,pr.value,pr.hoursToExpire,p.createdAt ";
 
-        $baseQuery = "  FROM promotion p JOIN promotion_reward pr on p.promotionRewardID=pr.promotionRewardID JOIN product_promotion pp ON p.productPromotionID=pp.productPromotionID JOIN sale_promotion sp on p.salePromotionID=sp.salePromotionID JOIN reward_type rt on pr.rewardTypeID=rt.rewardTypeID";
+        $baseQuery = " FROM promotion p JOIN promotion_reward pr on p.promotionRewardID=pr.promotionRewardID JOIN product_promotion pp ON p.productPromotionID=pp.productPromotionID JOIN sale_promotion sp on p.salePromotionID=sp.salePromotionID JOIN reward_type rt on pr.rewardTypeID=rt.rewardTypeID";
 
 
         $whereArray = [
@@ -284,17 +284,102 @@ class PromotionController extends Controller
         return "$sortClause $limitQuery";
     }
 
-    public function offerPromotion(){ 
-        $salesQuery = "SELECT * FROM promotion ";
-        //get sale 
 
-        //check if there is a reword
+    public function activate(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+        $json = $request->getJsonRawBody();
 
-      }
+        $promotionID = isset($json->promotionID) ? $json->promotionID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
 
-      //give early repayment promotion
-      //give product promotion
-      //give partner sales discount
-      //give 
+
+        $promotion = Promotion::findFirst("promotionID = $promotionID");
+
+        if(!$promotion){
+            return $res->dataError("Promotion not found");
+        }
+
+        $promotion->status = 1;
+
+        if ($promotion->save() === false) {
+                $errors = array();
+                $messages = $promotion->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                
+             return $res->dataError('promotion activate error', $errors);
+            }
+
+            return $res->success("Promotion activated successfully");
+    }
+
+
+     public function deactivate(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+        $json = $request->getJsonRawBody();
+
+        $promotionID = isset($json->promotionID) ? $json->promotionID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
+
+
+        $promotion = Promotion::findFirst("promotionID = $promotionID");
+
+        if(!$promotion){
+            return $res->dataError("Promotion not found");
+        }
+
+        $promotion->status = 0;
+
+        if ($promotion->save() === false) {
+                $errors = array();
+                $messages = $promotion->getMessages();
+                foreach ($messages as $message) {
+                    $e["message"] = $message->getMessage();
+                    $e["field"] = $message->getField();
+                    $errors[] = $e;
+                }
+                
+             return $res->dataError('promotion deactivate error', $errors);
+            }
+
+            return $res->success("Promotion deactivated successfully");
+    }
+
+    public function getPromotion(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $transactionManager = new TransactionManager();
+        $dbTransaction = $transactionManager->get();
+        $json = $request->getJsonRawBody();
+
+        $promotionID = isset($json->promotionID) ? $json->promotionID : NULL;
+        $userID = isset($json->userID) ? $json->userID : NULL;
+        $token = isset($json->token) ? $json->token : NULL;
+
+
+        $promotion = Promotion::findFirst("promotionID = $promotionID");
+
+        if(!$promotion){
+            return $res->dataError('Pomotion not found');
+        }
+        else{
+            return $res->success("Promotion ",$promotion);
+        }
+    }
+
 }
 

@@ -1,6 +1,6 @@
 <?php
 
-class SalePromotion extends \Phalcon\Mvc\Model
+class SalesCategory extends \Phalcon\Mvc\Model
 {
 
     /**
@@ -10,56 +10,21 @@ class SalePromotion extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $salePromotionID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $isPendingSale;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $isPartnerSale;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $isAgentSale;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $isGroup;
+    public $saleCategoryID;
 
     /**
      *
      * @var string
-     * @Column(type="string", nullable=false)
+     * @Column(type="string", length=50, nullable=false)
      */
-    public $saleCreatedAt;
+    public $saleCategoryName;
 
     /**
      *
      * @var string
-     * @Column(type="string", nullable=false)
+     * @Column(type="string", length=150, nullable=true)
      */
-    public $saleCreatedStartDate;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", nullable=false)
-     */
-    public $saleCreatedEndDate;
+    public $description;
 
     /**
      *
@@ -82,14 +47,14 @@ class SalePromotion extends \Phalcon\Mvc\Model
      */
     public function getSource()
     {
-        return 'sale_promotion';
+        return 'sales_category';
     }
 
     /**
      * Allows to query a set of records that match the specified conditions
      *
      * @param mixed $parameters
-     * @return SalePromotion[]
+     * @return SalesCategory[]
      */
     public static function find($parameters = null)
     {
@@ -100,7 +65,7 @@ class SalePromotion extends \Phalcon\Mvc\Model
      * Allows to query the first record that match the specified conditions
      *
      * @param mixed $parameters
-     * @return SalePromotion
+     * @return SalesCategory
      */
     public static function findFirst($parameters = null)
     {

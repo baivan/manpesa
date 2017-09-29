@@ -404,7 +404,6 @@ class ReconcileController extends Controller
                  $message = $e->getMessage();
               return $res->dataError('april sales   change error', $message);
             }  
-
     }
 
 }

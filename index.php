@@ -144,6 +144,7 @@ $sale_type_route->post('create', 'create'); ////{salesTypeName,salesTypeDeposit}
 $sale_type_route->post('update', 'update'); //{salesTypeName,salesTypeDeposit,salesTypeID}
 $sale_type_route->post('all', 'getAll');
 $sale_type_route->get('all', 'getAll'); //getTableSaleTypes
+$sale_type_route->get('all/categories','getSalesCategory');
 $sale_type_route->post('crm/all', 'getTableSaleTypes');
 $sale_type_route->get('crm/all', 'getTableSaleTypes');
 
@@ -217,6 +218,7 @@ $transaction_route->post('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
+$transaction_route->get('recon/pending','mapCustomerTransaction');
 //$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'createDummy');
 $transaction_route->post('reconcilepayment', 'reconcilePayment'); //To reconcile unknown payments
@@ -318,6 +320,8 @@ $promotion_route = new MicroCollection();
 $promotion_route->setPrefix('/promotion/');
 $promotion_route->setHandler(new PromotionController());
 $promotion_route->post('create', 'create');
+$promotion_route->post('activate','activate');
+$promotion_route->post('deactivate','deactivate');
 $promotion_route->get('crm/all','getTablePromotions');
 $promotion_route->post('crm/all','getTablePromotions');
 

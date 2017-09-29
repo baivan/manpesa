@@ -180,9 +180,9 @@ class TransactionsController extends Controller {
     private function mapTransactionContact($nationalID,$mobileNumber){
         $res = new SystemResponses();
 
-        $matchBothQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber=$nationalID and workMobile=$mobileNumber";
-        $matchNationalIDQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber=$nationalID ";
-        $matchMobileQuery = "SELECT contactsID FROM contacts WHERE workMobile=$mobileNumber ";
+        $matchBothQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber='".$nationalID."' and workMobile='".$mobileNumber."'";
+        $matchNationalIDQuery = "SELECT contactsID FROM contacts WHERE nationalIdNumber='".$nationalID."' ";
+        $matchMobileQuery = "SELECT contactsID FROM contacts WHERE workMobile='".$mobileNumber ."'";
        
         if(substr($nationalID, 0, strlen('group')) === 'group' ){
             $contact = $this->rawSelect($matchMobileQuery);
@@ -1114,6 +1114,88 @@ class TransactionsController extends Controller {
 
 
         return true;
+    }
+
+
+
+    public function mapCustomerTransaction(){
+            $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
+
+            $transactions = $this->rawSelect("SELECT * FROM transaction WHERE transactionID not IN (SELECT transactionID FROM customer_transaction) ");
+            //return $res->success("payment received ", $transactions);
+
+            foreach ($transactions as $trans) {
+                
+                 $contactsID = $this->mapTransactionContact($trans['salesID'],$trans['mobile']);
+          
+              if ($contactsID) {
+                   $customerTransaction = new CustomerTransaction();
+                   $customerTransaction->transactionID = $trans['transactionID'];
+                   $customerTransaction->contactsID = $contactsID;
+                   $customerTransaction->createdAt = date("Y-m-d H:i:s");
+
+                  $customer = Customer::findFirst(array("contactsID=:id: ",
+                              'bind' => array("id" => $contactsID)));
+                  if ($customer) {
+                      $customerTransaction->customerID = $customer->customerID;
+                  }
+
+                  $prospect = Prospects::findFirst(array("contactsID=:id: ",
+                              'bind' => array("id" => $contactsID)));
+                  if ($prospect) {
+                      $customerTransaction->prospectsID = $prospect->prospectsID;
+                  }
+
+                  if ($customerTransaction->save() === false) {
+                      $errors = array();
+                      $messages = $customerTransaction->getMessages();
+                      foreach ($messages as $message) {
+                          $e["message"] = $message->getMessage();
+                          $e["field"] = $message->getField();
+                          $errors[] = $e;
+                      }
+                      $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                      $res->dataError('customer transaction create failed', $messages);
+                     // return $res->success("Payment received", TRUE);
+                  }
+
+                  //Find incomplete sales
+                  $depositAmount = floatval(str_replace(',', '', $depositAmount));
+                  if($depositAmount > 0){
+                      if(substr($accounNumber, 0, strlen('group')) === 'group' ){
+                          $remainingAmount = $this->distributeGroupTransaction($accounNumber,$depositAmount,$dbTransaction);
+                      }
+                      else{
+                          $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
+                      }
+                  }
+                 
+              } else {
+                  $unknown = new TransactionUnknown();
+                  $unknown->transactionID = $trans['transactionID'];
+                  $unknown->createdAt = date("Y-m-d H:i:s");
+
+                  if ($unknown->save() === false) {
+                      $errors = array();
+                      $messages = $unknown->getMessages();
+                      foreach ($messages as $message) {
+                          $e["message"] = $message->getMessage();
+                          $e["field"] = $message->getField();
+                          $errors[] = $e;
+                      }
+                      $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                      $res->dataError('customer transaction create failed', $messages);
+                  }
+              }
+            }
+             $dbTransaction->commit();
+
+            return $res->success("payment received ", $transactions);
     }
 
 
