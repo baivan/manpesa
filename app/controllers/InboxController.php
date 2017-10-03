@@ -129,12 +129,12 @@ class InboxController extends Controller {
 
                 if (!$ticketData) {
                     $ticket = new Ticket();
-                    $ticket->ticketTitle = "Warranty Activation";
-                    $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
+                    $ticket->ticketTitle = "New sms ticket";
+                    $ticket->ticketDescription = "SMS trigger from customer ";
                     $ticket->contactsID = $contactsID;
                     $ticket->otherOwner = $otherOwner;
                     $ticket->assigneeID = NULL;
-                    $ticket->ticketCategoryID = 5; // Warranty SMS ticket
+                    $ticket->ticketCategoryID = 9; // Inbox SMS ticket
                     $ticket->otherCategory = NULL;
                     $ticket->priorityID = 1; //High priority
                     $ticket->userID = NULL;
