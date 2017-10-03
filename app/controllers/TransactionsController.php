@@ -146,23 +146,28 @@ class TransactionsController extends Controller {
                 }
                 
             } else {
-                $unknown = new TransactionUnknown();
-                $unknown->transactionID = $transactionID;
-                $unknown->createdAt = date("Y-m-d H:i:s");
+                $unknown = TransactionUnknown::findFirst("transactionID = $transactionID ");
+                if(!$unknown){
+                    $unknown = new TransactionUnknown();
+                    $unknown->transactionID = $transactionID;
+                    $unknown->createdAt = date("Y-m-d H:i:s");
 
-                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
+                    $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
 
-                if ($unknown->save() === false) {
-                    $errors = array();
-                    $messages = $unknown->getMessages();
-                    foreach ($messages as $message) {
-                        $e["message"] = $message->getMessage();
-                        $e["field"] = $message->getField();
-                        $errors[] = $e;
+                    if ($unknown->save() === false) {
+                        $errors = array();
+                        $messages = $unknown->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                        $res->dataError('customer transaction create failed', $messages);
                     }
-                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                    $res->dataError('customer transaction create failed', $messages);
+
                 }
+                
             }
 
             $dbTransaction->commit();
@@ -1025,22 +1030,26 @@ class TransactionsController extends Controller {
                 }
                
             } else {
-                $unknown = new TransactionUnknown();
-                $unknown->transactionID = $transactionID;
-                $unknown->createdAt = date("Y-m-d H:i:s");
+                $unknown = TransactionUnknown::findFirst("transactionID = $transactionID ");
+                if(!$unknown){
+                    $unknown = new TransactionUnknown();
+                    $unknown->transactionID = $transactionID;
+                    $unknown->createdAt = date("Y-m-d H:i:s");
 
-                $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
+                    $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
 
-                if ($unknown->save() === false) {
-                    $errors = array();
-                    $messages = $unknown->getMessages();
-                    foreach ($messages as $message) {
-                        $e["message"] = $message->getMessage();
-                        $e["field"] = $message->getField();
-                        $errors[] = $e;
+                    if ($unknown->save() === false) {
+                        $errors = array();
+                        $messages = $unknown->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                        $res->dataError('customer transaction create failed', $messages);
                     }
-                    $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                    $res->dataError('customer transaction create failed', $messages);
+
                 }
             }
 
@@ -1176,21 +1185,25 @@ class TransactionsController extends Controller {
                   }
                  
               } else {
-                  $unknown = new TransactionUnknown();
-                  $unknown->transactionID = $trans['transactionID'];
-                  $unknown->createdAt = date("Y-m-d H:i:s");
+                 $unknown = TransactionUnknown::findFirst("transactionID = ".$trans['transactionID']);
+                 if(!$unknown){
+                      $unknown = new TransactionUnknown();
+                      $unknown->transactionID = $trans['transactionID'];
+                      $unknown->createdAt = date("Y-m-d H:i:s");
 
-                  if ($unknown->save() === false) {
-                      $errors = array();
-                      $messages = $unknown->getMessages();
-                      foreach ($messages as $message) {
-                          $e["message"] = $message->getMessage();
-                          $e["field"] = $message->getField();
-                          $errors[] = $e;
+                      if ($unknown->save() === false) {
+                          $errors = array();
+                          $messages = $unknown->getMessages();
+                          foreach ($messages as $message) {
+                              $e["message"] = $message->getMessage();
+                              $e["field"] = $message->getField();
+                              $errors[] = $e;
+                          }
+                          $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                          $res->dataError('customer transaction create failed', $messages);
                       }
-                      $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                      $res->dataError('customer transaction create failed', $messages);
-                  }
+                 }
+                  
               }
             }
              $dbTransaction->commit();

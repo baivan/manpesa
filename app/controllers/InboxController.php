@@ -70,13 +70,14 @@ class InboxController extends Controller {
             }
 
             //Generate warranty ticket
-
-            if (preg_match('/warant/', strtolower($message)) || preg_match('/warrant/', strtolower($message))) {
-                $contact = Contacts::findFirst(array("workMobile=:workMobile:",
-                            'bind' => array("workMobile" => $MSISDN)));
                 $contactsID = NULL;
                 $otherOwner = NULL;
                 $ticketData = NULL;
+
+            if (preg_match('/warant/', strtolower($message)) || preg_match('/warrant/', strtolower($message)) || preg_match('/waranty/', strtolower($message)) || preg_match('/warranty/', strtolower($message))  ) { 
+                $contact = Contacts::findFirst(array("workMobile=:workMobile:",
+                            'bind' => array("workMobile" => $MSISDN)));
+               
 
                 if ($contact) {
                     $contactsID = $contact->contactsID;
@@ -113,6 +114,45 @@ class InboxController extends Controller {
                         $res->dataError('ticket create failed', $errors);
                     }
                 }
+            }
+            else{
+
+                 if ($contact) {
+                    $contactsID = $contact->contactsID;
+                    $ticketData = Ticket::findFirst(array("contactsID=:contactsID: AND status=0",
+                                'bind' => array("contactsID" => $contactsID)));
+                } else {
+                    $otherOwner = $MSISDN;
+                    $ticketData = Ticket::findFirst(array("otherOwner=:otherOwner: AND status=0",
+                                'bind' => array("otherOwner" => $otherOwner)));
+                }
+
+                if (!$ticketData) {
+                    $ticket = new Ticket();
+                    $ticket->ticketTitle = "Warranty Activation";
+                    $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
+                    $ticket->contactsID = $contactsID;
+                    $ticket->otherOwner = $otherOwner;
+                    $ticket->assigneeID = NULL;
+                    $ticket->ticketCategoryID = 5; // Warranty SMS ticket
+                    $ticket->otherCategory = NULL;
+                    $ticket->priorityID = 1; //High priority
+                    $ticket->userID = NULL;
+                    $ticket->status = 0;
+                    $ticket->createdAt = date("Y-m-d H:i:s");
+
+                    if ($ticket->save() === false) {
+                        $errors = array();
+                        $messages = $ticket->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        $res->dataError('ticket create failed', $errors);
+                    }
+                }
+
             }
 
             $dbTransaction->commit();
@@ -164,7 +204,6 @@ class InboxController extends Controller {
         $selectQuery = "SELECT i.inboxID,i.MSISDN,i.message,i.createdAt,c.fullName,c.contactsID,co.customerID,p.prospectsID ";
 
         $baseQuery = "FROM inbox i LEFT JOIN contacts c on i.contactsID=c.contactsID LEFT JOIN customer co on c.contactsID=co.contactsID LEFT JOIN prospects p on c.contactsID = p.contactsID ";
-
 
         $whereArray = [
             'c.contactsID' => $contactsID,
