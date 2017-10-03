@@ -697,7 +697,7 @@ class SalesController extends Controller {
                 . "f.frequencyName,s.customerID, s.contactsID, s.prospectsID,c.fullName AS customerName, "
                 . "c.workMobile AS customerMobile, c.nationalIdNumber,c.location, s.productID, "
                 . "p.productName, s.userID,c1.fullName AS agentName, c1.workMobile AS agentMobile, "
-                ."s.amount, s.paid, s.status, s.createdAt,gs.groupToken,gs.groupID,gs.numberOfMembers,gs.expiredAt,gs.closedAt,gs.abortedAt ";
+                ."s.amount, s.paid, s.status, s.createdAt,gs.groupToken,gs.groupID,gs.numberOfMembers,gs.expiredAt,gs.closedAt,gs.abortedAt,d.discountAmount ";
 
      
         $defaultQuery = "FROM sales s LEFT JOIN payment_plan pp on s.paymentPlanID=pp.paymentPlanID "
@@ -705,7 +705,8 @@ class SalesController extends Controller {
                 . "ON pp.frequencyID=f.frequencyID "
                 . "LEFT JOIN contacts c on s.contactsID=c.contactsID LEFT JOIN product p "
                 . "ON s.productID=p.productID LEFT JOIN users u ON s.userID=u.userID "
-                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN group_sale gs ON s.groupID=gs.groupID";
+                . "LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN group_sale gs ON s.groupID=gs.groupID "
+                . "LEFT JOIN sale_discount sd on s.salesID=sd.salesID left join discount d on sd.discountID=d.discountID ";
 
         $whereArray = [
             's.status' => $status,
@@ -2339,7 +2340,6 @@ create new customers for contacts from old system who had made sales
         foreach ($sales as $sale) {
             $ticket = new Ticket();
             
-
             $ticket->ticketTitle="Welcome call ticket";
             $ticket->ticketDescription = "Customer bought three days ago";
             $ticket->contactsID = $sale['contactsID'];
@@ -2362,6 +2362,60 @@ create new customers for contacts from old system who had made sales
         }
 
         $res->success('Welcome call ticket created');
+    }
+
+    public function removePendingSales(){
+         $res = new SystemResponses();
+         $salesQuery = " SELECT * from sales s left join sales_item si on s.salesID=si.saleID left join customer cu on s.customerID=cu.customerID where s.status=0  AND date(s.createdAt)<= date(date_sub(now(), interval 1 week)) ";
+         $sales = $this->rawSelect($salesQuery);
+         foreach ($sales as $sale) {
+                  $o_sale = Sales::findFirst("salesID = ".$sale["salesID"]);
+                  $o_sale->status = -2;
+                  if ($o_sale->save() === false) {
+                    $errors = array();
+                    $messages = $o_sale->getMessages();
+                    foreach ($messages as $message) {
+                        $e["message"] = $message->getMessage();
+                        $e["field"] = $message->getField();
+                        $errors[] = $e;
+                    }
+                     $res->dataError('Pending sale delete failed '.json_encode($sale), $errors);
+                }
+                  $o_sale_item = SalesItem::findFirst("saleID = ".$sale["salesID"]);
+                  if($o_sale_item){
+                        $o_sale_item->status=-2;
+
+                         if ($o_sale_item->save() === false) {
+                            $errors = array();
+                            $messages = $o_sale_item->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
+                            }
+                             $res->dataError('Pending sale_item delete failed '.json_encode($sale), $errors);
+                        }
+
+                  }
+                  $o_item = Item::findFirst("itemID=".$sale["itemID"]);
+                 if($o_item){
+                      
+                      $o_item->status=0;
+                      if ($o_item->save() === false) {
+                        $errors = array();
+                        $messages = $o_item->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                         $res->dataError('Pending item return failed '.json_encode($sale), $errors);
+                    }
+                 }
+                  
+         }
+
+         return $res->success('Pending sales removed');
     }
 
 }

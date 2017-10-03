@@ -321,7 +321,7 @@ class ReconcileController extends Controller
                                     $o_sale->status=2;
                                      $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
                                   }
-                                  else if($totalDeposit >= $balance && $paid >0){
+                                  elseif($totalDeposit >= $balance && $paid >0 && $paid<$amount){
                                     if($balance <= 0 ){
                                       $o_sale->paid = $amount;
                                     }
@@ -331,6 +331,33 @@ class ReconcileController extends Controller
                                     $o_sale->status=2;
                                      $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
                                   }
+                                  elseif($totalDeposit >= $balance && $paid>$amount){
+                                      if($balance <= 0 ){
+                                          $o_sale->paid = $amount;
+                                        }
+                                        else{
+                                          $o_sale->paid = $paid+$balance;
+                                        }
+                                        $o_sale->status=2;
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+                                  elseif($totalDeposit < $balance && $paid>=$amount){
+                                        $o_sale->paid = $totalDeposit;
+                                        $o_sale->status=1;
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+                                  elseif($totalDeposit > $balance  && $paid>=$amount){
+                                       if($totalDeposit>$amount){
+                                           $o_sale->paid = $amount;
+                                           $o_sale->status=2;
+                                       }
+                                       elseif($totalDeposit<=$amount){
+                                           $o_sale->paid = $totalDeposit;
+                                           $o_sale->status=1;
+                                       }
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+
                               
                                 $totalDeposit = $totalDeposit - $amount;
                                 $res->dataError("status 2 $excess > 0 totalDeposit ", $totalDeposit);
@@ -342,12 +369,42 @@ class ReconcileController extends Controller
                                     $totalDeposit = $totalDeposit-$balance;
                                      $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
                                 }
+                                elseif($totalDeposit >= $balance && $paid>0){
+                                    if($balance<=0){
+                                       $o_sale->paid = $amount;
+                                    }
+                                    else{
+                                       $o_sale->paid = $paid+$balance;
+                                    }
+                              
+                                    $o_sale->status=2;
+                                    $totalDeposit = $totalDeposit-$balance;
+                                     $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                                }
+                               
                                 elseif($totalDeposit < $balance && $paid<=0){
-                                    $o_sale->paid = $paid + $totalDeposit;
+                                    $o_sale->paid = $totalDeposit;
                                     $o_sale->status = 1;
                                     $totalDeposit = 0;
                                     $res->dataError("$totalDeposit < $balance ", $totalDeposit);
                                 }
+                                elseif($totalDeposit < $balance && $paid>0){
+                                    $o_sale->paid = $totalDeposit;
+                                    $o_sale->status = 1;
+                                    $totalDeposit = 0;
+                                    $res->dataError("$totalDeposit < $balance ", $totalDeposit);
+                                }
+                                elseif($totalDeposit > $balance  && $paid>=$amount){
+                                       if($totalDeposit>$amount){
+                                           $o_sale->paid = $amount;
+                                           $o_sale->status=2;
+                                       }
+                                       elseif($totalDeposit<=$amount){
+                                           $o_sale->paid = $totalDeposit;
+                                           $o_sale->status=1;
+                                       }
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
                             }
 
                             if ($o_sale->save() === false) {
