@@ -321,6 +321,16 @@ class ReconcileController extends Controller
                                     $o_sale->status=2;
                                      $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
                                   }
+                                  else if($totalDeposit >= $balance && $paid >0){
+                                    if($balance <= 0 ){
+                                      $o_sale->paid = $amount;
+                                    }
+                                    else{
+                                      $o_sale->paid = $paid+$balance;
+                                    }
+                                    $o_sale->status=2;
+                                     $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
                               
                                 $totalDeposit = $totalDeposit - $amount;
                                 $res->dataError("status 2 $excess > 0 totalDeposit ", $totalDeposit);
