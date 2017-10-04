@@ -1183,6 +1183,8 @@ class TransactionsController extends Controller {
                           $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);
                       }
                   }
+
+                  $this->removeFromUknown($trans["transactionID"]);
                  
               } else {
                  $unknown = TransactionUnknown::findFirst("transactionID = ".$trans['transactionID']);
@@ -1209,6 +1211,27 @@ class TransactionsController extends Controller {
              $dbTransaction->commit();
 
             return $res->success("payment received ", $transactions);
+    }
+
+    private function removeFromUknown($transactionID){
+          $unknown = TransactionUnknown::findFirst("transactionID = ".$trans['transactionID']);
+          if($unknown){
+            $unknown->status=1;
+            if ($unknown->save() === false) {
+                          $errors = array();
+                          $messages = $unknown->getMessages();
+                          foreach ($messages as $message) {
+                              $e["message"] = $message->getMessage();
+                              $e["field"] = $message->getField();
+                              $errors[] = $e;
+                          }
+                          $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                          $res->dataError('customer transaction create failed', $messages);
+
+                      }
+          }
+
+          return true;
     }
 
 
