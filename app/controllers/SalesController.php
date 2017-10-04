@@ -2396,22 +2396,26 @@ create new customers for contacts from old system who had made sales
                              $res->dataError('Pending sale_item delete failed '.json_encode($sale), $errors);
                         }
 
+                        if(isset($sale["itemID"])){
+                            $o_item = Item::findFirst("itemID=".$sale["itemID"]);
+                                 if($o_item){
+                                      
+                                      $o_item->status=0;
+                                      if ($o_item->save() === false) {
+                                        $errors = array();
+                                        $messages = $o_item->getMessages();
+                                        foreach ($messages as $message) {
+                                            $e["message"] = $message->getMessage();
+                                            $e["field"] = $message->getField();
+                                            $errors[] = $e;
+                                        }
+                                         $res->dataError('Pending item return failed '.json_encode($sale), $errors);
+                                    }
+                                 }
+
+                          }
+                
                   }
-                  $o_item = Item::findFirst("itemID=".$sale["itemID"]);
-                 if($o_item){
-                      
-                      $o_item->status=0;
-                      if ($o_item->save() === false) {
-                        $errors = array();
-                        $messages = $o_item->getMessages();
-                        foreach ($messages as $message) {
-                            $e["message"] = $message->getMessage();
-                            $e["field"] = $message->getField();
-                            $errors[] = $e;
-                        }
-                         $res->dataError('Pending item return failed '.json_encode($sale), $errors);
-                    }
-                 }
                   
          }
 
