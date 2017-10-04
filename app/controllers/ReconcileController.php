@@ -346,15 +346,16 @@ class ReconcileController extends Controller
                                         $o_sale->status=1;
                                        $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
                                   }
-                                  elseif($totalDeposit > $balance  && $paid>=$amount){
-                                       if($totalDeposit>$amount){
+                                  elseif($totalDeposit > $balance && $paid>=$amount){
+                                       if($totalDeposit>=$amount){
                                            $o_sale->paid = $amount;
                                            $o_sale->status=2;
                                        }
-                                       elseif($totalDeposit<=$amount){
+                                       elseif($totalDeposit< $amount){
                                            $o_sale->paid = $totalDeposit;
                                            $o_sale->status=1;
                                        }
+
                                        $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
                                   }
 
@@ -395,7 +396,7 @@ class ReconcileController extends Controller
                                     $res->dataError("$totalDeposit < $balance ", $totalDeposit);
                                 }
                                 elseif($totalDeposit > $balance  && $paid>=$amount){
-                                       if($totalDeposit>$amount){
+                                       if($totalDeposit>=$amount){
                                            $o_sale->paid = $amount;
                                            $o_sale->status=2;
                                        }
