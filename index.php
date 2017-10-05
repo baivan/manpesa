@@ -308,7 +308,7 @@ $discount_route->post('deactivate','actionDiscount');
 
 $group_route = new MicroCollection();
 $group_route->setPrefix('/group/');
-$group_route->setHandler(new GroupSaleController());
+$group_route->setHandler(new GroupSaleController()); 
 $group_route->post('create', 'create');
 $group_route->post('close','closeGroup');
 $group_route->post('abort','abortGroup');
@@ -325,6 +325,13 @@ $promotion_route->post('activate','activate');
 $promotion_route->post('deactivate','deactivate');
 $promotion_route->get('crm/all','getTablePromotions');
 $promotion_route->post('crm/all','getTablePromotions');
+$promotion_route->get('crm/all/rewards','getPromotionTableRewards');
+$promotion_route->post('crm/all/rewards','getPromotionTableRewards');
+$promotion_route->get('detail','getPromotion');
+$promotion_route->post('update','update');
+$promotion_route->get('expire','expirePromotion');
+$promotion_route->get('offer','offerPromotion');
+$promotion_route->get('expire/reward','expireRewards');
 
 
 

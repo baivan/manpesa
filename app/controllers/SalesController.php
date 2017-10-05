@@ -2366,7 +2366,7 @@ create new customers for contacts from old system who had made sales
 
     public function removePendingSales(){
          $res = new SystemResponses();
-         $salesQuery = " SELECT * from sales s left join sales_item si on s.salesID=si.saleID left join customer cu on s.customerID=cu.customerID where s.status=0  AND date(s.createdAt)<= date(date_sub(now(), interval 1 week)) ";
+         $salesQuery = " SELECT * FROM sales s LEFT JOIN sales_item si on s.salesID=si.saleID LEFT JOIN customer cu on s.customerID=cu.customerID where s.status=0  AND date(s.createdAt)<= date(date_sub(now(), interval 1 week)) ";
          $sales = $this->rawSelect($salesQuery);
          foreach ($sales as $sale) {
                   $o_sale = Sales::findFirst("salesID = ".$sale["salesID"]);

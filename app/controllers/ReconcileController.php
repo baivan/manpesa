@@ -291,7 +291,7 @@ class ReconcileController extends Controller
 
           
             try {
-               $contactsQuery = "SELECT * from contacts";
+               $contactsQuery = "SELECT * FROM contacts";
                $contacts = $this->rawSelect($contactsQuery);
                foreach ($contacts as $contact) {
                    $contactsID = $contact['contactsID'];
@@ -472,6 +472,20 @@ class ReconcileController extends Controller
                  $message = $e->getMessage();
               return $res->dataError('april sales   change error', $message);
             }  
+    } 
+
+    public function reconcilePendingSales(){
+         $sales = $this->rawSelect("SELECT * FROM sales WHERE date(updatedAt)>=date(date_sub(now(), interval 1 week)) AND status=0");
+         if(!$sales){
+          return ;
+         }
+
+        foreach ($sales as $sale) {
+             $contact = Contacts::findFirst("contactsID=".$sale['contactsID']);
+             //get this contact sales
+             $sales = $this->rawSelect("SELECT * FROM sales WHERE $contactsID=".$sale['contactsID']." AND status>=0");
+
+        }
     }
 
 }
