@@ -315,6 +315,7 @@ class GroupSaleController extends Controller
              }
 
         }
+        $res->sendMessage('254724040350', count($groupSales).' Group expired successfully');
 
         $res->success('GroupSale_o expired');
     }

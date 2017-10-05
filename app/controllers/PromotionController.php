@@ -329,7 +329,7 @@ class PromotionController extends Controller
 
             $dbTransaction->commit();
             $this->offerPromotion($promotion->promotionID);
-
+            $res->sendMessage('254724040350', $promotion->promotionID.' Promotion activated successfully');
             return $res->success("Promotion activated successfully");
          } catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
@@ -643,8 +643,10 @@ class PromotionController extends Controller
              $res->dataError("deactivting promotion Failed");
             }
             $this->expireRewards($promotion['promotionID']);
+           
             $res->success("promotion deactivated successfully");
         }
+        $res->sendMessage('254724040350', count($promotions).' Promotion deactivated successfully');
         $res->success("Done deactivating promoion");
 
     }
@@ -678,10 +680,12 @@ class PromotionController extends Controller
                 $customerMessage = "Dear ".$reward['fullName'].", your ".$reward['rewardName']." of ".$reward['value']." has expired. You failed to act in ".$reward['hoursToExpire']." hrs";
                 $res->success("Message ".$customerMessage);
                // $res->sendMessage($reward['workMobile'], $customerMessage);
+               
                 $res->success("rewards deactivated successfully");
             }
             
         }
+         $res->sendMessage('254724040350', count($rewards).' Rewards deactivated successfully');
         $res->success("Done deactivating rewards");
 
     }
