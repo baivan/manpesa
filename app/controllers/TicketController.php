@@ -534,24 +534,39 @@ class TicketController extends Controller {
         $token = $request->getQuery('token') ? $request->getQuery('token') : '';
         $ticketID = $request->getQuery('ticketID') ? $request->getQuery('ticketID') : '';
 
+
+
         if (!$token) {
             return $res->dataError("Missing data ", []);
         }
 
+        if(!$ticketID){
+            return $res->dataError("Missing data ", []);
+        }
+
+       // $ticket = Ticket::findFirst("ticketID=$ticketID AND ticketCategoryID=9");
+
         $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, "
                 . "t.userID,c.fullName AS triggerName,t.contactsID, c1.fullName AS owner, "
                 . "t.otherOwner,t.assigneeID, c2.fullName AS assigneeName, c2.workMobile, c2.workEmail, t.ticketCategoryID,"
-                . "cat.ticketCategoryName, t.otherCategory, t.priorityID,p.priorityName, t.status, t.createdAt, t.updatedAt ";
+                . "cat.ticketCategoryName, t.otherCategory, t.priorityID,p.priorityName, t.status, t.createdAt, t.updatedAt, i.message,i.inboxID ";
 
         $baseQuery = "FROM ticket t "
                 . "LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c ON u.contactID=c.contactsID "
                 . "LEFT JOIN contacts c1 ON t.contactsID=c1.contactsID LEFT JOIN users u1 "
                 . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
                 . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
-                . "INNER JOIN priority p ON t.priorityID=p.priorityID ";
+                . "INNER JOIN priority p ON t.priorityID=p.priorityID LEFT JOIN inbox i on t.inboxID=i.inboxID ";
+
+
 
         $whereQuery = $ticketID ? "WHERE ticketID=$ticketID" : "";
+
         $ticketQuery = "$selectQuery $baseQuery $whereQuery";
+
+
+
+        $res->success("Query ".$ticketQuery);
 
         $tickets = $this->rawSelect($ticketQuery);
 
@@ -623,7 +638,7 @@ sends email notification on ticket create
         return "$sortClause $limitQuery";
     }
 
-    public function netPromoterTickets(){
+    public function netPromoterTickets(){ 
       /*  $file = $_SERVER['SCRIPT_FILENAME']; 
         $ps = "ps aux|grep -v grep|grep $file -c"; 
         $shell = shell_exec($ps); 

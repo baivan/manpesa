@@ -597,9 +597,6 @@ class TransactionsController extends Controller {
          $groupSales = $this->rawSelect("SELECT * FROM sales WHERE groupID=$groupID AND status>=0 ");
 
 
-
-
-
     }
 
     public function checkPayment() {//{token,salesID}

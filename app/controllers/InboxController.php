@@ -42,9 +42,11 @@ class InboxController extends Controller {
         $dbTransaction = $transactionManager->get();
 
         $MSISDN = $request->getQuery('sender');
-        $message = $request->getQuery('text');
+        $message = $request->getQuery('text'); 
         $shortCode = $request->getQuery('receiver');
         $receivedAt = $request->getQuery('when');
+
+        $res->success("SELECT contactsID FROM contacts where workMobile=$MSISDN");
 
         try {
             //get contact if exists
@@ -95,6 +97,7 @@ class InboxController extends Controller {
                     $ticket->ticketDescription = "SMS trigger from customer to activate warranty on a product item";
                     $ticket->contactsID = $contactsID;
                     $ticket->otherOwner = $otherOwner;
+                    $ticket->inboxID=$inbox->inboxID;
                     $ticket->assigneeID = NULL;
                     $ticket->ticketCategoryID = 5; // Warranty SMS ticket
                     $ticket->otherCategory = NULL;
@@ -132,7 +135,8 @@ class InboxController extends Controller {
                     $ticket->ticketTitle = "New sms ticket";
                     $ticket->ticketDescription = "SMS trigger from customer ";
                     $ticket->contactsID = $contactsID;
-                    $ticket->otherOwner = $otherOwner;
+                    $ticket->otherOwner = $MSISDN;
+                    $ticket->inboxID=$inbox->inboxID;
                     $ticket->assigneeID = NULL;
                     $ticket->ticketCategoryID = 9; // Inbox SMS ticket
                     $ticket->otherCategory = NULL;
