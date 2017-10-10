@@ -345,6 +345,11 @@ $reconcile_route->get('agent','reconcileAgentSales');
 $reconcile_route->get('inbox','contactInbox');
 $reconcile_route->get('all/contact/sales','reconcileAllContactSales');
 
+$reports_route = new MicroCollection();
+$reports_route->setPrefix('/reports/');
+$reports_route->setHandler(new ReportsController());
+$reports_route->get('paygosummary', 'paygoSalesSummary');
+
 
 $app->mount($user_route);
 $app->mount($item_route);
@@ -373,6 +378,7 @@ $app->mount($discount_route);
 $app->mount($group_route);
 $app->mount($promotion_route);
 $app->mount($reconcile_route);
+$app->mount($reports_route);
 
 
 try {
