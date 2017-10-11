@@ -219,7 +219,7 @@ $transaction_route->post('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/all', 'getTableTransactions');
 $transaction_route->get('crm/unknown', 'getTableUnknownPayments');
 $transaction_route->post('checkpayment', 'checkPayment');
-$transaction_route->get('recon/pending','mapCustomerTransaction');
+$transaction_route->get('recon/pending','mapCustomerTransaction'); 
 //$transaction_route->post('dummy/create', 'create'); //workMobile,nationalIdNumber,fullName,location
 //$transaction_route->get("dummy", 'createDummy');
 $transaction_route->post('reconcilepayment', 'reconcilePayment'); //To reconcile unknown payments
