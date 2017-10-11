@@ -1133,11 +1133,13 @@ class TransactionsController extends Controller {
             $dbTransaction = $transactionManager->get();
 
             $transactions = $this->rawSelect("SELECT * FROM transaction WHERE transactionID not IN (SELECT transactionID FROM customer_transaction) ");
-            //return $res->success("payment received ", $transactions);
+             $res->success("payment received ", $transactions);
 
             foreach ($transactions as $trans) {
                 
-                 $contactsID = $this->mapTransactionContact($trans['salesID'],$trans['mobile']);
+              $contactsID = $this->mapTransactionContact($trans['salesID'],$trans['mobile']);
+
+              $res->success("payment received ", $contactsID);
           
               if ($contactsID) {
                    $customerTransaction = new CustomerTransaction();
@@ -1211,23 +1213,26 @@ class TransactionsController extends Controller {
     }
 
     private function removeFromUknown($transactionID){
-          $unknown = TransactionUnknown::findFirst("transactionID = ".$trans['transactionID']);
-          if($unknown){
-            $unknown->status=1;
-            if ($unknown->save() === false) {
-                          $errors = array();
-                          $messages = $unknown->getMessages();
-                          foreach ($messages as $message) {
-                              $e["message"] = $message->getMessage();
-                              $e["field"] = $message->getField();
-                              $errors[] = $e;
+          if($transactionID){
+              $unknown = TransactionUnknown::findFirst("transactionID = ".$transactionID);
+              if($unknown){
+                $unknown->status=1;
+                if ($unknown->save() === false) {
+                              $errors = array();
+                              $messages = $unknown->getMessages();
+                              foreach ($messages as $message) {
+                                  $e["message"] = $message->getMessage();
+                                  $e["field"] = $message->getField();
+                                  $errors[] = $e;
+                              }
+                              $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
+                              $res->dataError('customer transaction create failed', $messages);
+
                           }
-                          $dbTransaction->rollback('customer transaction create failed' . json_encode($errors));
-                          $res->dataError('customer transaction create failed', $messages);
+              }
 
-                      }
           }
-
+          
           return true;
     }
 
