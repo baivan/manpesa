@@ -344,6 +344,7 @@ $reconcile_route->get('april','reconcileSaleWithContactTransaction');
 $reconcile_route->get('agent','reconcileAgentSales');
 $reconcile_route->get('inbox','contactInbox');
 $reconcile_route->get('all/contact/sales','reconcileAllContactSales');
+$reconcile_route->get('pending/sales','reconcilePendingSales');
 
 $reports_route = new MicroCollection();
 $reports_route->setPrefix('/reports/');

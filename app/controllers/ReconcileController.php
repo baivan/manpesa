@@ -474,7 +474,7 @@ class ReconcileController extends Controller
             }  
     } 
 
-    public function reconcilePendingSales(){
+  /*  public function reconcilePendingSales(){
          $sales = $this->rawSelect("SELECT * FROM sales WHERE date(updatedAt)>=date(date_sub(now(), interval 1 week)) AND status=0");
          if(!$sales){
           return ;
@@ -485,8 +485,172 @@ class ReconcileController extends Controller
              //get this contact sales
              $sales = $this->rawSelect("SELECT * FROM sales WHERE $contactsID=".$sale['contactsID']." AND status>=0");
 
-        }
+        } 
     }
+*/
+
+    public function reconcilePendingSales(){
+            $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+         $sales = $this->rawSelect("SELECT * from sales s where s.status=0 and  (datediff(now(),s.createdAt))<=5");
+         if(!$sales){
+          return $res->success();
+         }
+
+        foreach ($sales as $sale) {
+            $this->reconcileContactSalesWithTransactions($sale['contactsID']);
+        }
+
+        return $res->success("Reconciled successfully");
+    }
+
+    protected function reconcileContactSalesWithTransactions($contactsID){
+            $res = new SystemResponses();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
+
+            try {
+                   $matchedTransactionsQuery = "SELECT SUM(replace(t.depositAmount,',','')) as totalDeposit from customer_transaction ct JOIN transaction t on ct.transactionID=t.transactionID WHERE ct.contactsID=$contactsID ";
+                    $customerSalesQuery = "SELECT * FROM sales WHERE status>=0 and contactsID=$contactsID ORDER BY salesID ASC";
+
+
+                    $depositAmounts=$this->rawSelect($matchedTransactionsQuery);
+                    $sales = $this->rawSelect($customerSalesQuery);
+                    $totalDeposit =$depositAmounts[0]['totalDeposit'];
+
+                     $res->dataError("testing  ".json_encode($sales));
+
+                    foreach ($sales as $sale) {
+                        $status = $sale['status'];
+                        $amount = $sale['amount'];
+                        $salesID = $sale['salesID'];
+                        $paid = $sale['paid'];
+
+                        $res->dataError("testing  ".$sale);
+
+                        $balance = $amount - $paid;
+                        $excess = $totalDeposit - $balance;
+                        $o_sale = Sales::findFirst(array("salesID=:id: ",
+                                    'bind' => array("id" => $salesID)));
+                        if($totalDeposit > 0){
+                            if($status == 2){
+                                 if($totalDeposit >= $balance && $paid <=0){
+                                    $o_sale->paid = $paid+$balance;
+                                    $o_sale->status=2;
+                                     $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                                  }
+                                  elseif($totalDeposit >= $balance && $paid >0 && $paid<$amount){
+                                    if($balance <= 0 ){
+                                      $o_sale->paid = $amount;
+                                    }
+                                    else{
+                                      $o_sale->paid = $paid+$balance;
+                                    }
+                                    $o_sale->status=2;
+                                     $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+                                  elseif($totalDeposit >= $balance && $paid>$amount){
+                                      if($balance <= 0 ){
+                                          $o_sale->paid = $amount;
+                                        }
+                                        else{
+                                          $o_sale->paid = $paid+$balance;
+                                        }
+                                        $o_sale->status=2;
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+                                  elseif($totalDeposit < $balance && $paid>=$amount){
+                                        $o_sale->paid = $totalDeposit;
+                                        $o_sale->status=1;
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+                                  elseif($totalDeposit > $balance && $paid>=$amount){
+                                       if($totalDeposit>=$amount){
+                                           $o_sale->paid = $amount;
+                                           $o_sale->status=2;
+                                       }
+                                       elseif($totalDeposit< $amount){
+                                           $o_sale->paid = $totalDeposit;
+                                           $o_sale->status=1;
+                                       }
+
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+
+                              
+                                $totalDeposit = $totalDeposit - $amount;
+                                $res->dataError("status 2 $excess > 0 totalDeposit ", $totalDeposit);
+                            }
+                           elseif($status == 1 || $status == 0){//&& $paid >0 && $amount != $paid){
+                                if($totalDeposit >= $balance && $paid<=0){
+                                    $o_sale->paid = $paid+$balance;
+                                    $o_sale->status=2;
+                                    $totalDeposit = $totalDeposit-$balance;
+                                     $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                                }
+                                elseif($totalDeposit >= $balance && $paid>0){
+                                    if($balance<=0){
+                                       $o_sale->paid = $amount;
+                                    }
+                                    else{
+                                       $o_sale->paid = $paid+$balance;
+                                    }
+                              
+                                    $o_sale->status=2;
+                                    $totalDeposit = $totalDeposit-$balance;
+                                     $res->dataError("$totalDeposit >= $balance ", $totalDeposit);
+                                }
+                               
+                                elseif($totalDeposit < $balance && $paid<=0){
+                                    $o_sale->paid = $totalDeposit;
+                                    $o_sale->status = 1;
+                                    $totalDeposit = 0;
+                                    $res->dataError("$totalDeposit < $balance ", $totalDeposit);
+                                }
+                                elseif($totalDeposit < $balance && $paid>0){
+                                    $o_sale->paid = $totalDeposit;
+                                    $o_sale->status = 1;
+                                    $totalDeposit = 0;
+                                    $res->dataError("$totalDeposit < $balance ", $totalDeposit);
+                                }
+                                elseif($totalDeposit > $balance  && $paid>=$amount){
+                                       if($totalDeposit>=$amount){
+                                           $o_sale->paid = $amount;
+                                           $o_sale->status=2;
+                                       }
+                                       elseif($totalDeposit<=$amount){
+                                           $o_sale->paid = $totalDeposit;
+                                           $o_sale->status=1;
+                                       }
+                                       $res->dataError("$totalDeposit >= $balance  and paid $paid", $totalDeposit);
+                                  }
+                            }
+
+                            if ($o_sale->save() === false) {
+                                    $errors = array();
+                                    $messages = $o_sale->getMessages();
+                                    foreach ($messages as $message) {
+                                        $e["message"] = $message->getMessage();
+                                        $e["field"] = $message->getField();
+                                        $errors[] = $e;
+                                    }
+                                 $res->dataError('Sale update new sale  failed to match', $errors);
+                           }
+                        }
+                        
+               }
+               $dbTransaction->commit();
+              return $res->success("march sales   updated successfully", $sales);
+            }
+               catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+                 $message = $e->getMessage();
+              return $res->dataError('april sales   change error', $message);
+            }
+    }
+
+
 
 }
 

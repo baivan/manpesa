@@ -132,6 +132,9 @@ class UsersController extends Controller {
                     } else if ($agentNumber == 2) {
                         $agentNumber = 'isa';
                     }
+                    elseif ($agentNumber=3) {
+                        $agentNumber = 'tsa';
+                    }
 
                     $agentNumber = $this->generateAgentCode($agentNumber, $roleID);
                 } else {
