@@ -102,6 +102,7 @@ $sale_route->post('all/v2','getSalesV2');
 $sale_route->get('crm/items', 'getCRMSaleItems');
 $sale_route->post('crm/all', 'getTableSales');
 $sale_route->get('crm/all', 'getTableSales');
+$sale_route->get('paygo/crm/all','getTablePaygoSales');
 $sale_route->get('crm/pending', 'getTablePendingSales');
 $sale_route->get('crm/partners', 'getTablePartnerSales');
 $sale_route->post('crm/reconcile', 'reconcileSales');
@@ -194,7 +195,7 @@ $customer_route->post('update', 'update');
 $customer_route->post('delete', 'delete');
 $customer_route->get('convert','falseCustomers');
 
-$user_item_route = new MicroCollection();
+$user_item_route = new MicroCollection(); 
 $user_item_route->setPrefix('/userItem/');
 $user_item_route->setHandler(new UserItemsController());
 $user_item_route->post('crm/all', 'getTableUserItems');

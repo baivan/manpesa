@@ -834,13 +834,125 @@ class SalesController extends Controller {
                 $data["sales"] = $displaySales;
 
         }
-
+ 
         else{
              $data["totalSales"] = $count[0]['totalSales'];
             $data["sales"] = $displaySales;
         }
 
     
+
+        return $res->success("Sales ", $data);
+    }
+
+
+    /*
+    retrieve  paygo sales to be tabulated on crm
+    parameters:
+    sort (field to be used in order condition),
+    order (either asc or desc),
+    page (current table page),
+    limit (total number of items to be retrieved),
+    filter (to be used on where statement)
+    */
+
+    public function getTablePaygoSales() { //sort, order, page, limit,filter,userID
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $userID = $request->getQuery('userID');
+        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 'salesID';
+        $order = $request->getQuery('order') ? $request->getQuery('order') : 'ASC';
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+        $status = $request->getQuery('status');
+        $salesID = $request->getQuery('salesID');
+        $contactsID = $request->getQuery('contactsID');
+        $startDate = $request->getQuery('start');
+        $endDate = $request->getQuery('end'); 
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+        
+
+        $countQuery = "SELECT count(DISTINCT s.salesID) as totalSales ";
+
+
+        $selectQuery = "SELECT s.salesID, c.fullName,(s.amount-s.paid) as amountOwing,c.location,c.workMobile,s.createdAt,s.amount,pp.paymentPlanDeposit as depositPaid,s.amount-pp.paymentPlanDeposit as netAmount,datediff(now(),s.createdAt) as timeLapse,s.paid,s.status,CASE WHEN s.productID ='[2]' THEN 35 WHEN s.productID ='2' THEN 35 WHEN s.productID ='[4]' THEN 35 WHEN s.productID ='4' THEN 35 WHEN s.productID ='[3]' THEN 25 WHEN s.productID ='3' THEN 25 ELSE 0 END rate ";
+
+                /*
+SELECT c.fullName,(s.amount-s.paid) as amountOwing,c.createdAt,s.amount,pp.paymentPlanDeposit as depositPaid,s.amount-pp.paymentPlanDeposit as netAmount,datediff(now(),s.createdAt) as timeLapse,s.paid,s.status,CASE WHEN s.productID ='[2]' THEN 35 WHEN s.productID ='2' THEN 35 WHEN s.productID ='[4]' THEN 35 WHEN s.productID ='4' THEN 35 WHEN s.productID ='[3]' THEN 25 WHEN s.productID ='3' THEN 25 ELSE 0 END rate  from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID  join contacts c on s.contactsID=c.contactsID where  pp.salesTypeID=2  and s.status>=0
+                */
+
+      
+        $defaultQuery = "  FROM sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID  join contacts c on s.contactsID=c.contactsID where  pp.salesTypeID=2  and s.status>=0 ";
+
+        $whereArray = [
+            'filter' => $filter,
+            's.salesID' => $salesID,
+            's.contactsID' => $contactsID,
+            's.userID' => $userID,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $whereQuery = " AND ";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['c.fullName', 'c.workMobile',];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(s.createdAt) BETWEEN '$value[0]' AND '$value[1]' ";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, "AND ");
+        }
+      
+
+        $countQuery = $countQuery . $defaultQuery . $whereQuery;
+        $selectQuery = $selectQuery . $defaultQuery . $whereQuery;
+        $exportQuery = $selectQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+        //$res->success($selectQuery);
+
+
+        $count = $this->rawSelect($countQuery);
+        $sales = $this->rawSelect($selectQuery);
+    
+
+        if($isExport){
+                $exportSales = $this->rawSelect($exportQuery);
+              // $res->success($selectQuery);
+                $data["exportSales"] = $exportSales;
+                
+        }
+
+       
+             $data["totalSales"] = $count[0]['totalSales'];
+            $data["sales"] = $sales;
+        
 
         return $res->success("Sales ", $data);
     }
