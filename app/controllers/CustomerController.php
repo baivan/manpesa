@@ -565,7 +565,7 @@ class CustomerController extends Controller {
             $whereQuery = chop($whereQuery, " AND");
         }
 
-        $whereQuery = $whereQuery ? "WHERE c.status=1 AND $whereQuery " : " WHERE c.status=1 ";
+        $whereQuery = $whereQuery ? "WHERE c.status=1 AND $whereQuery AND datediff(now(),c.createdAt)>30" : " WHERE c.status=1 AND datediff(now(),c.createdAt)>30 ";
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
