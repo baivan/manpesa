@@ -56,6 +56,10 @@ class CallController extends Controller {
         $comment = isset($json->comment) ? $json->comment : NULL;
         $callback = !empty(trim($json->callback)) ? $json->callback : NULL;
 
+        $agentBehaviourComment = !empty(trim($json->agentBehaviourComment)) ? $json->agentBehaviourComment : NULL;
+        $overalExperienceComment = !empty(trim($json->overalExperienceComment)) ? $json->overalExperienceComment : NULL;
+        $recomendationComment = !empty(trim($json->recomendationComment)) ? $json->recomendationComment : NULL;
+
         $previousTool = $json->previousTool ? $json->previousTool : NULL;
         $promoterID = $json->promoterID ? $json->promoterID : NULL;
         $customerComment = $json->customerComment ? $json->customerComment : NULL;
@@ -67,6 +71,7 @@ class CallController extends Controller {
         $deliveryRating = $json->deliveryRating ? (int) $json->deliveryRating : NULL;
         $deliveryReason = $json->deliveryReason ? $json->deliveryReason : NULL;
         $overalExperience = $json->overalExperience ? (int) $json->overalExperience : NULL;
+
 
         if (!$token || !$callTypeID || !$userID || (!$contactsID && !$recipient)) {
             return $res->dataError("Fields missing ", []);
@@ -112,10 +117,14 @@ class CallController extends Controller {
                             $promoterScore->productExperience = $productExperience;
                             $promoterScore->recommendation = $recommendation;
                             $promoterScore->referralScheme = $referralScheme;
+                            $promoterScore->agentBehaviourComment = $agentBehaviourComment;
+                            $promoterScore->overalExperienceComment = $overalExperienceComment;
+                            $promoterScore->recomendationComment = $recomendationComment;
+                            
                         }
                     }
                 } else {
-                    $promoterScore = new PromoterScore();
+                    $promoterScore = new PromoterScore(); 
                     if ($promoterID) {
                         $promoterScore->previousTool = $previousTool;
                         $promoterScore->promoterID = $promoterID;
@@ -130,6 +139,9 @@ class CallController extends Controller {
                         $promoterScore->recommendation = $recommendation;
                         $promoterScore->referralScheme = $referralScheme;
                     }
+                    $promoterScore->agentBehaviourComment = $agentBehaviourComment;
+                    $promoterScore->overalExperienceComment = $overalExperienceComment;
+                    $promoterScore->recomendationComment = $recomendationComment;
 
                     $promoterScore->userID = $userID;
                     $promoterScore->contactsID = $contactsID;

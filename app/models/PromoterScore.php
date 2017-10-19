@@ -1,6 +1,7 @@
 <?php
 
-class PromoterScore extends \Phalcon\Mvc\Model {
+class PromoterScore extends \Phalcon\Mvc\Model
+{
 
     /**
      *
@@ -21,16 +22,37 @@ class PromoterScore extends \Phalcon\Mvc\Model {
     /**
      *
      * @var integer
-     * @Column(type="integer", length=11, nullable=false)
+     * @Column(type="integer", length=11, nullable=true)
      */
     public $promoterID;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=150, nullable=true)
+     * @Column(type="string", length=500, nullable=true)
      */
     public $comment;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=500, nullable=true)
+     */
+    public $agentBehaviourComment;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=500, nullable=true)
+     */
+    public $overalExperienceComment;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=500, nullable=true)
+     */
+    public $recomendationComment;
 
     /**
      *
@@ -70,7 +92,7 @@ class PromoterScore extends \Phalcon\Mvc\Model {
     /**
      *
      * @var string
-     * @Column(type="string", length=150, nullable=true)
+     * @Column(type="string", length=200, nullable=true)
      */
     public $productExperience;
 
@@ -107,7 +129,8 @@ class PromoterScore extends \Phalcon\Mvc\Model {
      *
      * @return string
      */
-    public function getSource() {
+    public function getSource()
+    {
         return 'promoter_score';
     }
 
@@ -115,9 +138,10 @@ class PromoterScore extends \Phalcon\Mvc\Model {
      * Allows to query a set of records that match the specified conditions
      *
      * @param mixed $parameters
-     * @return Outbox[]
+     * @return PromoterScore[]
      */
-    public static function find($parameters = null) {
+    public static function find($parameters = null)
+    {
         return parent::find($parameters);
     }
 
@@ -125,9 +149,10 @@ class PromoterScore extends \Phalcon\Mvc\Model {
      * Allows to query the first record that match the specified conditions
      *
      * @param mixed $parameters
-     * @return Outbox
+     * @return PromoterScore
      */
-    public static function findFirst($parameters = null) {
+    public static function findFirst($parameters = null)
+    {
         return parent::findFirst($parameters);
     }
 
