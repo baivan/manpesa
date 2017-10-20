@@ -320,7 +320,7 @@ class ProspectsController extends Controller {
         }
 
 
-        $whereQuery = $whereQuery ? " WHERE datediff(now(),co.createdAt)>30 AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 "; 
+        $whereQuery = $whereQuery ? " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID "; 
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
