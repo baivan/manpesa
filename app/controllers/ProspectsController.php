@@ -268,6 +268,7 @@ class ProspectsController extends Controller {
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
         $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+        $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
 
 
         $countQuery = "SELECT count(prospectsID) as totalProspects ";
@@ -285,7 +286,7 @@ class ProspectsController extends Controller {
 
         $whereQuery = "";
 
-        foreach ($whereArray as $key => $value) {
+        foreach ($whereArray as $key => $value) { 
 
             if ($key == 'filter') {
                 $searchColumns = ['co.fullName', 'co.nationalIdNumber', 'co.workMobile', 'co.location'];
@@ -319,7 +320,7 @@ class ProspectsController extends Controller {
         }
 
 
-        $whereQuery = $whereQuery ? "WHERE datediff(now(),co.createdAt)>30 AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 "; 
+        $whereQuery = $whereQuery ? " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 "; 
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;

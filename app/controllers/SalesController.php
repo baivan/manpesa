@@ -874,9 +874,7 @@ class SalesController extends Controller {
         $endDate = $request->getQuery('end'); 
         $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
         
-
         $countQuery = "SELECT count(DISTINCT s.salesID) as totalSales ";
-
 
         $selectQuery = "SELECT s.salesID, c.fullName,(s.amount-s.paid) as amountOwing,c.contactsID,s.customerID,c.location,c.workMobile,s.createdAt,s.amount,pp.paymentPlanDeposit as depositPaid,s.amount-pp.paymentPlanDeposit as netAmount,datediff(now(),s.createdAt) as timeLapse,s.paid,s.status,CASE WHEN s.productID ='[2]' THEN 35 WHEN s.productID ='2' THEN 35 WHEN s.productID ='[4]' THEN 35 WHEN s.productID ='4' THEN 35 WHEN s.productID ='[3]' THEN 25 WHEN s.productID ='3' THEN 25 ELSE 0 END rate ";
 
