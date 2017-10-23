@@ -132,7 +132,7 @@ class UsersController extends Controller {
                     } else if ($agentNumber == 2) {
                         $agentNumber = 'isa';
                     }
-                    elseif ($agentNumber=3) {
+                    else if ($agentNumber == 3) {
                         $agentNumber = 'tsa';
                     }
 
@@ -205,7 +205,7 @@ class UsersController extends Controller {
         $transactionManager = new TransactionManager();
         $dbTransaction = $transactionManager->get();
 
-//        $logger->log('Update Request Data: ' . json_encode($json));
+       $logger->log('Update Request Data: ' . json_encode($json));
 
         $homeMobile = isset($json->homeMobile) ? $json->homeMobile : NULL;
         $homeEmail = isset($json->homeEmail) ? $json->homeEmail : NULL;
@@ -364,7 +364,17 @@ class UsersController extends Controller {
             }
 
             if ($agentNumber) {
-                $user->agentNumber = $agentNumber;
+                //$user->agentNumber = $agentNumber;
+
+                 if ($agentNumber == 1) {
+                        $agentNumber = 'dsr';
+                    } else if ($agentNumber == 2) {
+                        $agentNumber = 'isa';
+                    }
+                    else if ($agentNumber == 3) {
+                        $agentNumber = 'tsa';
+                    }
+                $user->agentNumber = substr_replace($user->agentNumber,$agentNumber,0,3);
             }
 
             $user->contactID = $contactsID;

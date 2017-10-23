@@ -351,6 +351,7 @@ $reports_route = new MicroCollection();
 $reports_route->setPrefix('/reports/');
 $reports_route->setHandler(new ReportsController());
 $reports_route->get('paygosummary', 'paygoSalesSummary');
+$reports_route->get('salesreport','salesReports');
 
 
 $app->mount($user_route);

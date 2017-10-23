@@ -92,6 +92,35 @@ class ReportsController extends Controller {
 
 		 
 	}
+
+	public function salesReports(){
+		   $jwtManager = new JwtManager();
+	        $request = new Request();
+	        $res = new SystemResponses();
+	        $token = $request->getQuery('token');
+            
+
+			$threeMonths = $this->rawSelect("SELECT  st.salesTypeName,COUNT(s.salesID) as units from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where month(now())-month(s.createdAt) =3 AND s.status>0 group by st.salesTypeID");
+			$twoMonths = $this->rawSelect("SELECT  st.salesTypeName,COUNT(s.salesID) as units from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where month(now())-month(s.createdAt)=2 AND s.status>0 group by st.salesTypeID");
+			$lastMonth = $this->rawSelect("SELECT  st.salesTypeName,COUNT(s.salesID) as units from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where month(now())-month(s.createdAt) =1 AND s.status>0 group by st.salesTypeID");
+
+			$monthToDate = $this->rawSelect("SELECT  st.salesTypeName,COUNT(s.salesID) as units from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where month(now())=month(s.createdAt) AND s.status>0 group by st.salesTypeID");
+
+			$thisWeek = $this->rawSelect("SELECT  st.salesTypeName,COUNT(s.salesID) as units from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where date(now())-date(s.createdAt)=7 AND s.status>0 group by st.salesTypeID");
+
+			$today = $this->rawSelect("SELECT  st.salesTypeName,COUNT(s.salesID) as units from sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID JOIN sales_type st on pp.salesTypeID=st.salesTypeID where date(now())=date(s.createdAt) AND s.status>0 group by st.salesTypeID");
+
+			$data['threeMonths'] = $threeMonths;
+			$data['twoMonths'] = $twoMonths;
+			$data['lastMonth'] = $lastMonth;
+			$data['monthToDate'] = $monthToDate;
+			$data['thisWeek'] = $thisWeek;
+			$data['today']=$today;
+
+
+			return $res->success("sales ",$data);
+
+	}
 	
 
 }
