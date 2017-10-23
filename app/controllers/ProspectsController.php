@@ -320,7 +320,7 @@ class ProspectsController extends Controller {
         }
 
 
-        $whereQuery = $whereQuery ? " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID "; 
+        $whereQuery = $whereQuery ? " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID  "; 
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
@@ -376,8 +376,15 @@ class ProspectsController extends Controller {
     */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
+        $orderQuery = ""
+        if(!$order && !$sort){
+            $sortClause = "ORDER BY p.createdAt desc "
+        }
+        else {
+            $sortClause = "ORDER BY $sort $order";
+        }
 
-        $sortClause = "ORDER BY $sort $order";
+        
 
         if (!$page || $page <= 0) {
             $page = 1;

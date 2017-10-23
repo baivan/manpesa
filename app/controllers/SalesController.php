@@ -879,7 +879,7 @@ class SalesController extends Controller {
         $selectQuery = "SELECT s.salesID, c.fullName,(s.amount-s.paid) as amountOwing,c.contactsID,s.customerID,c.location,c.workMobile,s.createdAt,s.amount,pp.paymentPlanDeposit as depositPaid,s.amount-pp.paymentPlanDeposit as netAmount,datediff(now(),s.createdAt) as timeLapse,s.paid,s.status,CASE WHEN s.productID ='[2]' THEN 35 WHEN s.productID ='2' THEN 35 WHEN s.productID ='[4]' THEN 35 WHEN s.productID ='4' THEN 35 WHEN s.productID ='[3]' THEN 25 WHEN s.productID ='3' THEN 25 ELSE 0 END rate ";
 
       
-        $defaultQuery = "  FROM sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID  join contacts c on s.contactsID=c.contactsID where  pp.salesTypeID=2  and s.status>=0 ";
+        $defaultQuery = "  FROM sales s join payment_plan pp on s.paymentPlanID=pp.paymentPlanID  join contacts c on s.contactsID=c.contactsID where  pp.salesTypeID=2  and s.status>0 ";
 
         $whereArray = [
             'filter' => $filter,
