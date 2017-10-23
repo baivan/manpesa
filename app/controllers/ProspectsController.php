@@ -376,16 +376,17 @@ class ProspectsController extends Controller {
     */
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
-        $orderQuery = ""
-        if(!$order && !$sort){
+        
+        /*if(!$order && !$sort){
+            $orderQuery = ""
             $sortClause = "ORDER BY p.createdAt desc "
         }
         else {
-            $sortClause = "ORDER BY $sort $order";
-        }
+            
+        }*/
 
         
-
+        $sortClause = "ORDER BY $sort $order";
         if (!$page || $page <= 0) {
             $page = 1;
         }
