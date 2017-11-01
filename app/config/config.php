@@ -77,9 +77,9 @@ if ($host == '192.168.1.5') {
 } else {
     $connection = array(
         'adapter' => 'mysql',
-        'host' => 'ke-pr-db-1',
-        'username' => 'fast_sms',
-        'password' => 'fast_sms',
+        'host' => 'ke-pr-sdb1',
+        'username' => 'envirofit',
+        'password' => 'envirofit',
         'dbname' => 'envirofit',
         'charset' => 'utf8'
     );
