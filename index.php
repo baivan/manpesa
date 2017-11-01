@@ -194,6 +194,7 @@ $customer_route->post('partner/create', 'create');
 $customer_route->post('update', 'update');
 $customer_route->post('delete', 'delete');
 $customer_route->get('convert','falseCustomers');
+$customer_route->post('ussd','getGasCustomers');
 
 $user_item_route = new MicroCollection(); 
 $user_item_route->setPrefix('/userItem/');
@@ -352,6 +353,7 @@ $reports_route->setPrefix('/reports/');
 $reports_route->setHandler(new ReportsController());
 $reports_route->get('paygosummary', 'paygoSalesSummary');
 $reports_route->get('salesreport','salesReports');
+$reports_route->get('agentsreport','agentsReport');
 
 
 $app->mount($user_route);

@@ -34,8 +34,8 @@ class ContactsController extends Controller {
     */
     
     public function searchContacts() {
-        $jwtManager = new JwtManager();
-        $request = new Request();
+        $jwtManager = new JwtManager(); 
+        $request = new Request(); 
         $res = new SystemResponses();
         $token = $request->getQuery('token');
         $filter = $request->getQuery('filter');
@@ -51,8 +51,7 @@ class ContactsController extends Controller {
 
         $searchQuery = "SELECT c.contactsID,c.workMobile,c.fullName,c.passportNumber,c.nationalIdNumber,c.location,p.prospectsID,cu.customerID,u.userID FROM contacts c "
                 . "LEFT JOIN prospects p ON c.contactsID=p.contactsID LEFT JOIN customer cu ON c.contactsID=cu.contactsID "
-                . "LEFT JOIN users u ON c.contactsID=u.userID WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter' "
-                . "OR c.location REGEXP '$filter' ";
+                . "LEFT JOIN users u ON c.contactsID=u.userID WHERE c.workMobile REGEXP '$filter' OR c.fullName REGEXP '$filter' ";
 
         if ($filter) {
             $contacts = $this->rawSelect($searchQuery);

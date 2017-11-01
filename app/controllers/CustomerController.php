@@ -614,6 +614,7 @@ class CustomerController extends Controller {
         return "$sortClause $limitQuery";
     }
 
+//move from customers to prospects
     public function falseCustomers(){
          $jwtManager = new JwtManager();
         $request = new Request();
@@ -647,5 +648,43 @@ class CustomerController extends Controller {
         }
         return $res->success("Success ",true);
     }
+
+
+   public function getGasCustomers(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $json = $request->getJsonRawBody();
+
+        $token = $json->token;
+        $workMobile = $json->mobile;
+
+        if(!$token || !$workMobile){
+            return $res->dataError("Missing data");
+        }
+
+        $data = array();
+        $serials = array();
+        $paygo = 0;
+
+        $items = $this->rawSelect("SELECT c.workMobile,c.contactsID,i.serialNumber,i.itemID FROM contacts c join user_items ui on c.contactsID=ui.contactsID join item i on ui.itemID=i.itemID WHERE c.workMobile=$workMobile");
+        foreach ($items as $item) {
+            //get sale item 
+            $saleItem = $this->rawSelect("SELECT (s.amount-s.paid) as pending FROM sales_item si join sales s on si.saleID=s.salesID join payment_plan pp on s.paymentPlanID=pp.paymentPlanID where pp.salesTypeID=2 AND s.status>0 AND si.itemID=".$item['itemID']);
+
+            if($saleItem ){
+                //$data['paygo'] = $saleItem[0]['pending'];
+                $paygo = $paygo+ $saleItem[0]['pending'];
+            }
+            //$data['']
+            array_push( $serials, $item['serialNumber']);
+        }
+
+        $data['paygo'] = $paygo;
+        $data['serials'] = $serials;
+
+        return $res->success("User data",$data);
+
+   }
 
 }

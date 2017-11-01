@@ -117,10 +117,130 @@ class ReportsController extends Controller {
 			$data['thisWeek'] = $thisWeek;
 			$data['today']=$today;
 
-
 			return $res->success("sales ",$data);
 
 	}
+
+	/*public function agentsReport(){
+		$jwtManager = new JwtManager();
+	        $request = new Request();
+	        $res = new SystemResponses();
+	        $token = $request->getQuery('token');
+
+		$agentSales = $this->rawSelect("SELECT c.fullName as agent,s.userID,sum(IF(st.salesTypeName ='Cash',s.amount,0)) as cash,sum(IF(st.salesTypeName ='Pay As You Go',s.amount,0)) as paygo,sum(IF(st.salesTypeName ='Installment',s.amount,0)) as Installment FROM sales_type st JOIN payment_plan pp on st.salesTypeID=pp.salesTypeID JOIN sales s on pp.paymentPlanID=s.paymentPlanID join users u on s.userID=u.userID join contacts c on u.contactID=c.contactsID  where s.status>0 group by s.userID ");
+		//$data['agentSales'] = $agentSales;
+
+		return $res->success("agent sales ",$agentSales);
+	}*/
+
+
+	public function agentsReport() { //sort, order, page, limit,filter,userID
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+        $token = $request->getQuery('token');
+        $userID = $request->getQuery('userID');
+        $sort = $request->getQuery('sort') ? $request->getQuery('sort') : 'salesID';
+        $order = $request->getQuery('order') ? $request->getQuery('order') : 'ASC';
+        $page = $request->getQuery('page');
+        $limit = $request->getQuery('limit');
+        $filter = $request->getQuery('filter');
+        $status = $request->getQuery('status');
+        $salesID = $request->getQuery('salesID');
+        $contactsID = $request->getQuery('contactsID');
+        $startDate = $request->getQuery('start');
+        $endDate = $request->getQuery('end'); 
+        $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
+        
+        $countQuery = "SELECT count(DISTINCT s.userID) as totalAgents ";
+
+        $selectQuery = "SELECT c.fullName as agent,u.agentNumber,s.createdAt,s.userID,sum(IF(st.salesTypeName ='Cash',s.amount,0)) as cash,sum(IF(st.salesTypeName ='Pay As You Go',s.amount,0)) as paygo,sum(IF(st.salesTypeName ='Installment',s.amount,0)) as Installment ";
+
+      
+        $defaultQuery = "  FROM sales_type st JOIN payment_plan pp on st.salesTypeID=pp.salesTypeID JOIN sales s on pp.paymentPlanID=s.paymentPlanID join users u on s.userID=u.userID join contacts c on u.contactID=c.contactsID  where s.status>0  ";
+
+        $whereArray = [
+            'filter' => $filter,
+            'date' => [$startDate, $endDate]
+        ];
+
+        $whereQuery = " AND ";
+
+        foreach ($whereArray as $key => $value) {
+
+            if ($key == 'filter') {
+                $searchColumns = ['c.fullName', 'c.workMobile'];
+
+                $valueString = "";
+                foreach ($searchColumns as $searchColumn) {
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                }
+                $valueString = chop($valueString, " ||");
+                if ($valueString) {
+                    $valueString = "(" . $valueString;
+                    $valueString .= ") AND";
+                }
+                $whereQuery .= $valueString;
+            } else if ($key == 'date') {
+                if (!empty($value[0]) && !empty($value[1])) {
+                    $valueString = " DATE(s.createdAt) BETWEEN '$value[0]' AND '$value[1]' ";
+                    $whereQuery .= $valueString;
+                }
+            } else {
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $whereQuery .= $valueString;
+            }
+        }
+
+        if ($whereQuery) {
+            $whereQuery = chop($whereQuery, "AND ");
+        }
+      
+
+        $countQuery = $countQuery . $defaultQuery . $whereQuery;
+        $selectQuery = $selectQuery . $defaultQuery . $whereQuery ." group by s.userID ";
+        $exportQuery = $selectQuery;
+
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $selectQuery .= $queryBuilder;
+
+        //$res->success($countQuery);
+
+
+        $count = $this->rawSelect($countQuery);
+        $agents = $this->rawSelect($selectQuery);
+    
+
+        if($isExport){
+                $exportSales = $this->rawSelect($exportQuery);
+                $data["exportSales"] = $exportSales;
+                
+        }
+
+       
+        $data["totalAgents"] = $count[0]['totalAgents'];
+        $data["agents"] = $agents;
+        
+
+        return $res->success("Agents summary ", $data);
+    }
+
 	
+    public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
+
+        $sortClause = "ORDER BY $sort $order";
+
+        if (!$page || $page <= 0) {
+            $page = 1;
+        }
+        if (!$limit) {
+            $limit = 10;
+        }
+
+        $ofset = (int) ($page - 1) * $limit;
+        $limitQuery = "LIMIT $ofset, $limit";
+
+        return "$sortClause $limitQuery";
+    }
 
 }

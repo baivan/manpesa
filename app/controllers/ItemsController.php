@@ -56,6 +56,8 @@ class ItemsController extends Controller {
         $productID = $json->productID;
         $status = $this->assigned; 
         $userID = $json->userID;
+        $isGas = $json->isGas;
+        $contactsID = $json->contactsID;
 
         if (!$token || !$serialNumber || !$productID || !$userID) {
             return $res->dataError("Missing data ");
@@ -69,6 +71,10 @@ class ItemsController extends Controller {
 
         if (!$status) {
             $status = $this->assigned;
+        }
+
+        if($contactsID){
+             $status = $this->sold; 
         }
 
 
@@ -107,6 +113,7 @@ class ItemsController extends Controller {
             $userItem->userID = $userID;
             $userItem->itemID = $item->itemID;
             $userItem->status = $status;
+            $userItem->contactsID = $contactsID ? $contactsID : 0;
             $userItem->createdAt = date("Y-m-d H:i:s");
 
             if ($userItem->save() === false) {
@@ -118,6 +125,43 @@ class ItemsController extends Controller {
                     $errors[] = $e;
                 }
                 $dbTransaction->rollback("Assigning item failed, Item create failed " . json_encode($errors));
+            }
+
+
+            //add this item to a sale
+             $product = $this->rawSelect("select * from product where productID=$productID");
+            
+            if(strpos(strtolower($product[0]['productName']),'gas') !==false && $contactID) {
+                 $userSales = $this->rawSelect("SELECT * FROM sales s WHERE s.contactsID=$contactsID AND s.status>0 AND s.productID REGEXP $productID ");
+
+                 foreach ($userSales as $sale) {
+                    //get sale items
+                    $items = $this->rawSelect("SELECT * FROM sales_item where saleID=".$sale['salesID']);
+                    if($items){
+                        continue;
+                    }
+                    else{
+                        $saleItem = new SalesItem();
+                        $saleItem->saleID = $sale['salesID'];
+                        $saleItem->itemID = $item->itemID;
+                        $saleItem->status=$status;
+                        $userItem->createdAt = date("Y-m-d H:i:s");
+
+                        //save this sale item
+                        if ($saleItem->save() === false) {
+                            $errors = array();
+                            $messages = $saleItem->getMessages();
+                            foreach ($messages as $message) {
+                                $e["message"] = $message->getMessage();
+                                $e["field"] = $message->getField();
+                                $errors[] = $e;
+                            }
+                            $dbTransaction->rollback("Assigning saleItem failed, Item create failed " . json_encode($errors));
+                        }
+                        break;
+                    }
+
+                 }
             }
 
             $dbTransaction->commit();
@@ -147,6 +191,7 @@ class ItemsController extends Controller {
             return $res->dataError('Item create error', $message);
         }
     }
+
  
      /*
     update  item 
