@@ -667,7 +667,7 @@ class CustomerController extends Controller {
         $serials = array();
         $paygo = 0;
 
-        $items = $this->rawSelect("SELECT c.workMobile,c.contactsID,i.serialNumber,i.itemID FROM contacts c join user_items ui on c.contactsID=ui.contactsID join item i on ui.itemID=i.itemID WHERE c.workMobile=$workMobile");
+        $items = $this->rawSelect("SELECT c.workMobile,c.fullName,c.nationalIdNumber,c.contactsID,i.serialNumber,i.itemID FROM contacts c join user_items ui on c.contactsID=ui.contactsID join item i on ui.itemID=i.itemID WHERE c.workMobile=$workMobile");
         foreach ($items as $item) {
             //get sale item 
             $saleItem = $this->rawSelect("SELECT (s.amount-s.paid) as pending FROM sales_item si join sales s on si.saleID=s.salesID join payment_plan pp on s.paymentPlanID=pp.paymentPlanID where pp.salesTypeID=2 AND s.status>0 AND si.itemID=".$item['itemID']);
@@ -681,6 +681,8 @@ class CustomerController extends Controller {
         }
 
         $data['paygo'] = $paygo;
+        $data['customer_name'] = $items[0]['fullName'];
+        $data['is_number'] = $items[0]['nationalIdNumber'];
         $data['serials'] = $serials;
 
         return $res->success("User data",$data);

@@ -1,3 +1,4 @@
 *.log
 app/logs/*
+app/config/*
 /nbproject/private/
