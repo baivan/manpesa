@@ -1,4 +1,4 @@
 *.log
 app/logs/*
-app/config/*
+app/config/config.php
 /nbproject/private/
