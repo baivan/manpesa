@@ -56,6 +56,7 @@ class TransactionsController extends Controller {
         $accounNumber = isset($json->account) ? $json->account : NULL;
         $nationalID = isset($json->nationalID) ? $json->nationalID : NULL;
         $token = isset($json->token) ? $json->token : NULL;
+        $paymentTypeID = 1; //normal payment type
 
         if (!$token) {
             return $res->dataError("Token missing ");
@@ -96,14 +97,42 @@ class TransactionsController extends Controller {
             //Determine customer
 
             $transactionID = $transaction->transactionID;
+            $paymentType = 0;
+
+            if(strpos($accounNumber, '#') !== false || strpos($accounNumber, '_') !== false){
+
+                if(strpos($accounNumber, '#') !== false){
+                    $messageArray = explode('#', $message);
+                }
+                elseif(strpos($accounNumber, '_') !== false){
+                    $messageArray = explode('_', $message);
+                }
+                
+                $prefix = $messageArray[0];
+                $account = 0;
+
+                if(strcasecmp($prefix,"P")==0){ //paygo repayment
+                   // $contactsID = $this->processGasPayments($transactionID,$account);
+                    $contactsID = $this->mapTransactionContact($account,$mobile);
+                }
+                elseif(strcasecmp($prefix,"R")==0){
+                    //create 
+                }
 
 
-            $contactsID = $this->mapTransactionContact($accounNumber,$mobile);
+                
+                $paymentTypeID = 2; //lpg pyment type
+            }else{
+                 $contactsID = $this->mapTransactionContact($accounNumber,$mobile);
+            }
+
+           
 
             if ($contactsID) {
                  $customerTransaction = new CustomerTransaction();
                  $customerTransaction->transactionID = $transactionID;
                  $customerTransaction->contactsID = $contactsID;
+                 $customerTransaction->paymentTypeID = $paymentTypeID;
                  $customerTransaction->createdAt = date("Y-m-d H:i:s");
 
                 $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
@@ -150,6 +179,7 @@ class TransactionsController extends Controller {
                 if(!$unknown){
                     $unknown = new TransactionUnknown();
                     $unknown->transactionID = $transactionID;
+                    $unknown->paymentTypeID = $paymentTypeID;
                     $unknown->createdAt = date("Y-m-d H:i:s");
 
                     $res->sendMessage($mobile, "Dear " . $fullName . ", your payment of KES " . $depositAmount . " has been received");
@@ -177,6 +207,15 @@ class TransactionsController extends Controller {
             $message = $e->getMessage();
             return $res->dataError('Transaction create error', $message);
         }
+    }
+
+    /*
+    process gas payments 
+    */
+
+    private function processGasPayments($accountNumber){
+
+
     }
 
     /*

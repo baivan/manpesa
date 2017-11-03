@@ -666,6 +666,9 @@ class CustomerController extends Controller {
         $data = array();
         $serials = array();
         $paygo = 0;
+        $customer = Contacts::findFirst(array("workMobile=:id: ",
+                        'bind' => array("id" => $workMobile)));
+
 
         $items = $this->rawSelect("SELECT c.workMobile,c.fullName,c.nationalIdNumber,c.contactsID,i.serialNumber,i.itemID FROM contacts c join user_items ui on c.contactsID=ui.contactsID join item i on ui.itemID=i.itemID WHERE c.workMobile=$workMobile");
         foreach ($items as $item) {
@@ -681,8 +684,8 @@ class CustomerController extends Controller {
         }
 
         $data['paygo'] = $paygo;
-        $data['customer_name'] = $items[0]['fullName'];
-        $data['is_number'] = $items[0]['nationalIdNumber'];
+        $data['customer_name'] = $customer->fullName; //$items[0]['fullName'];
+        $data['id_number'] = $customer->nationalIdNumber;//$items[0]['nationalIdNumber'];
         $data['serials'] = $serials;
 
         return $res->success("User data",$data);
