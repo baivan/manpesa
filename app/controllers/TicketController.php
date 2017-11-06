@@ -326,18 +326,16 @@ class TicketController extends Controller {
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
         $isExport = $request->getQuery('isExport') ? $request->getQuery('isExport') : '';
 
+        /*
+SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID,c.fullName AS owner,t.otherOwner, c.workMobile, t.ticketCategoryID, cat.ticketCategoryName, t.otherCategory,t.priorityID,pr.priorityName, t.userID, c1.fullName AS triggerName, t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt FROM ticket t JOIN priority pr ON t.priorityID=pr.priorityID LEFT JOIN contacts c ON t.contactsID=c.contactsID JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN users u1 ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID  order by t.ticketID
+        */
+
 
         $countQuery = "SELECT count(ticketID) as totalTickets ";
 
-        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID,cu.customerID,c.fullName AS owner,t.otherOwner, "
-                . "c.workMobile, t.ticketCategoryID, cat.ticketCategoryName, t.otherCategory,t.priorityID,pr.priorityName, t.userID, "
-                . "c1.fullName AS triggerName, t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
+        $selectQuery = "SELECT t.ticketID, t.ticketTitle, t.ticketDescription, t.contactsID,c.fullName AS owner,t.otherOwner, c.workMobile, t.ticketCategoryID, cat.ticketCategoryName, t.otherCategory,t.priorityID,pr.priorityName, t.userID, c1.fullName AS triggerName, t.assigneeID, c2.fullName AS assigneeName, t.status, t.createdAt, t.updatedAt ";
 
-        $baseQuery = "FROM ticket t LEFT JOIN contacts c ON t.contactsID=c.contactsID LEFT JOIN customer cu on c.contactsID=cu.contactsID LEFT JOIN users u "
-                . "ON t.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN users u1 "
-                . "ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID "
-                . "LEFT JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID "
-                . "INNER JOIN priority pr ON t.priorityID=pr.priorityID ";
+        $baseQuery = " FROM ticket t JOIN priority pr ON t.priorityID=pr.priorityID LEFT JOIN contacts c ON t.contactsID=c.contactsID JOIN ticket_category cat ON t.ticketCategoryID=cat.ticketCategoryID LEFT JOIN users u ON t.userID=u.userID LEFT JOIN contacts c1 ON u.contactID=c1.contactsID LEFT JOIN users u1 ON t.assigneeID=u1.userID LEFT JOIN contacts c2 ON u1.contactID=c2.contactsID  ";
 
         $whereArray = [
             't.status' => $status,
@@ -402,7 +400,7 @@ class TicketController extends Controller {
         $logger->log("Request Query: " . $selectQuery);
 
         $count = $this->rawSelect($countQuery);
-
+ 
         $tickets = $this->rawSelect($selectQuery);
        
 

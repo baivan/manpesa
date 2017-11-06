@@ -58,6 +58,7 @@ class TransactionsController extends Controller {
         $token = isset($json->token) ? $json->token : NULL;
         $paymentTypeID = 1; //normal payment type
 
+
         if (!$token) {
             return $res->dataError("Token missing ");
         }
@@ -91,38 +92,41 @@ class TransactionsController extends Controller {
                 }
                 $res->dataError('sale create failed', $errors);
                 $dbTransaction->rollback('transaction create failed' . json_encode($errors));
-                //return $res->success("Payment received", TRUE);
+                
             }
 
             //Determine customer
 
             $transactionID = $transaction->transactionID;
-            $paymentType = 0;
+            $contactsID=0;
+            $isRefil = false;
 
-            if(strpos($accounNumber, '#') !== false || strpos($accounNumber, '_') !== false){
-
-                if(strpos($accounNumber, '#') !== false){
-                    $messageArray = explode('#', $message);
-                }
-                elseif(strpos($accounNumber, '_') !== false){
-                    $messageArray = explode('_', $message);
-                }
+            if(strpos($accounNumber, '.') !== false){
                 
+                
+                $messageArray = explode('.', $accounNumber); 
                 $prefix = $messageArray[0];
-                $account = 0;
+                $account = $messageArray[1];
+
+                 $res->success("$prefix is gas payment $account $accounNumber");
 
                 if(strcasecmp($prefix,"P")==0){ //paygo repayment
                    // $contactsID = $this->processGasPayments($transactionID,$account);
                     $contactsID = $this->mapTransactionContact($account,$mobile);
+                    $paymentTypeID = 2;
                 }
-                elseif(strcasecmp($prefix,"R")==0){
-                    //create 
+                else if(strcasecmp($prefix,"R")==0){
+                    //this is a refil transaction
+                    //get this item and its owner 
+                    $customerData = $this->rawSelect("SELECT c.contactsID,c.fullName,c.nationalIdNumber,c.workMobile  FROM user_items ui join contacts c on ui.contactsID=c.contactsID join item i on ui.itemID=i.itemID where i.serialNumber='$account' ");
+                    $contactsID = $customerData[0]['contactsID'];
+                    $isRefil = true;
+                    $paymentTypeID = 3;
                 }
-
-
                 
-                $paymentTypeID = 2; //lpg pyment type
+                 //lpg pyment type
             }else{
+                
                  $contactsID = $this->mapTransactionContact($accounNumber,$mobile);
             }
 
@@ -168,6 +172,11 @@ class TransactionsController extends Controller {
                    // if(strtolower(strpos($accounNumber,"group"))===0 ){
                     if(substr($accounNumber, 0, strlen('group')) === 'group' ){
                         $remainingAmount = $this->distributeGroupTransaction($accounNumber,$depositAmount,$dbTransaction);
+                    }
+                    elseif($isRefil){
+                        //send this payment data to lpg system
+                        $res->sendPayment($customerData,$account,$depositAmount,$referenceNumber);
+
                     }
                     else{
                         $remainingAmount = $this->distributePaymentToSale($contactsID,$depositAmount,$dbTransaction);

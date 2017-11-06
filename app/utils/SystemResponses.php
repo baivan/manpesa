@@ -16,12 +16,16 @@ class SystemResponses extends Controller {
     get log file to use
     */
 
+     private $EnvirofitClientSecret = "7OCCKa0qstZ0biil2H9vkAug4yZV9Cb9b4bV0kaG";
+    private $EnvirofitClientID = 5;
+
     private function getLogFile($action = "") {
 
         /**
          * Read the configuration
          */
         $config = include APP_PATH . "/app/config/config.php";
+       
 
         $logPathLocation = $config->logPath->location;
         switch ($action) {
@@ -419,5 +423,94 @@ class SystemResponses extends Controller {
         }
         return $msisdn;
     }
+
+
+    public function sendPayment($customerData,$account,$depositAmount,$referenceNumber){
+         $url ="https://lpgadmin.envirofit.org/api/v1/clientPayments";
+         $verifCode = strtoupper(substr(md5(date('YmdHis').''.(10.4*100)),0,6));
+         $data = array("meterNumber"=>$account,
+                    "amount"=>$depositAmount,
+                    "payerName"=>$customerData[0]['fullName'],
+                    "paymentDateTime"=>date("Y-m-d H:i:s"),
+                    "payerPhone"=>$customerData[0]['workMobile'],
+                    "referenceNumber"=>$referenceNumber,
+                     "currency"=>"KES",
+                    "verifCode"=>$verifCode);   
+    
+         $authUrl="https://lpgadmin.envirofit.org/oauth/token";
+                 //$url = $this->EnvirofitBaseAPIURL . "/" . $this->authToken; 
+                 $payload = 
+                  [ "client_secret" => $this->EnvirofitClientSecret, 
+                     "client_id" => $this->EnvirofitClientID, 
+                      "grant_type" => "client_credentials" 
+                  ];
+              /** * {"token_type":"Bearer","expires_in":86400,"access_token":"eyJ0..."} */ 
+              $response = $this->sendPostJsonData($authUrl, $payload); 
+              $statusCode = $response['statusCode']; 
+
+              $this->success(json_encode($payload)." $statusCode authorization query ".json_encode($response));
+              
+              if ($statusCode == 200) { 
+                    $response = json_decode($response['response']); 
+                    if (!empty($response)) 
+                        { 
+                             $access_token = $response->access_token; 
+                           //  $request_headers = array( 'Authorization' => 'Bearer ' . $access_token );
+                             //$paymentResponse = $this->sendPostJsonData($url, $data,$request_headers); 
+                             $httpRequest = curl_init($url);
+                             curl_setopt($httpRequest, CURLOPT_NOBODY, true); 
+                            curl_setopt($httpRequest, CURLOPT_POST, true); 
+                            curl_setopt($httpRequest, CURLOPT_POSTFIELDS, json_encode($data)); 
+                            curl_setopt($httpRequest, CURLOPT_TIMEOUT, 10); 
+                            //timeout after 30 seconds 
+                            curl_setopt($httpRequest, CURLOPT_RETURNTRANSFER, 1); 
+                            curl_setopt($httpRequest, CURLOPT_HTTPHEADER, 
+                                        array('Content-Type: application/json', 
+                                                'Content-Length: ' . strlen(json_encode($data)),
+                                                'authorization: Bearer '.$access_token)); 
+                            //curl_setopt( $ch, CURLOPT_HEADER, 0); 
+                            curl_setopt($httpRequest, CURLOPT_RETURNTRANSFER, true); 
+                            curl_setopt($httpRequest, CURLOPT_HEADER, false); 
+                            $response = curl_exec($httpRequest); 
+                            $status = curl_getinfo($httpRequest, CURLINFO_HTTP_CODE); 
+                            curl_close($httpRequest);
+                            
+                            $this->success("$status payment query ".json_encode($data));
+
+                            if($status == 200 ){
+                                $logger = new FileAdapter($this->getLogFile('success'));
+                                $logger->log(date("Y-m-d H:i:s").' lpg refil payment '.$response);
+
+                            }
+                            else{
+                                 $logger = new FileAdapter($this->getLogFile('error'));
+                                 $logger->log(date("Y-m-d H:i:s").' lpg refil payment '.$response);
+
+                            }
+                        }
+            }
+                     
+    }
+
+    public function sendPostJsonData($url, $payload,$request_headers=null) { 
+                $httpRequest = curl_init($url);
+
+                curl_setopt($httpRequest, CURLOPT_NOBODY, true); 
+                curl_setopt($httpRequest, CURLOPT_POST, true); 
+                curl_setopt($httpRequest, CURLOPT_POSTFIELDS, json_encode($payload)); 
+                curl_setopt($httpRequest, CURLOPT_TIMEOUT, 10); 
+                //timeout after 30 seconds 
+                curl_setopt($httpRequest, CURLOPT_RETURNTRANSFER, 1); 
+                curl_setopt($httpRequest, CURLOPT_HTTPHEADER, array('Content-Type: ' 
+                    . 'application/json', 'Content-Length: ' . strlen(json_encode($payload)))); 
+                //curl_setopt( $ch, CURLOPT_HEADER, 0); 
+                curl_setopt($httpRequest, CURLOPT_RETURNTRANSFER, true); 
+                curl_setopt($httpRequest, CURLOPT_HEADER, false); 
+                $response = curl_exec($httpRequest); 
+                $status = curl_getinfo($httpRequest, CURLINFO_HTTP_CODE); 
+                curl_close($httpRequest); 
+                return array( "statusCode" => isset($status) ? $status : 0, "response" => $response );
+
+        }
 
 }
