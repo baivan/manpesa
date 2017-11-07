@@ -37,7 +37,7 @@ class JwtManager {
         return;
     }
 
-    public function issueToken($user) {
+    public function issueToken($user=null) {
         $key = "IMw2c3W5KWLFN1sBH1befeFocdWUs0Sd";
 
         $tokenId = base64_encode(mcrypt_create_iv(32));
@@ -53,8 +53,19 @@ class JwtManager {
             "name" => $user->username,
             "userId" => $user->userID
         );
+        /*$token = array(
+            "iss" => $serverName,
+            "iat" => $issuedAt,
+            "nbf" => $notBefore,
+            "name" => 'gasTicket',
+            "action" => 'ticket'
+        );*/
+
         $jwt = JWT::encode($token, $key);
         return $jwt;
     }
+
+
+
 
 }

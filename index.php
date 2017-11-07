@@ -56,7 +56,7 @@ $user_route->get('all', 'getUsers');
 $user_route->get('crm/all', 'getTableUsers');
 $user_route->post('crm/all', 'getTableUsers');
 $user_route->post('update/status', 'changeUserStatus');
-//$user_route->get("updateOldUsers","updateOldUsers");
+$user_route->get("token","generateTocken");
 
 $item_route = new MicroCollection();
 $item_route->setPrefix('/item/');
@@ -281,6 +281,7 @@ $ticket_route->post('assign', 'assign');
 $ticket_route->get('crm/updates', 'tableTicketUpdates');
 $ticket_route->get('crm/email', 'email');
 $ticket_route->get('netpromoter','netPromoterTickets');
+$ticket_route->post('lpg','gasTickets');
 
 
 $metropol_route = new MicroCollection();

@@ -688,6 +688,76 @@ sends email notification on ticket create
         $res->success('Net promoter call ticket created');
     }
 
+    public function gasTickets(){ 
+
+            $jwtManager = new JwtManager();
+            $request = new Request();
+            $res = new SystemResponses();
+            $json = $request->getJsonRawBody();
+            $transactionManager = new TransactionManager();
+            $dbTransaction = $transactionManager->get();
+
+            $token = $json->token ? $json->token:"";
+            $meterNumber = $json->meterNumber ? $json->meterNumber : "";
+            $ticketType = $json->ticketType ? $json->ticketType : ""; 
+
+
+               if(!$token || !$meterNumber || !$ticketType){
+                 return $res->dataError("Missing required data");
+               }
+
+               //verify token
+               $tokenData = $jwtManager->verifyToken($token, 'ticket');
+
+                if (!$tokenData) {
+                    return $res->dataError("Data compromised");
+                }
+
+
+               //get ticket type
+               $ticketCategory = $this->rawSelect("SELECT * FROM ticket_category where ticketCategoryName = '$ticketType'");
+               if(!$ticketCategory){
+                   return $res->dataError("Ticket type not found");
+               }
+
+               //get customer data 
+               $customerData = $this->rawSelect("SELECT c.contactsID FROM user_items ui join contacts c on ui.contactsID=c.contactsID join item i on ui.itemID=i.itemID where i.serialNumber='$meterNumber' ");
+
+
+               try{
+                    $ticket = new Ticket();
+                    $ticket->ticketTitle="LPG ".$ticketType;//"Net promoter call ticket";
+                    $ticket->ticketDescription = $ticketCategory[0]['ticketCategoryDescription'];//"Make net promoter call to this customer";
+                    $ticket->contactsID = $customer[0]['contactsID'];
+                    $ticket->ticketCategoryID =$ticketCategory[0]['ticketCategoryID'];
+                    $ticket->priorityID =1;
+                    $ticket->status =0;
+                    $ticket->createdAt = date("Y-m-d H:i:s");
+
+                    if ($ticket->save() === false) {
+                        $errors = array();
+                        $messages = $ticket->getMessages();
+                        foreach ($messages as $message) {
+                            $e["message"] = $message->getMessage();
+                            $e["field"] = $message->getField();
+                            $errors[] = $e;
+                        }
+                        //return $res->dataError('sale create failed',$errors);
+                        $dbTransaction->rollback('ticket create failed' . json_encode($errors));
+                    }
+
+                    $dbTransaction->commit();
+
+                    return $res->success("Ticket created successfully");
+
+                } 
+                catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
+                $message = $e->getMessage();
+                return $res->dataError('Ticket create error', $message);
+            }
+        
+    }
+
     
 
 }

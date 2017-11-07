@@ -953,4 +953,13 @@ status
     }
     */
 
+/*
+    public function generateTocken(){
+        $jwtManager = new JwtManager();
+        $request = new Request();
+        $res = new SystemResponses();
+
+        return $res->success("Token ",$jwtManager->issueToken());
+    }*/
+
 }
