@@ -62,6 +62,8 @@ class ContactsController extends Controller {
         return $res->success("contacts ", $contacts);
     }
 
+    
+
    /*
     retrieve product contacts to be tabulated on crm
     parameters:

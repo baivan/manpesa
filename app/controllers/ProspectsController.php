@@ -193,9 +193,6 @@ class ProspectsController extends Controller {
         $activityLog= new ActivityLogsController();
         $activityLog->create($userID,"get prospects ",$longitude,$latitude);
 
-       
-       
-
         if (!$token) {
             return $res->dataError("Missing data ");
         }
@@ -320,13 +317,13 @@ class ProspectsController extends Controller {
         }
 
 
-        $whereQuery = $whereQuery ? " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 or p.userID=$userID  "; 
+        $whereQuery = $whereQuery ? " WHERE (datediff(now(),co.createdAt)>30 OR p.userID=$userID) AND $whereQuery   " : " WHERE datediff(now(),co.createdAt)>30 OR p.userID=$userID  "; 
 
         $countQuery = $countQuery . $baseQuery . $whereQuery;
         $selectQuery = $selectQuery . $baseQuery . $whereQuery;
         $exportQuery = $selectQuery;
 
-        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit);
+        $queryBuilder = $this->tableQueryBuilder($sort, $order, $page, $limit); 
 
         $selectQuery .= $queryBuilder;
         
@@ -346,7 +343,7 @@ class ProspectsController extends Controller {
             $data["prospects"] = $prospects;
             $data['exportProspects'] = 'no data';
         }
-       
+       $res->success("query ".$selectQuery);
  
         return $res->success("Prospects ", $data);
     }

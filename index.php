@@ -77,7 +77,7 @@ $item_route->post('issue', 'issueItem'); //{salesID,ItemID,userID,contactsID}
 $item_route->post('issuev2','issueItemV2');//{salesID,ItemID[],userID,contactsID}
 
 $prospect_route = new MicroCollection();
-$prospect_route->setPrefix('/prospect/');
+$prospect_route->setPrefix('/prospect/'); 
 $prospect_route->setHandler(new ProspectsController());
 $prospect_route->post('create', 'createContactProspect'); //{userID,workMobile,nationalIdNumber,fullName,location,token}
 $prospect_route->post('update', 'update');
@@ -199,7 +199,7 @@ $customer_route->post('ussd','getGasCustomers');
 $user_item_route = new MicroCollection(); 
 $user_item_route->setPrefix('/userItem/');
 $user_item_route->setHandler(new UserItemsController());
-$user_item_route->post('crm/all', 'getTableUserItems');
+$user_item_route->post('crm/all', 'getTableUserItems'); 
 $user_item_route->get('crm/all', 'getTableUserItems');
 
 $contacts_route = new MicroCollection();
@@ -271,7 +271,7 @@ $priority_route->get('all', 'getAll');
 $ticket_route = new MicroCollection();
 $ticket_route->setPrefix('/ticket/');
 $ticket_route->setHandler(new TicketController());
-$ticket_route->post('create', 'create'); //{ticketTitle,ticketDescription,customerID,assigneeID,ticketCategoryID,priorityID,status}
+$ticket_route->post('create', 'create'); // {ticketTitle,ticketDescription,customerID,assigneeID,ticketCategoryID,priorityID,status}
 $ticket_route->post('update', 'update');
 $ticket_route->post('crm/all', 'getTableTickets');
 $ticket_route->get('crm/all', 'getTableTickets');

@@ -47,7 +47,7 @@ class CustomerController extends Controller {
         $nationalIdNumber = $json->nationalIdNumber;
         $serialNumber = $json->serialNumber;
         $productID = $json->productID ? $json->productID : NULL;
-        $salePartner = $json->salePartner;
+        $salePartner = $json->salePartner; 
         $userID = $json->userID;
 
        // $res->dataError("USer data ".json_encode($json));
@@ -433,6 +433,7 @@ class CustomerController extends Controller {
         $res = new SystemResponses();
         $token = $request->getQuery('token') ? $request->getQuery('token') : '';
         $customerID = $request->getQuery('customerID') ? $request->getQuery('customerID') : '';
+        $contactsID = $request->getQuery('contactsID') ? $request->getQuery('contactsID') : '';
         $userID = $request->getQuery('userID') ? $request->getQuery('userID') : '';
         $filter = $request->getQuery('filter') ? $request->getQuery('filter') : '';
 
@@ -446,6 +447,7 @@ class CustomerController extends Controller {
 
         $whereArray = [
             'cu.customerID' => $customerID,
+            'c.contactsID' => $contactsID,
             'cu.userID' => $userID,
             'filter' => $filter
         ];
@@ -576,6 +578,8 @@ class CustomerController extends Controller {
         $selectQuery .= $queryBuilder;
        // return $res->success("customers", $selectQuery);
 
+        $res->success("testing".$selectQuery);
+
         $count = $this->rawSelect($countQuery);
 
         $customers = $this->rawSelect($selectQuery);
@@ -599,7 +603,7 @@ class CustomerController extends Controller {
     */
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
 
-        $sortClause = "ORDER BY $sort $order";
+        $sortClause = " ORDER BY $sort $order";
 
         if (!$page || $page <= 0) {
             $page = 1;
@@ -609,7 +613,7 @@ class CustomerController extends Controller {
         }
 
         $ofset = (int) ($page - 1) * $limit;
-        $limitQuery = "LIMIT $ofset, $limit";
+        $limitQuery = " LIMIT $ofset, $limit";
 
         return "$sortClause $limitQuery";
     }
