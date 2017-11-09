@@ -742,6 +742,7 @@ class TransactionsController extends Controller {
         $token = $request->getQuery('token');
         $salesID = $request->getQuery('salesID');
         $contactsID = $request->getQuery('contactsID');
+        $paymentTypeID = $request->getQuery('paymentTypeID');
         $sort = $request->getQuery('sort');
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
@@ -766,6 +767,7 @@ class TransactionsController extends Controller {
             'filter' => $filter,
             'ct.salesID' => $salesID,
             'ct.contactsID' => $contactsID,
+            'ct.paymentTypeID' => $paymentTypeID,
             'date' => [$startDate, $endDate]
         ];
 
@@ -794,6 +796,13 @@ class TransactionsController extends Controller {
                     $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
+            } 
+            else if ($key == 't.paymentTypeID' && $value > 1) {
+                //$valueString = "" . $key . "=0" . " AND ";
+               // $whereQuery .= $valueString;
+                $valueString = $value ? "" . $key . "> 1  AND " : "";
+                $whereQuery .= $valueString;
+
             } else {
                 $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
                 $whereQuery .= $valueString;
@@ -855,6 +864,7 @@ class TransactionsController extends Controller {
         $order = $request->getQuery('order');
         $page = $request->getQuery('page');
         $limit = $request->getQuery('limit');
+        $paymentTypeID = $request->getQuery('paymentTypeID');
         $filter = $request->getQuery('filter');
         $startDate = $request->getQuery('start') ? $request->getQuery('start') : '';
         $endDate = $request->getQuery('end') ? $request->getQuery('end') : '';
@@ -872,6 +882,7 @@ class TransactionsController extends Controller {
         $whereArray = [
             'filter' => $filter,
             'tu.status' => 404,
+            'tu.paymentTypeID'=>$paymentTypeID,
             'date' => [$startDate, $endDate]
         ];
 
@@ -884,9 +895,9 @@ class TransactionsController extends Controller {
 
                 $valueString = "";
                 foreach ($searchColumns as $searchColumn) {
-                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' ||" : "";
+                    $valueString .= $value ? "" . $searchColumn . " REGEXP '" . $value . "' || " : "";
                 }
-                $valueString = chop($valueString, " ||");
+                $valueString = chop($valueString, " || ");
                 if ($valueString) {
                     $valueString = "(" . $valueString;
                     $valueString .= ") AND ";
@@ -900,6 +911,21 @@ class TransactionsController extends Controller {
                     $valueString = " DATE(t.createdAt) BETWEEN '$value[0]' AND '$value[1]'";
                     $whereQuery .= $valueString;
                 }
+            }
+
+            /*else if ($key == 'tu.paymentTypeID' && $value == 1) {
+                //$valueString = "" . $key . "=0" . " AND ";
+               // $whereQuery .= $valueString;
+                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $whereQuery .= $valueString;
+
+            }*/
+            else if ($key == 'tu.paymentTypeID' && $value > 1) {
+                //$valueString = "" . $key . "=0" . " AND ";
+               // $whereQuery .= $valueString;
+                $valueString = $value ? "" . $key . "> 1  AND " : "";
+                $whereQuery .= $valueString;
+
             } else {
                 $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
                 $whereQuery .= $valueString;

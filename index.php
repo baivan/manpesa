@@ -190,6 +190,8 @@ $customer_route->post('crm/all', 'getTableCustomers');
 $customer_route->get('crm/all', 'getTableCustomers');
 $customer_route->get('all', 'getAll');
 $customer_route->post('all', 'getAll');
+$customer_route->post('web/all','webGetAll');
+$customer_route->get('web/all','webGetAll');
 $customer_route->post('partner/create', 'create');
 $customer_route->post('update', 'update');
 $customer_route->post('delete', 'delete');

@@ -293,7 +293,7 @@ class ItemsController extends Controller {
             return $res->dataError("Data compromised");
         }
 
-        $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.createdAt,p.productID,p.productName FROM item i join product p on i.productID=p.productID";
+        $itemsQuery = "SELECT i.itemID,i.serialNumber,i.status,i.createdAt,p.productID,p.productName FROM item i join product p on i.productID=p.productID ";
         $condition = " ";
 
         if ($productID && $itemID && $status >= 0 && $status >= 0) {
