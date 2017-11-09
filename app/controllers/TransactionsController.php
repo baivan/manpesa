@@ -800,11 +800,11 @@ class TransactionsController extends Controller {
             else if ($key == 't.paymentTypeID' && $value > 1) {
                 //$valueString = "" . $key . "=0" . " AND ";
                // $whereQuery .= $valueString;
-                $valueString = $value ? "" . $key . "> 1  AND " : "";
+                $valueString = $value ? " " . $key . "> 1  AND " : " ";
                 $whereQuery .= $valueString;
 
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND" : "";
+                $valueString = $value ? " " . $key . "=" . $value . " AND" : " ";
                 $whereQuery .= $valueString;
             }
         }
@@ -839,7 +839,7 @@ class TransactionsController extends Controller {
             $data['exportTransactions'] = "no data";
         }
        
-        return $res->success("Transactions get successfully ", $data);
+        return $res->success("Transactions get successfully $selectQuery", $data);
     }
 
     /*
@@ -923,11 +923,11 @@ class TransactionsController extends Controller {
             else if ($key == 'tu.paymentTypeID' && $value > 1) {
                 //$valueString = "" . $key . "=0" . " AND ";
                // $whereQuery .= $valueString;
-                $valueString = $value ? "" . $key . "> 1  AND " : "";
+                $valueString = $value ? " " . $key . "> 1  AND " : "";
                 $whereQuery .= $valueString;
 
             } else {
-                $valueString = $value ? "" . $key . "=" . $value . " AND " : "";
+                $valueString = $value ? " " . $key . "=" . $value . " AND " : "";
                 $whereQuery .= $valueString;
             }
         }
@@ -964,7 +964,7 @@ class TransactionsController extends Controller {
             $data["exportTransactions"] = "no data";
         }
         
-        return $res->success("Unknown payments get successfully ", $data);
+        return $res->success("Unknown payments get successfully $selectQuery", $data);
     }
 
     public function tableQueryBuilder($sort = "", $order = "", $page = 0, $limit = 10) {
