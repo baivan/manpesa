@@ -15,72 +15,37 @@ class Users extends \Phalcon\Mvc\Model
     /**
      *
      * @var string
+     * @Column(type="string", length=20, nullable=false)
+     */
+    public $mobile;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", length=50, nullable=false)
+     */
+    public $email;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $fullName;
+
+    /**
+     *
+     * @var string
      * @Column(type="string", length=100, nullable=false)
      */
-    public $username;
+    public $regID;
 
     /**
      *
-     * @var string
-     * @Column(type="string", length=600, nullable=false)
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
      */
     public $password;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", length=15, nullable=true)
-     */
-    public $targetSale;
-    
-        /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $agentType;
-
-    /**
-     *
-     * @var string
-     * @Column(type="string", length=50, nullable=true)
-     */
-    public $agentNumber;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $roleID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $locationID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $contactID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $status;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $code;
 
     /**
      *

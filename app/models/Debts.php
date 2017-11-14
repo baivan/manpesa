@@ -1,6 +1,7 @@
 <?php
 
-class Ticket extends \Phalcon\Mvc\Model {
+class Debts extends \Phalcon\Mvc\Model
+{
 
     /**
      *
@@ -9,70 +10,63 @@ class Ticket extends \Phalcon\Mvc\Model {
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $ticketID;
+    public $debtId;
+
+    /**
+     *
+     * @var integer
+     * @Column(type="integer", length=11, nullable=false)
+     */
+    public $userId;
 
     /**
      *
      * @var string
      * @Column(type="string", length=50, nullable=false)
      */
-    public $ticketTitle;
+    public $debtorName;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=500, nullable=false)
+     * @Column(type="string", length=20, nullable=false)
      */
-    public $ticketDescription;
+    public $amount;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $userID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $contactsID;
+    public $paid;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=150, nullable=true)
+     * @Column(type="string", nullable=false)
      */
-    public $otherOwner;
+    public $dueDate;
+
+    /**
+     *
+     * @var string
+     * @Column(type="string", nullable=false)
+     */
+    public $lendDate;
 
     /**
      *
      * @var integer
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $assigneeID;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=true)
-     */
-    public $ticketCategoryID;
+    public $debtTypeId;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=150, nullable=true)
+     * @Column(type="string", nullable=false)
      */
-    public $otherCategory;
-
-    /**
-     *
-     * @var integer
-     * @Column(type="integer", length=11, nullable=false)
-     */
-    public $priorityID;
+    public $settleDate;
 
     /**
      *
@@ -100,17 +94,19 @@ class Ticket extends \Phalcon\Mvc\Model {
      *
      * @return string
      */
-    public function getSource() {
-        return 'ticket';
+    public function getSource()
+    {
+        return 'debts';
     }
 
     /**
      * Allows to query a set of records that match the specified conditions
      *
      * @param mixed $parameters
-     * @return Ticket[]
+     * @return Debts[]
      */
-    public static function find($parameters = null) {
+    public static function find($parameters = null)
+    {
         return parent::find($parameters);
     }
 
@@ -118,9 +114,10 @@ class Ticket extends \Phalcon\Mvc\Model {
      * Allows to query the first record that match the specified conditions
      *
      * @param mixed $parameters
-     * @return Ticket
+     * @return Debts
      */
-    public static function findFirst($parameters = null) {
+    public static function findFirst($parameters = null)
+    {
         return parent::findFirst($parameters);
     }
 

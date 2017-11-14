@@ -1,6 +1,6 @@
 <?php
 
-class DiscountCondition extends \Phalcon\Mvc\Model
+class DebtTypes extends \Phalcon\Mvc\Model
 {
 
     /**
@@ -10,21 +10,21 @@ class DiscountCondition extends \Phalcon\Mvc\Model
      * @Identity
      * @Column(type="integer", length=11, nullable=false)
      */
-    public $discountConditionID;
+    public $debtTypeID;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=50, nullable=false)
+     * @Column(type="string", length=20, nullable=false)
      */
-    public $conditionName;
+    public $name;
 
     /**
      *
      * @var string
-     * @Column(type="string", length=150, nullable=false)
+     * @Column(type="string", length=100, nullable=false)
      */
-    public $conditionDescription;
+    public $description;
 
     /**
      *
@@ -47,14 +47,14 @@ class DiscountCondition extends \Phalcon\Mvc\Model
      */
     public function getSource()
     {
-        return 'discount_condition';
+        return 'debt_types';
     }
 
     /**
      * Allows to query a set of records that match the specified conditions
      *
      * @param mixed $parameters
-     * @return DiscountCondition[]
+     * @return DebtTypes[]
      */
     public static function find($parameters = null)
     {
@@ -65,7 +65,7 @@ class DiscountCondition extends \Phalcon\Mvc\Model
      * Allows to query the first record that match the specified conditions
      *
      * @param mixed $parameters
-     * @return DiscountCondition
+     * @return DebtTypes
      */
     public static function findFirst($parameters = null)
     {

@@ -46,19 +46,18 @@ class JwtManager {
         $expire = $notBefore + 60;            // Adding 60 seconds
         $serverName = "www.southwell.io"; // Retrieve the server name from config file
 
-        $token = array(
+       $token = array(
             "iss" => $serverName,
             "iat" => $issuedAt,
             "nbf" => $notBefore,
             "name" => $user->username,
             "userId" => $user->userID
-        );
-        /*$token = array(
+        ); 
+       /* $token = array(
             "iss" => $serverName,
             "iat" => $issuedAt,
             "nbf" => $notBefore,
-            "name" => 'gasTicket',
-            "action" => 'ticket'
+            "action" => 'register'
         );*/
 
         $jwt = JWT::encode($token, $key);
