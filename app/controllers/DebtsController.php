@@ -26,9 +26,11 @@ class DebtsController extends  ControllerBase
         $token = isset($json->token) ? $json->token : NULL;
 
         if (!$token || !$userId || !$debtorName || !$amount || !$dueDate 
-        	|| !$lendDate || !$debtTypeId || !$settleDate) {
+        	|| !$lendDate || !$debtTypeId) {
             return $this->dataError("Missing data ");
         }
+
+
         $tokenData = $jwtManager->verifyToken($token);
 
         $user = Users::findFirst(array("userID=:id: ",
@@ -36,10 +38,10 @@ class DebtsController extends  ControllerBase
 
 
         if (!$tokenData) {
-            return $this->dataError("User Data compromised");
+            return $this->dataError("User Data compromised ");
         }
-        elseif ($tokenData->userId !=$user->userId ) {
-        	return $this->dataError("User Data compromised");
+        elseif ($tokenData->userId !=$user->userID ) {
+        	return $this->dataError(" User Data compromised ");
         }
 
         try{
@@ -50,7 +52,7 @@ class DebtsController extends  ControllerBase
 	        $debt->dueDate = $dueDate;
 	        $debt->lendDate = $lendDate;
 	        $debt->debtTypeId = $debtTypeId;
-	        $debt->settleDate = $settleDate;
+	        $debt->settleDate = isset($settleDate)?$settleDate:$dueDate;
 	        $debt->status = $status;
 	        $debt->createdAt = date("Y-m-d H:i:s");
 
@@ -71,7 +73,7 @@ class DebtsController extends  ControllerBase
 
         }catch (Phalcon\Mvc\Model\Transaction\Failed $e) {
             $message = $e->getMessage();
-            return $this->dataError('debt create error', $message);
+            return $this->dataError('debt create error '.json_encode($message), $message);
         }
         
     }
@@ -106,7 +108,7 @@ class DebtsController extends  ControllerBase
         if (!$tokenData) {
             return $this->dataError("User Data compromised");
         }
-        elseif ($tokenData->userId !=$user->userId ) {
+        elseif ($tokenData->userId !=$user->userID ) {
         	return $this->dataError("User Data compromised");
         }
 
@@ -192,7 +194,7 @@ class DebtsController extends  ControllerBase
         elseif (!$user) {
            return $this->dataError("User not found ",$tokenData);
         }
-        elseif ($tokenData->userId !=$user->userId ) {
+        elseif ($tokenData->userId !=$user->userID) {
         	return $this->dataError("User Data compromised");
         }
 

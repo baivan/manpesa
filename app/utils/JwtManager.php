@@ -27,6 +27,7 @@ class JwtManager {
             $res->composePushLog("Exeption", $e->getMessage(), "Token decode error");
             return $decoded;
         }
+
         if ($decoded->action == $action) {
             return $decoded;
         }

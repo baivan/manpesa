@@ -34,7 +34,7 @@ class UsersController  extends ControllerBase
 
         if($user){
             if ($this->security->checkHash($password, $user->password)) {
-                 $data['userId'] = $user->userID;
+                 $data['userID'] = $user->userID;
                  $data['mobile'] = $user->mobile;
                  $data['name'] = $user->fullName;
                  $data['email'] = $user->email;
@@ -74,7 +74,7 @@ class UsersController  extends ControllerBase
         $fullName = isset($json->fullName) ? $json->fullName : NULL;
 
         if (!$token || !$mobile || !$email || !$fullName || !$password) {
-            return $res->dataError("Missing data ");
+            return $res->dataError("Missing data here".json_encode($json));
         }
         $tokenData = $jwtManager->verifyToken($token, 'register');
 
@@ -112,7 +112,7 @@ class UsersController  extends ControllerBase
 
 	         $dbTransaction->commit();
 
-	         $data['userId'] = $user->userID;
+	         $data['userID'] = $user->userID;
 	         $data['mobile'] = $user->mobile;
 	         $data['name'] = $user->fullName;
 	         $data['email'] = $user->email;
