@@ -52,7 +52,7 @@ class DebtsController extends  ControllerBase
 	        $debt->dueDate = date($dueDate);
 	        $debt->lendDate = date($lendDate);
 	        $debt->debtTypeId = $debtTypeId;
-	        $debt->settleDate = empty($settleDate)?date($settleDate):NULL;
+	        $debt->settleDate = empty($settleDate)?NULL:date($settleDate);
 	        $debt->status = $status;
 	        $debt->createdAt = date("Y-m-d H:i:s");
 
