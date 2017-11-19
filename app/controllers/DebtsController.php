@@ -49,10 +49,10 @@ class DebtsController extends  ControllerBase
 	        $debt->userId = $userId;
 	        $debt->debtorName = $debtorName;
 	        $debt->amount = $amount;
-	        $debt->dueDate = $dueDate;
-	        $debt->lendDate = $lendDate;
+	        $debt->dueDate = date($dueDate);
+	        $debt->lendDate = date($lendDate);
 	        $debt->debtTypeId = $debtTypeId;
-	        $debt->settleDate = isset($settleDate)?$settleDate:$dueDate;
+	        $debt->settleDate = isset($settleDate)?date($settleDate):NULL;
 	        $debt->status = $status;
 	        $debt->createdAt = date("Y-m-d H:i:s");
 
@@ -130,17 +130,17 @@ class DebtsController extends  ControllerBase
 	        	$debt->debtorName = $debtorName;
 	        }
 	        if($dueDate ){
-	        	$debt->dueDate = $dueDate;
+	        	$debt->dueDate = date($dueDate);
 	        }
 	        if($lendDate ){
-	        	$debt->lendDate = $lendDate;
+	        	$debt->lendDate = date($lendDate);
 	        }
 
 	        if($debtTypeId ){
 	        	$debt->debtTypeId = $debtTypeId;
 	        }
 	        if($settleDate ){
-	        	$debt->settleDate = $settleDate;
+	        	$debt->settleDate = date($settleDate);
 	        }
 
 	        if($status){
